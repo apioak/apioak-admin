@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"net/http/httputil"
@@ -30,5 +31,6 @@ func startServer() {
 }
 
 func main() {
+	fmt.Println("Hello, APIOAK")
 	startServer()
 }
