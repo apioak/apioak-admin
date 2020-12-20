@@ -31,6 +31,7 @@ func startServer() {
 }
 
 func main() {
+	fmt.Println(VERSION)
 	fmt.Println("Hello, APIOAK")
 	startServer()
 }
