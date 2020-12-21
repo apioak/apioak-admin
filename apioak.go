@@ -1,11 +1,14 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"log"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"os"
+	"strconv"
 )
 
 type Upstream struct {
@@ -22,16 +25,30 @@ func (upstream *Upstream) ServeHTTP(writer http.ResponseWriter, request *http.Re
 	proxy.ServeHTTP(writer, request)
 }
 
-func startServer() {
+func startServer(application *ConfigApp) {
 	u := &Upstream{"127.0.0.1", "10222"}
-	err := http.ListenAndServe(":10111", u)
+	err := http.ListenAndServe(application.Host+":"+strconv.Itoa(application.Port), u)
 	if err != nil {
 		log.Fatalln(err)
 	}
 }
 
 func main() {
-	fmt.Println(VERSION)
-	fmt.Println("Hello, APIOAK")
-	startServer()
+	flag.Parse()
+
+	if err := initConfig(); err != nil {
+		panic(err)
+	}
+
+	if config.CLI.Version {
+		fmt.Printf("APIOAK: Version %s\n", AppVersion)
+		os.Exit(1)
+	}
+
+	if len(config.EtcdNodes) == 0 {
+		fmt.Print("error: config etcd nodes is empty")
+		os.Exit(1)
+	}
+
+	startServer(&config.App)
 }

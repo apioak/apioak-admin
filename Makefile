@@ -2,7 +2,7 @@
 
 build:
 	@echo "Building APIOAK"
-	@mkdir -p bin
+	@mkdir -p bin etc
 	@go build -o bin/apioak .
 
 clean:
