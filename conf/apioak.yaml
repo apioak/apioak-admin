@@ -1,0 +1,13 @@
+app:
+  host: 127.0.0.1
+  port: 10666
+
+etcd:
+  - 127.0.0.1:12379
+  - 127.0.0.1:22379
+  - 127.0.0.1:32379
+
+log:
+  level: debug
+  error: logs/error.log
+  access: logs/access.log
