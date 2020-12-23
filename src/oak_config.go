@@ -15,6 +15,7 @@ type ConfigApp struct {
 
 type ConfigLog struct {
 	Level  string `yaml:"level"`
+	Format string `yaml:"json"`
 	Error  string `yaml:"error"`
 	Access string `yaml:"access"`
 }
@@ -24,11 +25,16 @@ type ConfigCLI struct {
 	Version bool
 }
 
+type ConfigEtcd struct {
+	Prefix string
+	Nodes  []string
+}
+
 type Config struct {
-	CLI       ConfigCLI
-	App       ConfigApp `yaml:"app"`
-	Log       ConfigLog `yaml:"log"`
-	EtcdNodes []string  `yaml:"etcd"`
+	CLI  ConfigCLI
+	App  ConfigApp  `yaml:"app"`
+	Log  ConfigLog  `yaml:"log"`
+	Etcd ConfigEtcd `yaml:"etcd"`
 }
 
 var config Config
