@@ -45,7 +45,7 @@ func Main() {
 		os.Exit(1)
 	}
 
-	if len(config.EtcdNodes) == 0 {
+	if len(config.Etcd.Nodes) == 0 {
 		fmt.Print("error: config etcd nodes is empty")
 		os.Exit(1)
 	}
