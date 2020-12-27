@@ -1,7 +1,7 @@
 package src
 
 import (
-	"flag"
+	"fmt"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
 )
@@ -26,12 +26,12 @@ type ConfigCLI struct {
 }
 
 type ConfigEtcd struct {
-	Prefix string
-	Nodes  []string
+	Prefix string   `yaml:"prefix"`
+	Nodes  []string `yaml:"nodes"`
 }
 
 type Config struct {
-	CLI  ConfigCLI
+	CLI  ConfigCLI  `yaml:"-"`
 	App  ConfigApp  `yaml:"app"`
 	Log  ConfigLog  `yaml:"log"`
 	Etcd ConfigEtcd `yaml:"etcd"`
@@ -40,11 +40,12 @@ type Config struct {
 var config Config
 
 func init() {
-	flag.StringVar(&config.CLI.Config, "c", "etc/apioak.yaml", "the apioak config file")
-	flag.BoolVar(&config.CLI.Version, "v", false, "the apioak version")
+	//flag.StringVar(&config.CLI.Config, "c", "etc/apioak.yaml", "the apioak config file")
+	//flag.BoolVar(&config.CLI.Version, "v", false, "the apioak version")
 }
 
 func initConfig() error {
+	config.CLI.Config = "etc/apioak.yaml"
 	configFile, err := ioutil.ReadFile(config.CLI.Config)
 
 	if err != nil {
@@ -55,6 +56,8 @@ func initConfig() error {
 	if err != nil {
 		return err
 	}
+
+	fmt.Println(config.Etcd.Nodes)
 
 	return nil
 }

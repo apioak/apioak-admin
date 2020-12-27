@@ -4,6 +4,10 @@ apioak:
   admin:
     listen: 10888
 
+app:
+  host: 127.0.0.1
+  port: 10666
+
 etcd:
   prefix: /apioak
   nodes:

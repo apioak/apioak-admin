@@ -1,7 +1,6 @@
 package src
 
 import (
-	"flag"
 	"fmt"
 	"log"
 	"net/http"
@@ -34,7 +33,6 @@ func startServer(application *ConfigApp) {
 }
 
 func Main() {
-	flag.Parse()
 
 	if err := initConfig(); err != nil {
 		panic(err)
@@ -50,5 +48,5 @@ func Main() {
 		os.Exit(1)
 	}
 
-	startServer(&config.App)
+	//startServer(&config.App)
 }

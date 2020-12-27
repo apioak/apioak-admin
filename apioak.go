@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"time"
+	"github.com/apioak/apioak-go/src"
 )
 
 func produce(p chan<- int) {
@@ -20,9 +20,9 @@ func consumer(c <-chan int) {
 }
 
 func main() {
-	// src.Main()
-	ch := make(chan int, 10)
-	go produce(ch)
-	go consumer(ch)
-	time.Sleep(1 * time.Second)
+	src.Main()
+	//ch := make(chan int, 10)
+	//go produce(ch)
+	//go consumer(ch)
+	//time.Sleep(1 * time.Second)
 }
