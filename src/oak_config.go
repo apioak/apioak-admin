@@ -1,63 +1,71 @@
 package src
 
 import (
-	"fmt"
+	"github.com/urfave/cli"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
+	"os"
 )
 
-const AppVersion = "0.6.0"
-
-type ConfigApp struct {
-	Host string `yaml:"host"`
-	Port int    `yaml:"port"`
-}
-
-type ConfigLog struct {
-	Level  string `yaml:"level"`
-	Format string `yaml:"json"`
-	Error  string `yaml:"error"`
-	Access string `yaml:"access"`
-}
-
-type ConfigCLI struct {
-	Config  string
-	Version bool
-}
-
-type ConfigEtcd struct {
-	Prefix string   `yaml:"prefix"`
-	Nodes  []string `yaml:"nodes"`
-}
-
 type Config struct {
-	CLI  ConfigCLI  `yaml:"-"`
-	App  ConfigApp  `yaml:"app"`
-	Log  ConfigLog  `yaml:"log"`
-	Etcd ConfigEtcd `yaml:"etcd"`
+	Application struct {
+		Listen int  `yaml:"listen"`
+		Debug  bool `yaml:"debug"`
+	} `yaml:"application"`
+	Etcd struct {
+		Prefix string   `yaml:"prefix"`
+		Nodes  []string `yaml:"nodes"`
+	} `yaml:"etcd"`
+	Mysql struct {
+		Host     string `yaml:"host"`
+		Database string `yaml:"database"`
+		Port     int    `yaml:"port"`
+		Username string `yaml:"username"`
+		Password int    `yaml:"password"`
+		Prefix   string `yaml:"prefix"`
+	} `yaml:"mysql"`
 }
 
 var config Config
 
-func init() {
-	//flag.StringVar(&config.CLI.Config, "c", "etc/apioak.yaml", "the apioak config file")
-	//flag.BoolVar(&config.CLI.Version, "v", false, "the apioak version")
-}
-
 func initConfig() error {
-	config.CLI.Config = "etc/apioak.yaml"
-	configFile, err := ioutil.ReadFile(config.CLI.Config)
+	var app = cli.NewApp()
+	app.Name = "apioak-admin"
+	app.Usage = "Administrator control panel"
+	app.Version = AppVersion
 
+	app.Flags = []cli.Flag{
+		cli.StringFlag{
+			Name:  "config, c",
+			Value: "conf/apioak-admin.yaml",
+			Usage: "set configuration file",
+		},
+	}
+
+	app.Action = func(c *cli.Context) error {
+		_, err := os.Stat(c.String("config"))
+		if err != nil {
+			return err
+		}
+
+		configFile, err := ioutil.ReadFile(c.String("config"))
+
+		if err != nil {
+			return err
+		}
+
+		err = yaml.Unmarshal(configFile, &config)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	}
+
+	err := app.Run(os.Args)
 	if err != nil {
 		return err
 	}
-
-	err = yaml.Unmarshal(configFile, &config)
-	if err != nil {
-		return err
-	}
-
-	fmt.Println(config.Etcd.Nodes)
 
 	return nil
 }
