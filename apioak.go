@@ -1,9 +1,17 @@
 package main
 
-import (
-	"github.com/apioak/apioak-admin/src"
-)
-
 func main() {
-	src.Main()
+
+	// 初始化配置
+
+	// 初始化框架
+
+	// 初始化控制器
+
+	// 初始化数据库
+
+	// 初始化参数验证器
+
+	// 初始化路由
+
 }
