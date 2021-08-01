@@ -2,7 +2,7 @@ package models
 
 import "time"
 
-type users struct {
+type Users struct {
 	ID        string    `gorm:"column:id;primary_key"` //User iD
 	Name      string    `gorm:"column:name"`           //User name
 	Password  string    `gorm:"column:password"`       //Password
@@ -12,7 +12,8 @@ type users struct {
 }
 
 // TableName sets the insert table name for this struct type
-func (u *users) TableName() string {
+func (u *Users) TableName() string {
 	return "oak_users"
 }
+
 
