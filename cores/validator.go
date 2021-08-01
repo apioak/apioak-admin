@@ -16,23 +16,17 @@ import (
 var (
 	LocaleEn = "en"
 	LocaleZh = "zh"
-
 	trans ut.Translator
 )
 
 func InitValidator(conf*ConfigGlobal) (err error) {
 	if validatorEngine, ok := binding.Validator.Engine().(*validator.Validate); ok {
 
-		// 注册获取 json 的自定义方法
-		RegisterTag(validatorEngine, "json")
-		RegisterTag(validatorEngine, "form")
+		// 注册获取的自定义 json tag方法（验证错误信息以传递参数名称为准）
+		RegisterTag(validatorEngine, "json", "zh")
 
 		zhT := zh.New() //中文翻译器
 		enT := en.New() //英文翻译器
-
-		// 第一个参数是备用（fallback）的语言环境
-		// 后面的参数是应该支持的语言环境（支持多个）
-		// uni := ut.New(zhT, zhT) 也是可以的
 		uni := ut.New(enT, zhT, enT)
 
 		// locale 通常取决于 http 请求头的 'Accept-Language'
@@ -42,11 +36,6 @@ func InitValidator(conf*ConfigGlobal) (err error) {
 		if !ok {
 			return fmt.Errorf("uni.GetTranslator(%s) failed", conf.Validator.Locale)
 		}
-
-		// 增加额外的翻译
-		RegisterCustomizeTrans(validatorEngine, trans, "required_with", "{0} 为必填字段!")
-		RegisterCustomizeTrans(validatorEngine, trans, "required_without", "{0} 为必填字段!")
-		RegisterCustomizeTrans(validatorEngine, trans, "required_without_all", "{0} 为必填字段!")
 
 		// 注册翻译器
 		switch strings.ToLower(conf.Validator.Locale) {

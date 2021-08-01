@@ -1,6 +1,8 @@
 package main
 
-import "apioak-admin/cores"
+import (
+	"apioak-admin/cores"
+)
 
 func main() {
 

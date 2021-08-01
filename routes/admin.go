@@ -1,44 +1,47 @@
 package routes
 
-import "github.com/gin-gonic/gin"
+import (
+	"apioak-admin/app/controllers/admin"
+	"github.com/gin-gonic/gin"
+)
 
-func AdminRegister(routeEngine *gin.Engine) {
+func RouteRegister(routeEngine *gin.Engine) {
 
 	// API——后台管理
-	admin := routeEngine.Group("admin")
+	adminRoute := routeEngine.Group("admin")
 	{
-		// API——用户
-		user := admin.Group("user")
+		// 用户
+		user := adminRoute.Group("user")
 		{
-			user.GET("/login")
+			user.POST("/register", admin.Register)
 		}
 
-		// API——服务
-		service := admin.Group("service")
+		// 服务
+		service := adminRoute.Group("service")
 		{
 			service.GET("/info")
 		}
 
-		// API——路由
-		route := admin.Group("route")
+		// 路由
+		route := adminRoute.Group("route")
 		{
 			route.GET("/info")
 		}
 
-		// API——插件
-		plugin := admin.Group("plugin")
+		// 插件
+		plugin := adminRoute.Group("plugin")
 		{
 			plugin.GET("/info")
 		}
 
-		// API——证书
-		certificate := admin.Group("certificate")
+		// 证书
+		certificate := adminRoute.Group("certificate")
 		{
 			certificate.GET("/info")
 		}
 
-		// API——结点
-		node := admin.Group("node")
+		// 节点
+		node := adminRoute.Group("node")
 		{
 			node.GET("info")
 		}
