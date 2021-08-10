@@ -2,24 +2,24 @@ package routes
 
 import (
 	"apioak-admin/app/controllers/admin"
+	"apioak-admin/app/middlewares"
 	"github.com/gin-gonic/gin"
 )
 
 func RouteRegister(routeEngine *gin.Engine) {
 
-	// API——后台管理
 	adminRoute := routeEngine.Group("admin")
 	{
 		// 用户
-		user := adminRoute.Group("user")
+		user := adminRoute.Group("user").Use(middlewares.CheckUserLogin)
 		{
-			user.POST("/register", admin.Register)
+			user.POST("/register", admin.UserRegister)
 		}
 
 		// 服务
 		service := adminRoute.Group("service")
 		{
-			service.GET("/info")
+			service.POST("/add", admin.ServiceAdd)
 		}
 
 		// 路由

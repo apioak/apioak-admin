@@ -16,29 +16,27 @@ import (
 var (
 	LocaleEn = "en"
 	LocaleZh = "zh"
-	trans ut.Translator
+	trans    ut.Translator
 )
 
-func InitValidator(conf*ConfigGlobal) (err error) {
+func InitValidator(conf *ConfigGlobal) (err error) {
+
 	if validatorEngine, ok := binding.Validator.Engine().(*validator.Validate); ok {
 
-		// 注册获取的自定义 json tag方法（验证错误信息以传递参数名称为准）
-		RegisterTag(validatorEngine, "json", "zh")
-
-		zhT := zh.New() //中文翻译器
-		enT := en.New() //英文翻译器
-		uni := ut.New(enT, zhT, enT)
-
-		// locale 通常取决于 http 请求头的 'Accept-Language'
-		var ok bool
-		// 也可以使用 uni.FindTranslator(...) 传入多个locale进行查找
-		trans, ok = uni.GetTranslator(conf.Validator.Locale)
+		uni := ut.New(en.New(), zh.New(), en.New())
+		confLocal := strings.ToLower(conf.Validator.Locale)
+		trans, ok = uni.GetTranslator(confLocal)
 		if !ok {
-			return fmt.Errorf("uni.GetTranslator(%s) failed", conf.Validator.Locale)
+			return fmt.Errorf("uni.GetTranslator (%s) failed", confLocal)
 		}
 
-		// 注册翻译器
-		switch strings.ToLower(conf.Validator.Locale) {
+		registerValidatorErr := RegisterCustomizeValidator(validatorEngine)
+		if registerValidatorErr != nil {
+			return fmt.Errorf("Custom registration verification error (%s)", registerValidatorErr)
+		}
+
+		RegisterTag(validatorEngine, "json", confLocal)
+		switch confLocal {
 		case LocaleEn:
 			err = enTranslations.RegisterDefaultTranslations(validatorEngine, trans)
 		case LocaleZh:
@@ -46,8 +44,10 @@ func InitValidator(conf*ConfigGlobal) (err error) {
 		default:
 			err = enTranslations.RegisterDefaultTranslations(validatorEngine, trans)
 		}
+		packages.SetValidatorLocale(confLocal)
 		packages.SetTranslator(&trans)
 		return
 	}
 	return
 }
+

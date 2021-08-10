@@ -2,9 +2,8 @@ package cores
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/jinzhu/gorm"
-	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
+	"gorm.io/gorm"
 	"io/ioutil"
 )
 
@@ -30,24 +29,15 @@ type ConfigValidator struct {
 	Locale string `yaml:"locale"`
 }
 
-type ConfigLogger struct {
-	LogPath  string `yaml:"log_path"`
-	LogLevel string `yaml:"log_level"`
-}
-
 type ConfigRuntime struct {
-	DB            *gorm.DB
-	Gin           *gin.Engine
-	Logger        *logrus.Logger
-	LogAccessFile string
-	LogErrorFile  string
+	DB  *gorm.DB
+	Gin *gin.Engine
 }
 
 type ConfigGlobal struct {
 	Server    ConfigServer    `yaml:"server"`
 	Database  ConfigDatabase  `yaml:"database"`
 	Validator ConfigValidator `yaml:"validator"`
-	Logger    ConfigLogger    `yaml:"logger"`
 	Runtime   ConfigRuntime
 }
 
@@ -67,4 +57,3 @@ func InitConfig(conf *ConfigGlobal) error {
 
 	return nil
 }
-

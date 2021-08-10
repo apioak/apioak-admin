@@ -6,11 +6,25 @@ import (
 	"github.com/gin-gonic/gin"
 	ut "github.com/go-playground/universal-translator"
 	"github.com/go-playground/validator/v10"
+	"strings"
 )
 
-var trans *ut.Translator
+var (
+	validatorLocale string
+	trans *ut.Translator
+	customizeValidator *validator.Validate
+	allRegisterValidatorErrMessages = map[string]string{}
+)
 
-func SetTranslator(translator *ut.Translator)  {
+func SetValidatorLocale(local string) {
+	validatorLocale = local
+}
+
+func GetValidatorLocale() string {
+	return validatorLocale
+}
+
+func SetTranslator(translator *ut.Translator) {
 	trans = translator
 }
 
@@ -36,7 +50,29 @@ func ParseRequestParams(c *gin.Context, request interface{}) (string, error) {
 			errStr = err.Error()
 		}
 
+		if len(allRegisterValidatorErrMessages) > 0 {
+			for funcName, errorMessage := range allRegisterValidatorErrMessages{
+				if strings.Contains(errStr, funcName) {
+					errStr = errorMessage
+				}
+			}
+		}
+
 		return errStr, err
 	}
 	return "", nil
 }
+
+func SetCustomizeValidator(validator *validator.Validate) {
+	customizeValidator = validator
+}
+
+func GetCustomizeValidator() *validator.Validate {
+	return customizeValidator
+}
+
+func SetAllCustomizeValidatorErrMsgs(funcName string, msg string) {
+	allRegisterValidatorErrMessages[funcName] = msg
+}
+
+

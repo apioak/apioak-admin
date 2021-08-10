@@ -23,5 +23,3 @@ func InitFramework(conf *ConfigGlobal) error {
 func RunFramework(conf *ConfigGlobal) error {
 	return conf.Runtime.Gin.Run(fmt.Sprintf("%s:%d", conf.Server.Host, conf.Server.Port))
 }
-
-
