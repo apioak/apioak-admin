@@ -22,9 +22,8 @@ var (
 			"min":      "长度最小只能为%d",
 		},
 	}
-	domainMin      = 1
-	domainMax      = 50
-	serviceDomains = make([]ServiceDomainAdd, 0)
+	domainMin = 1
+	domainMax = 50
 )
 
 type ServiceDomainAdd struct {
@@ -65,10 +64,8 @@ func CheckServiceDomain(fl validator.FieldLevel) bool {
 				errMsg = domainValidator(tag, field)
 			}
 			packages.SetAllCustomizeValidatorErrMsgs("CheckServiceDomain", errMsg)
-			serviceDomains = nil
 			return false
 		}
-		serviceDomains = append(serviceDomains, serviceDomain)
 	}
 	return true
 }
@@ -87,6 +84,21 @@ func domainValidator(tag string, field string) string {
 	return errMsg
 }
 
-func GetServiceDomains() []ServiceDomainAdd {
+func GetServiceAddDomains(serviceNames string) []ServiceDomainAdd {
+	serviceDomains := []ServiceDomainAdd{}
+
+	domains := strings.Split(serviceNames, ",")
+	for _, domain := range domains {
+		domainTrim := strings.TrimSpace(domain)
+		if len(domainTrim) <= 0 {
+			continue
+		}
+
+		serviceDomain := ServiceDomainAdd{
+			Domain: domainTrim,
+		}
+		serviceDomains = append(serviceDomains, serviceDomain)
+	}
+
 	return serviceDomains
 }

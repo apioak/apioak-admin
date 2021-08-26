@@ -1,6 +1,9 @@
 package models
 
-import "apioak-admin/app/utils"
+import (
+	"apioak-admin/app/packages"
+	"apioak-admin/app/utils"
+)
 
 type ServiceNodes struct {
 	ID         string `gorm:"column:id;primary_key"` //Service node id
@@ -15,6 +18,7 @@ type ServiceNodes struct {
 var (
 	IPTypeV4 = 1
 	IPTypeV6 = 2
+	sNodeId  = ""
 )
 
 // TableName sets the insert table name for this struct type
@@ -24,7 +28,7 @@ func (s *ServiceNodes) TableName() string {
 
 func IPTypeMap() map[string]int {
 	var ipTypeMap map[string]int
-	ipTypeMap =  make(map[string]int)
+	ipTypeMap = make(map[string]int)
 
 	ipTypeMap[utils.IPV4] = IPTypeV4
 	ipTypeMap[utils.IPV6] = IPTypeV6
@@ -32,3 +36,32 @@ func IPTypeMap() map[string]int {
 	return ipTypeMap
 }
 
+func (serviceNode *ServiceNodes) ServiceNodeIdUnique(sNodeIds map[string]string) (string, error) {
+	if serviceNode.ID == "" {
+		tmpID, err := utils.IdGenerate(utils.IdTypeServiceNode)
+		if err != nil {
+			return "", err
+		}
+		serviceNode.ID = tmpID
+	}
+
+	result := packages.GetDb().Table(serviceNode.TableName()).Select("id").First(&serviceNode)
+	mapId := sNodeIds[serviceNode.ID]
+	if (result.RowsAffected == 0) && (serviceNode.ID != mapId) {
+		sNodeId = serviceNode.ID
+		sNodeIds[serviceNode.ID] = serviceNode.ID
+		return sNodeId, nil
+	} else {
+		svcNodeId, svcErr := utils.IdGenerate(utils.IdTypeServiceNode)
+		if svcErr != nil {
+			return "", svcErr
+		}
+		serviceNode.ID = svcNodeId
+		_, err := serviceNode.ServiceNodeIdUnique(sNodeIds)
+		if err != nil {
+			return "", err
+		}
+	}
+
+	return sNodeId, nil
+}

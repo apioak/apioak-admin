@@ -3,7 +3,6 @@ package models
 import (
 	"apioak-admin/app/packages"
 	"apioak-admin/app/utils"
-	"apioak-admin/app/validators"
 )
 
 type Services struct {
@@ -23,86 +22,48 @@ func (s *Services) TableName() string {
 	return "oak_services"
 }
 
-var ServiceId = ""
+var sId = ""
 
-func (service *Services)ServiceIdUnique() (string, error) {
-	if ServiceId != "" {
-		return ServiceId, nil
-	} else {
-		if service.ID == "" {
-			tmpID, err := utils.IdGenerate(utils.IdTypeService)
-			if err != nil {
-				return "", err
-			}
-			service.ID = tmpID
+func (service *Services) ServiceIdUnique(sIds map[string]string) (string, error) {
+	if service.ID == "" {
+		tmpID, err := utils.IdGenerate(utils.IdTypeService)
+		if err != nil {
+			return "", err
 		}
+		service.ID = tmpID
+	}
 
-		result := packages.GetDb().First(&service);
-		if result.RowsAffected == 0 {
-			ServiceId = service.ID
-			return ServiceId, nil
-		} else {
-			svcId, svcErr := utils.IdGenerate(utils.IdTypeService)
-			if svcErr != nil {
-				return "", svcErr
-			}
-			service.ID = svcId
-			_, err := service.ServiceIdUnique()
-			if err != nil {
-				return "", err
-			}
+	result := packages.GetDb().Table(service.TableName()).Select("id").First(&service)
+	mapId := sIds[service.ID]
+	if (result.RowsAffected == 0) && (service.ID != mapId) {
+		sId = service.ID
+		sIds[service.ID] = service.ID
+		return sId, nil
+	} else {
+		svcId, svcErr := utils.IdGenerate(utils.IdTypeService)
+		if svcErr != nil {
+			return "", svcErr
+		}
+		service.ID = svcId
+		_, err := service.ServiceIdUnique(sIds)
+		if err != nil {
+			return "", err
 		}
 	}
-	return ServiceId, nil
+
+	return sId, nil
 }
 
+func (s *Services) ServiceAdd(serviceInfo *Services, serviceDomains *[]ServiceDomains, serviceNodes *[]ServiceNodes) error {
 
-func (s *Services) ServiceAdd(serviceInfo *validators.ServiceAdd, serviceDomains *[]validators.ServiceDomainAdd, serviceNodes *[]validators.ServiceNodeAdd) error {
-
-	var serviceDomainInfos = make([]ServiceDomains, 0)
-	var serviceNodeInfos = make([]ServiceNodes, 0)
-	serviceId, _ := utils.IdGenerate(utils.IdTypeService)
-
-	createServiceData := Services{
-		ID:          serviceId,
-		Name:        serviceId,
-		Protocol:    serviceInfo.Protocol,
-		HealthCheck: serviceInfo.HealthCheck,
-		WebSocket:   serviceInfo.WebSocket,
-		IsEnable:    serviceInfo.IsEnable,
-		LoadBalance: serviceInfo.LoadBalance,
-		Timeouts:    serviceInfo.Timeouts,
-	}
-
-	for _, domainInfo := range *serviceDomains {
-		domainId, _ := utils.IdGenerate(utils.IdTypeMain)
-		domain := ServiceDomains{
-			ID:        domainId,
-			ServiceID: serviceId,
-			Domain:    domainInfo.Domain,
-		}
-		serviceDomainInfos = append(serviceDomainInfos, domain)
-	}
-
-	for _, nodeInfo := range *serviceNodes {
-		nodeId, _ := utils.IdGenerate(utils.IdTypeNode)
-		ipType, err := utils.DiscernIP(nodeInfo.NodeIp)
-		if err != nil {
-			return err
-		}
-		ipTypeMap := IPTypeMap()
-		nodeIPInfo := ServiceNodes{
-			ID:         nodeId,
-			ServiceID:  serviceId,
-			NodeIP:     nodeInfo.NodeIp,
-			IPType:     ipTypeMap[ipType],
-			NodePort:   nodeInfo.NodePort,
-			NodeWeight: nodeInfo.NodeWeight,
-		}
-		serviceNodeInfos = append(serviceNodeInfos, nodeIPInfo)
+	tpmIds := map[string]string{}
+	serviceId, serviceIdUniqueErr := s.ServiceIdUnique(tpmIds)
+	if serviceIdUniqueErr != nil {
+		return serviceIdUniqueErr
 	}
 
 	tx := packages.GetDb().Begin()
+
 	defer func() {
 		if r := recover(); r != nil {
 			tx.Rollback()
@@ -113,22 +74,42 @@ func (s *Services) ServiceAdd(serviceInfo *validators.ServiceAdd, serviceDomains
 		return err
 	}
 
-	err := tx.Debug().Create(&createServiceData).Error
-	if err != nil {
+	serviceInfo.ID = serviceId
+	serviceInfo.Name = serviceId
+	createServiceErr := tx.Create(&serviceInfo).Error
+	if createServiceErr != nil {
 		tx.Rollback()
-		return err
+		return createServiceErr
 	}
 
-	domainErr := tx.Debug().Create(&serviceDomainInfos).Error
-	if domainErr != nil {
-		tx.Rollback()
-		return domainErr
+	for _, serviceDomain := range *serviceDomains {
+		domainId, domainIdErr := serviceDomain.ServiceDomainIdUnique(tpmIds)
+		if domainIdErr != nil {
+			return domainIdErr
+		}
+
+		serviceDomain.ID = domainId
+		serviceDomain.ServiceID = serviceId
+		domainErr := tx.Create(&serviceDomain).Error
+		if domainErr != nil {
+			tx.Rollback()
+			return domainErr
+		}
 	}
 
-	nodeErr := tx.Debug().Create(&serviceNodeInfos).Error
-	if nodeErr != nil {
-		tx.Rollback()
-		return nodeErr
+	for _, serviceNode := range *serviceNodes {
+		nodeId, nodeIdErr := serviceNode.ServiceNodeIdUnique(tpmIds)
+		if nodeIdErr != nil {
+			return nodeIdErr
+		}
+
+		serviceNode.ID = nodeId
+		serviceNode.ServiceID = serviceId
+		nodeErr := tx.Create(&serviceNode).Error
+		if nodeErr != nil {
+			tx.Rollback()
+			return nodeErr
+		}
 	}
 
 	return tx.Commit().Error

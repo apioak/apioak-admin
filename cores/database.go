@@ -36,13 +36,15 @@ func InitDataBase(conf *ConfigGlobal) error {
 			conf.Database.Password,
 			conf.Database.Host,
 			conf.Database.Port,
-			conf.Database.DbName)), &gorm.Config{
-			Logger:logger.Default.LogMode(logger.Info),
-		})
+			conf.Database.DbName)))
 	}
 
 	if err != nil {
 		return err
+	}
+
+	if conf.Database.SqlMode {
+		db.Config.Logger = logger.Default.LogMode(logger.Info)
 	}
 
 	sqlDB, err := db.DB()

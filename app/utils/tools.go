@@ -10,13 +10,14 @@ import (
 )
 
 const (
-	IdTypeUser        = "u"
-	IdTypeService     = "svc"
-	IdTypeRoute       = "rt"
-	IdTypePlugin      = "pu"
-	IdTypeCertificate = "cert"
-	IdTypeNode        = "nd"
-	IdTypeMain        = "main"
+	IdTypeUser          = "u"
+	IdTypeService       = "svc"
+	IdTypeServiceDomain = "sdm"
+	IdTypeServiceNode   = "snd"
+	IdTypeRoute         = "rt"
+	IdTypeRoutePlugin   = "rpu"
+	IdTypeCertificate   = "cer"
+	IdTypeClusterNode   = "cnd"
 )
 
 var (
@@ -47,16 +48,18 @@ func IdGenerate(idType string) (string, error) {
 		id = IdTypeUser + "-" + randomId
 	case IdTypeService:
 		id = IdTypeService + "-" + randomId
+	case IdTypeServiceDomain:
+		id = IdTypeServiceDomain + "-" + randomId
+	case IdTypeServiceNode:
+		id = IdTypeServiceNode + "-" + randomId
 	case IdTypeRoute:
 		id = IdTypeRoute + "-" + randomId
-	case IdTypePlugin:
-		id = IdTypePlugin + "-" + randomId
+	case IdTypeRoutePlugin:
+		id = IdTypeRoutePlugin + "-" + randomId
 	case IdTypeCertificate:
 		id = IdTypeCertificate + "-" + randomId
-	case IdTypeNode:
-		id = IdTypeNode + "-" + randomId
-	case IdTypeMain:
-		id = IdTypeMain + "-" + randomId
+	case IdTypeClusterNode:
+		id = IdTypeClusterNode + "-" + randomId
 	default:
 		return "", fmt.Errorf("id type error")
 	}

@@ -25,93 +25,95 @@ var (
 			"min":      "最小只能为%d",
 		},
 	}
-	nodePortMin   = 0
-	nodePortMax   = 65535
-	nodeWeightMin = 0
-	nodeWeightMax = 100
-	serviceNodes  = make([]ServiceNodeAdd, 0)
+	defaultNodePort   = 80
+	defaultNodeWeight = 100
+	nodePortMin       = 0
+	nodePortMax       = 65535
+	nodeWeightMin     = 0
+	nodeWeightMax     = 100
 )
 
 type ServiceNodeAdd struct {
 	NodeIp     string `json:"node_ip" zh:"上游节点IP" en:"Node IP" binding:"required,ip"`
-	NodePort   int    `json:"node_port" zh:"端口" en:"Node port" binding:"omitempty,min=0,max=10000000000000"`
+	NodePort   int    `json:"node_port" zh:"端口" en:"Node port" binding:"omitempty,min=0,max=65535"`
 	NodeWeight int    `json:"node_weight" zh:"权重" en:"Node weight" binding:"omitempty,min=0,max=100"`
 }
 
-func CheckServiceNode(fl validator.FieldLevel) bool {
-
-	serviceNodeIps := fl.Field().String()
-	var nodeIps []interface{}
-
-	jsonErr := json.Unmarshal([]byte(serviceNodeIps), &nodeIps)
+func parsingNodeIpInfos(nodeInfosString string) ([]interface{}, error) {
+	var nodeInfos []interface{}
+	jsonErr := json.Unmarshal([]byte(nodeInfosString), &nodeInfos)
 	if jsonErr != nil {
-		packages.SetAllCustomizeValidatorErrMsgs("CheckServiceNode", ("json.Unmarshal error: [" + jsonErr.Error() + "]"))
-		return false
+		return nil, fmt.Errorf("json.Unmarshal error: [" + jsonErr.Error() + "]")
 	}
 
-	if len(nodeIps) <= 0 {
-		packages.SetAllCustomizeValidatorErrMsgs("CheckServiceNode", ("json.Unmarshal: parsed ip is empty"))
+	if len(nodeInfos) <= 0 {
+		return nil, fmt.Errorf("json.Unmarshal: parsed ip is empty")
+	}
+
+	return nodeInfos, nil
+}
+
+func CheckServiceNode(fl validator.FieldLevel) bool {
+	serviceNodeIpsString := fl.Field().String()
+	nodeIps, err := parsingNodeIpInfos(serviceNodeIpsString)
+	if err != nil {
+		packages.SetAllCustomizeValidatorErrMsgs("CheckServiceNode", err.Error())
 		return false
 	}
 
 	customizeValidator := packages.GetCustomizeValidator()
 	for _, ipInfos := range nodeIps {
-		switch ipInfo := ipInfos.(type) {
-		case map[string]interface{}:
-
-			nodeIp := ""
-			nodePort := 80
-			nodeWeight := 100
-
-			if ipInfo["node_ip"] != nil {
-				nodeIp = ipInfo["node_ip"].(string)
-			}
-			if ipInfo["node_port"] != nil {
-				nodePort = int(ipInfo["node_port"].(float64))
-			}
-			if ipInfo["node_weight"] != nil {
-				nodeWeight = int(ipInfo["node_weight"].(float64))
-			}
-
-			nodeIP := ServiceNodeAdd{
-				NodeIp:     nodeIp,
-				NodePort:   nodePort,
-				NodeWeight: nodeWeight,
-			}
-
-			nodeIPErr := customizeValidator.Struct(nodeIP)
-			if nodeIPErr != nil {
-				var (
-					structField string
-					tag         string
-					field       string
-					errMsg      string
-				)
-
-				for _, e := range nodeIPErr.(validator.ValidationErrors) {
-					structField = e.StructField()
-					tag = e.Tag()
-					field = e.Field()
-					break
-				}
-
-				switch strings.ToLower(structField) {
-				case "nodeip":
-					errMsg = nodeIpValidator(tag, field)
-				case "nodeport":
-					errMsg = nodePortValidator(tag, field)
-				case "nodeweight":
-					errMsg = nodeWeightValidator(tag, field)
-				}
-				packages.SetAllCustomizeValidatorErrMsgs("CheckServiceNode", errMsg)
-				serviceNodes = nil
-				return false
-			}
-
-			serviceNodes = append(serviceNodes, nodeIP)
-		default:
+		nodeIpPortWeight, ok := ipInfos.(map[string]interface{})
+		if ok == false {
 			packages.SetAllCustomizeValidatorErrMsgs("CheckServiceNode", ("json.Unmarshal: parsed ip type is wrong"))
-			serviceNodes = nil
+			return false
+		}
+
+		nodeIp := ""
+		nodePort := defaultNodePort
+		nodeWeight := defaultNodeWeight
+
+		if nodeIpPortWeight["node_ip"] != nil {
+			nodeIp = nodeIpPortWeight["node_ip"].(string)
+		}
+		if nodeIpPortWeight["node_port"] != nil {
+			nodePort = int(nodeIpPortWeight["node_port"].(float64))
+		}
+		if nodeIpPortWeight["node_weight"] != nil {
+			nodeWeight = int(nodeIpPortWeight["node_weight"].(float64))
+		}
+
+		nodeIP := ServiceNodeAdd{
+			NodeIp:     nodeIp,
+			NodePort:   nodePort,
+			NodeWeight: nodeWeight,
+		}
+
+		nodeIPErr := customizeValidator.Struct(nodeIP)
+		if nodeIPErr != nil {
+			var (
+				structField string
+				tag         string
+				field       string
+				errMsg      string
+			)
+
+			for _, e := range nodeIPErr.(validator.ValidationErrors) {
+				structField = e.StructField()
+				tag = e.Tag()
+				field = e.Field()
+				break
+			}
+
+			switch strings.ToLower(structField) {
+			case "nodeip":
+				errMsg = nodeIpValidator(tag, field)
+			case "nodeport":
+				errMsg = nodePortValidator(tag, field)
+			case "nodeweight":
+				errMsg = nodeWeightValidator(tag, field)
+			}
+			packages.SetAllCustomizeValidatorErrMsgs("CheckServiceNode", errMsg)
 			return false
 		}
 	}
@@ -147,6 +149,40 @@ func nodeWeightValidator(tag string, field string) string {
 	return errMsg
 }
 
-func GetServiceNodeInfo() []ServiceNodeAdd {
+func GetServiceAddNodes(serviceNodesString string) []ServiceNodeAdd {
+	serviceNodes := []ServiceNodeAdd{}
+	nodeIpInfos, err := parsingNodeIpInfos(serviceNodesString)
+	if err != nil {
+		return serviceNodes
+	}
+
+	for _, nodeIpInfo := range nodeIpInfos {
+		nodeIpPortWeight, ok := nodeIpInfo.(map[string]interface{})
+		if ok == false {
+			continue
+		}
+
+		nodeIp := ""
+		nodePort := defaultNodePort
+		nodeWeight := defaultNodeWeight
+
+		if nodeIpPortWeight["node_ip"] != nil {
+			nodeIp = nodeIpPortWeight["node_ip"].(string)
+		}
+		if nodeIpPortWeight["node_port"] != nil {
+			nodePort = int(nodeIpPortWeight["node_port"].(float64))
+		}
+		if nodeIpPortWeight["node_weight"] != nil {
+			nodeWeight = int(nodeIpPortWeight["node_weight"].(float64))
+		}
+
+		nodeIPPortWeight := ServiceNodeAdd{
+			NodeIp:     nodeIp,
+			NodePort:   nodePort,
+			NodeWeight: nodeWeight,
+		}
+		serviceNodes = append(serviceNodes, nodeIPPortWeight)
+	}
+
 	return serviceNodes
 }
