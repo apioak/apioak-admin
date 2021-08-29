@@ -1,6 +1,7 @@
 package services
 
 import (
+	"apioak-admin/app/enums"
 	"apioak-admin/app/models"
 	"apioak-admin/app/utils"
 	"apioak-admin/app/validators"
@@ -8,7 +9,50 @@ import (
 	"strings"
 )
 
-func ServiceCreate(serviceData *validators.ServiceAdd, serviceDomains *[]validators.ServiceDomainAdd, serviceNodes *[]validators.ServiceNodeAdd) error {
+func CheckExistDomain(domains string, filterServiceIds []string) error {
+	serviceDomainInfo := models.ServiceDomains{}
+	domainInfos := strings.Split(strings.TrimSpace(domains), ",")
+	serviceDomains := serviceDomainInfo.DomainInfoByDomain(domainInfos, filterServiceIds)
+
+	if len(serviceDomains) == 0 {
+		return nil
+	}
+
+	var existDomains = []string{}
+	for _, serviceDomain := range serviceDomains {
+		if len(serviceDomain.Domain) == 0 {
+			continue
+		}
+
+		if len(existDomains) == 0 {
+			existDomains = append(existDomains, serviceDomain.Domain)
+			continue
+		}
+
+		var exist = false
+		for _, existDomain := range existDomains {
+			if existDomain == serviceDomain.Domain {
+				exist = true
+			}
+		}
+		if exist {
+			continue
+		} else {
+			existDomains = append(existDomains, serviceDomain.Domain)
+		}
+	}
+
+	if len(existDomains) != 0 {
+		return fmt.Errorf(fmt.Sprintf(enums.CodeMessages(enums.ServiceDomainExist), strings.Join(existDomains, ",")))
+	}
+
+	return nil
+}
+
+func ServiceCreate(
+	serviceData *validators.ServiceAddUpdate,
+	serviceDomains *[]validators.ServiceDomainAddUpdate,
+	serviceNodes *[]validators.ServiceNodeAddUpdate) error {
 
 	serviceModel := &models.Services{}
 	serviceDomainInfos := []models.ServiceDomains{}
@@ -45,49 +89,39 @@ func ServiceCreate(serviceData *validators.ServiceAdd, serviceDomains *[]validat
 		serviceNodeInfos = append(serviceNodeInfos, nodeIPInfo)
 	}
 
+	// @todo 选择 请求协议： HTTP 和 HTTP&HTTPS 时校验证书是否存在
+
 	createErr := serviceModel.ServiceAdd(&createServiceData, &serviceDomainInfos, &serviceNodeInfos)
+
+	// @todo 记录错误信息的日志，并返回定义的业务提示错误信息
 
 	return createErr
 }
 
-func CheckExistDomain(domains string) error {
-	serviceDomainInfo := models.ServiceDomains{}
-	domainInfos := strings.Split(strings.TrimSpace(domains), ",")
+func ServiceUpdate(
+	serviceId string,
+	serviceData *validators.ServiceAddUpdate,
+	serviceDomains *[]validators.ServiceDomainAddUpdate,
+	serviceNodes *[]validators.ServiceNodeAddUpdate) error {
 
-	serviceDomainInfo.DomainInfoByDomain(domainInfos)
-	serviceDomains := serviceDomainInfo.DomainInfoByDomain(domainInfos)
-
-	if len(serviceDomains) == 0 {
-		return nil
+	updateServiceData := models.Services{
+		Protocol:    serviceData.Protocol,
+		HealthCheck: serviceData.HealthCheck,
+		WebSocket:   serviceData.WebSocket,
+		IsEnable:    serviceData.IsEnable,
+		LoadBalance: serviceData.LoadBalance,
+		Timeouts:    serviceData.Timeouts,
 	}
 
-	var existDomains = []string{}
-	for _, serviceDomain := range serviceDomains {
-		if len(serviceDomain.Domain) == 0 {
-			continue
-		}
+	addDomains, deleteDomainIds := GetToOperateDomains(serviceId, serviceDomains)
+	addNodes, updateNodes, deleteNodeIds := GetToOperateNodes(serviceId, serviceNodes)
 
-		if len(existDomains) == 0 {
-			existDomains = append(existDomains, serviceDomain.Domain)
-			continue
-		}
+	// @todo 选择 请求协议： HTTP 和 HTTP&HTTPS 时校验证书是否存在
 
-		var exist = false
-		for _, existDomain := range existDomains {
-			if existDomain == serviceDomain.Domain {
-				exist = true
-			}
-		}
-		if exist {
-			continue
-		} else {
-			existDomains = append(existDomains, serviceDomain.Domain)
-		}
-	}
+	serviceModel := &models.Services{}
+	updateErr := serviceModel.ServiceUpdate(serviceId, &updateServiceData, &addDomains, &addNodes, &updateNodes, deleteDomainIds, deleteNodeIds)
 
-	if len(existDomains) != 0 {
-		return fmt.Errorf("[" + strings.Join(existDomains, ",") + "]域名已存在")
-	}
+	// @todo 记录错误信息的日志，并返回定义的业务提示错误信息
 
-	return nil
+	return updateErr
 }

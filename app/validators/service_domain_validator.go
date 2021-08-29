@@ -26,7 +26,7 @@ var (
 	domainMax = 50
 )
 
-type ServiceDomainAdd struct {
+type ServiceDomainAddUpdate struct {
 	Domain string `json:"service_domain" zh:"单个域名" en:"Domain name" binding:"required,min=1,max=50"`
 }
 
@@ -39,7 +39,7 @@ func CheckServiceDomain(fl validator.FieldLevel) bool {
 	for _, domain := range domains {
 		domainTrim := strings.TrimSpace(domain)
 
-		serviceDomain := ServiceDomainAdd{
+		serviceDomain := ServiceDomainAddUpdate{
 			Domain: domainTrim,
 		}
 
@@ -84,8 +84,8 @@ func domainValidator(tag string, field string) string {
 	return errMsg
 }
 
-func GetServiceAddDomains(serviceNames string) []ServiceDomainAdd {
-	serviceDomains := []ServiceDomainAdd{}
+func GetServiceAddDomains(serviceNames string) []ServiceDomainAddUpdate {
+	serviceDomains := []ServiceDomainAddUpdate{}
 
 	domains := strings.Split(serviceNames, ",")
 	for _, domain := range domains {
@@ -94,7 +94,7 @@ func GetServiceAddDomains(serviceNames string) []ServiceDomainAdd {
 			continue
 		}
 
-		serviceDomain := ServiceDomainAdd{
+		serviceDomain := ServiceDomainAddUpdate{
 			Domain: domainTrim,
 		}
 		serviceDomains = append(serviceDomains, serviceDomain)

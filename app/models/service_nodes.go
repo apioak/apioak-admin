@@ -36,32 +36,39 @@ func IPTypeMap() map[string]int {
 	return ipTypeMap
 }
 
-func (serviceNode *ServiceNodes) ServiceNodeIdUnique(sNodeIds map[string]string) (string, error) {
-	if serviceNode.ID == "" {
+func (s *ServiceNodes) ServiceNodeIdUnique(sNodeIds map[string]string) (string, error) {
+	if s.ID == "" {
 		tmpID, err := utils.IdGenerate(utils.IdTypeServiceNode)
 		if err != nil {
 			return "", err
 		}
-		serviceNode.ID = tmpID
+		s.ID = tmpID
 	}
 
-	result := packages.GetDb().Table(serviceNode.TableName()).Select("id").First(&serviceNode)
-	mapId := sNodeIds[serviceNode.ID]
-	if (result.RowsAffected == 0) && (serviceNode.ID != mapId) {
-		sNodeId = serviceNode.ID
-		sNodeIds[serviceNode.ID] = serviceNode.ID
+	result := packages.GetDb().Table(s.TableName()).Select("id").First(&s)
+	mapId := sNodeIds[s.ID]
+	if (result.RowsAffected == 0) && (s.ID != mapId) {
+		sNodeId = s.ID
+		sNodeIds[s.ID] = s.ID
 		return sNodeId, nil
 	} else {
 		svcNodeId, svcErr := utils.IdGenerate(utils.IdTypeServiceNode)
 		if svcErr != nil {
 			return "", svcErr
 		}
-		serviceNode.ID = svcNodeId
-		_, err := serviceNode.ServiceNodeIdUnique(sNodeIds)
+		s.ID = svcNodeId
+		_, err := s.ServiceNodeIdUnique(sNodeIds)
 		if err != nil {
 			return "", err
 		}
 	}
 
 	return sNodeId, nil
+}
+
+func (s *ServiceNodes) NodeInfosByServiceIds(serviceIds []string) []ServiceNodes {
+	nodeInfos := []ServiceNodes{}
+	packages.GetDb().Table(s.TableName()).Where("service_id IN ?", serviceIds).Find(&nodeInfos)
+
+	return nodeInfos
 }

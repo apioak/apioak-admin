@@ -20,6 +20,7 @@ func RouteRegister(routeEngine *gin.Engine) {
 		service := adminRoute.Group("service")
 		{
 			service.POST("/add", admin.ServiceAdd)
+			service.PUT("/update/:id", admin.ServiceUpdate)
 		}
 
 		// 路由

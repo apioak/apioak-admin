@@ -33,7 +33,7 @@ var (
 	nodeWeightMax     = 100
 )
 
-type ServiceNodeAdd struct {
+type ServiceNodeAddUpdate struct {
 	NodeIp     string `json:"node_ip" zh:"上游节点IP" en:"Node IP" binding:"required,ip"`
 	NodePort   int    `json:"node_port" zh:"端口" en:"Node port" binding:"omitempty,min=0,max=65535"`
 	NodeWeight int    `json:"node_weight" zh:"权重" en:"Node weight" binding:"omitempty,min=0,max=100"`
@@ -83,7 +83,7 @@ func CheckServiceNode(fl validator.FieldLevel) bool {
 			nodeWeight = int(nodeIpPortWeight["node_weight"].(float64))
 		}
 
-		nodeIP := ServiceNodeAdd{
+		nodeIP := ServiceNodeAddUpdate{
 			NodeIp:     nodeIp,
 			NodePort:   nodePort,
 			NodeWeight: nodeWeight,
@@ -149,8 +149,8 @@ func nodeWeightValidator(tag string, field string) string {
 	return errMsg
 }
 
-func GetServiceAddNodes(serviceNodesString string) []ServiceNodeAdd {
-	serviceNodes := []ServiceNodeAdd{}
+func GetServiceAddNodes(serviceNodesString string) []ServiceNodeAddUpdate {
+	serviceNodes := []ServiceNodeAddUpdate{}
 	nodeIpInfos, err := parsingNodeIpInfos(serviceNodesString)
 	if err != nil {
 		return serviceNodes
@@ -176,7 +176,7 @@ func GetServiceAddNodes(serviceNodesString string) []ServiceNodeAdd {
 			nodeWeight = int(nodeIpPortWeight["node_weight"].(float64))
 		}
 
-		nodeIPPortWeight := ServiceNodeAdd{
+		nodeIPPortWeight := ServiceNodeAddUpdate{
 			NodeIp:     nodeIp,
 			NodePort:   nodePort,
 			NodeWeight: nodeWeight,

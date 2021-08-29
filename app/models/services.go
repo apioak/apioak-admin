@@ -24,28 +24,28 @@ func (s *Services) TableName() string {
 
 var sId = ""
 
-func (service *Services) ServiceIdUnique(sIds map[string]string) (string, error) {
-	if service.ID == "" {
+func (s *Services) ServiceIdUnique(sIds map[string]string) (string, error) {
+	if s.ID == "" {
 		tmpID, err := utils.IdGenerate(utils.IdTypeService)
 		if err != nil {
 			return "", err
 		}
-		service.ID = tmpID
+		s.ID = tmpID
 	}
 
-	result := packages.GetDb().Table(service.TableName()).Select("id").First(&service)
-	mapId := sIds[service.ID]
-	if (result.RowsAffected == 0) && (service.ID != mapId) {
-		sId = service.ID
-		sIds[service.ID] = service.ID
+	result := packages.GetDb().Table(s.TableName()).Select("id").First(&s)
+	mapId := sIds[s.ID]
+	if (result.RowsAffected == 0) && (s.ID != mapId) {
+		sId = s.ID
+		sIds[s.ID] = s.ID
 		return sId, nil
 	} else {
 		svcId, svcErr := utils.IdGenerate(utils.IdTypeService)
 		if svcErr != nil {
 			return "", svcErr
 		}
-		service.ID = svcId
-		_, err := service.ServiceIdUnique(sIds)
+		s.ID = svcId
+		_, err := s.ServiceIdUnique(sIds)
 		if err != nil {
 			return "", err
 		}
@@ -109,6 +109,106 @@ func (s *Services) ServiceAdd(serviceInfo *Services, serviceDomains *[]ServiceDo
 		if nodeErr != nil {
 			tx.Rollback()
 			return nodeErr
+		}
+	}
+
+	return tx.Commit().Error
+}
+
+func (s *Services) ServiceInfoById(id string) *Services {
+	serviceInfo := s
+	packages.GetDb().Table(s.TableName()).Where("id = ?", id).First(&serviceInfo)
+	return serviceInfo
+}
+
+func (s *Services) ServiceUpdate(
+	id string,
+	serviceInfo *Services,
+	serviceDomains *[]ServiceDomains,
+	serviceNodes *[]ServiceNodes,
+	updateNodes *[]ServiceNodes,
+	deleteDomainIds []string,
+	deleteNodeIds []string) error {
+
+	tx := packages.GetDb().Begin()
+
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+		}
+	}()
+
+	if err := tx.Error; err != nil {
+		return err
+	}
+
+	updateError := tx.Table(s.TableName()).Where("id = ?", id).Updates(serviceInfo).Error
+	if updateError != nil {
+		tx.Rollback()
+		return updateError
+	}
+
+	if len(deleteDomainIds) != 0 {
+		serviceDomainsModel := ServiceDomains{}
+		domainDeleteError := tx.Table(serviceDomainsModel.TableName()).Where("id IN ?", deleteDomainIds).Delete(&serviceDomainsModel).Error
+		if domainDeleteError != nil {
+			tx.Rollback()
+			return domainDeleteError
+		}
+	}
+
+	if len(deleteNodeIds) != 0 {
+		serviceNodesModel := ServiceNodes{}
+		nodeDeleteError := tx.Table(serviceNodesModel.TableName()).Where("id IN ?", deleteNodeIds).Delete(&serviceNodesModel).Error
+		if nodeDeleteError != nil {
+			tx.Rollback()
+			return nodeDeleteError
+		}
+	}
+
+	if len(*serviceDomains) > 0 {
+		tpmIds := map[string]string{}
+		for _, serviceDomain := range *serviceDomains {
+			domainId, domainIdErr := serviceDomain.ServiceDomainIdUnique(tpmIds)
+			if domainIdErr != nil {
+				return domainIdErr
+			}
+
+			serviceDomain.ID = domainId
+			serviceDomain.ServiceID = id
+			domainErr := tx.Create(&serviceDomain).Error
+			if domainErr != nil {
+				tx.Rollback()
+				return domainErr
+			}
+		}
+	}
+
+	if len(*updateNodes) > 0 {
+		for _, updateNode := range *updateNodes {
+			updateNodeError := tx.Table(updateNode.TableName()).Where("id = ?", updateNode.ID).Updates(ServiceNodes{NodeWeight: updateNode.NodeWeight}).Error
+			if updateNodeError != nil {
+				tx.Rollback()
+				return updateNodeError
+			}
+		}
+	}
+
+	if len(*serviceNodes) > 0 {
+		tpmIds := map[string]string{}
+		for _, serviceNode := range *serviceNodes {
+			nodeId, nodeIdErr := serviceNode.ServiceNodeIdUnique(tpmIds)
+			if nodeIdErr != nil {
+				return nodeIdErr
+			}
+
+			serviceNode.ID = nodeId
+			serviceNode.ServiceID = id
+			nodeErr := tx.Create(&serviceNode).Error
+			if nodeErr != nil {
+				tx.Rollback()
+				return nodeErr
+			}
 		}
 	}
 

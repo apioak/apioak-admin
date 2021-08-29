@@ -14,7 +14,7 @@ var (
 	readTimeoutKey       = "read_timeout"
 )
 
-type ServiceAdd struct {
+type ServiceAddUpdate struct {
 	Timeouts     string `json:"timeouts" zh:"超时时间" en:"Time out" binding:"omitempty,json"`
 	LoadBalance  int    `json:"load_balance" zh:"负载均衡算法" en:"Load balancing algorithm" binding:"omitempty,oneof=1 2"`
 	IsEnable     int    `json:"is_enable" zh:"服务开关" en:"Service enable" binding:"omitempty,oneof=1 2"`

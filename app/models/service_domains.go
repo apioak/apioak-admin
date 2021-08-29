@@ -19,28 +19,28 @@ func (s *ServiceDomains) TableName() string {
 
 var sDomainId = ""
 
-func (serviceDomain *ServiceDomains) ServiceDomainIdUnique(sDomainIds map[string]string) (string, error) {
-	if serviceDomain.ID == "" {
+func (s *ServiceDomains) ServiceDomainIdUnique(sDomainIds map[string]string) (string, error) {
+	if s.ID == "" {
 		tmpID, err := utils.IdGenerate(utils.IdTypeServiceDomain)
 		if err != nil {
 			return "", err
 		}
-		serviceDomain.ID = tmpID
+		s.ID = tmpID
 	}
 
-	result := packages.GetDb().Table(serviceDomain.TableName()).Select("id").First(&serviceDomain)
-	mapId := sDomainIds[serviceDomain.ID]
-	if (result.RowsAffected == 0) && (serviceDomain.ID != mapId) {
-		sDomainId = serviceDomain.ID
-		sDomainIds[serviceDomain.ID] = serviceDomain.ID
+	result := packages.GetDb().Table(s.TableName()).Select("id").First(&s)
+	mapId := sDomainIds[s.ID]
+	if (result.RowsAffected == 0) && (s.ID != mapId) {
+		sDomainId = s.ID
+		sDomainIds[s.ID] = s.ID
 		return sDomainId, nil
 	} else {
 		svcDomainId, svcErr := utils.IdGenerate(utils.IdTypeServiceDomain)
 		if svcErr != nil {
 			return "", svcErr
 		}
-		serviceDomain.ID = svcDomainId
-		_, err := serviceDomain.ServiceDomainIdUnique(sDomainIds)
+		s.ID = svcDomainId
+		_, err := s.ServiceDomainIdUnique(sDomainIds)
 		if err != nil {
 			return "", err
 		}
@@ -49,11 +49,20 @@ func (serviceDomain *ServiceDomains) ServiceDomainIdUnique(sDomainIds map[string
 	return sDomainId, nil
 }
 
-func (serviceDomain *ServiceDomains) DomainInfoByDomain(domains []string) []ServiceDomains {
-	serviceDomains := &ServiceDomains{}
-
+func (s *ServiceDomains) DomainInfoByDomain(domains []string, filterServiceIds []string) []ServiceDomains {
 	domainInfos := []ServiceDomains{}
-	packages.GetDb().Table(serviceDomains.TableName()).Where("domain IN ?", domains).Find(&domainInfos)
+	if len(filterServiceIds) == 0 {
+		packages.GetDb().Table(s.TableName()).Where("domain IN ?", domains).Find(&domainInfos)
+	} else {
+		packages.GetDb().Table(s.TableName()).Where("domain IN ?", domains).Where("service_id NOT IN ?", filterServiceIds).Find(&domainInfos)
+	}
+
+	return domainInfos
+}
+
+func (s *ServiceDomains) DomainInfosByServiceIds(serviceIds []string) []ServiceDomains {
+	domainInfos := []ServiceDomains{}
+	packages.GetDb().Table(s.TableName()).Where("service_id IN ?", serviceIds).Find(&domainInfos)
 
 	return domainInfos
 }
