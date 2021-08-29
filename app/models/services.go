@@ -3,6 +3,8 @@ package models
 import (
 	"apioak-admin/app/packages"
 	"apioak-admin/app/utils"
+	"apioak-admin/app/validators"
+	"strings"
 )
 
 type Services struct {
@@ -15,6 +17,8 @@ type Services struct {
 	LoadBalance int    `gorm:"column:load_balance"`   //Load balancing algorithm
 	Timeouts    string `gorm:"column:timeouts"`       //Time out
 	ModelTime
+	Domains []ServiceDomains `gorm:"foreignKey:ServiceID"`
+	Nodes []ServiceNodes `gorm:"foreignKey:ServiceID"`
 }
 
 // TableName sets the insert table name for this struct type
@@ -250,3 +254,43 @@ func (s *Services) ServiceDelete(id string) error {
 	return tx.Commit().Error
 }
 
+func (s *Services) ServiceAllInfosListPage(serviceIds []string, param *validators.ServiceList) (list []Services, total int, listError error) {
+	tx := packages.GetDb().Table(s.TableName())
+	if len(serviceIds) != 0 {
+		tx = tx.Where("id IN ?", serviceIds)
+	}
+	if param.Protocol != 0 {
+		tx = tx.Where("protocol = ?", param.Protocol)
+	}
+	if param.IsEnable != 0 {
+		tx = tx.Where("is_enable = ?", param.IsEnable)
+	}
+	countError := ListCount(tx, &total)
+	if countError != nil {
+		listError = countError
+		return
+	}
+
+	tx = tx.Preload("Domains").Preload("Nodes").Order("updated_at desc")
+	listError = ListPaginate(tx, &list, &param.BaseListPage)
+	return
+}
+
+func (s *Services) ServiceInfosLikeIdName(idOrName string) ([]Services, error) {
+	serviceInfos := []Services{}
+	idOrName = strings.TrimSpace(idOrName)
+	if len(idOrName) == 0 {
+		return serviceInfos, nil
+	}
+
+	idOrName = "%" + idOrName + "%"
+	err := packages.GetDb().Table(s.TableName()).
+		Where("id LIKE ?", idOrName).
+		Or("name LIKE ?", idOrName).
+		Find(&serviceInfos).Error
+	if err != nil {
+		 return nil, err
+	}
+
+	return serviceInfos, nil
+}

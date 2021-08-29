@@ -7,7 +7,10 @@ import (
 
 func GetToOperateDomains(serviceId string, updateDomains *[]validators.ServiceDomainAddUpdate) ([]models.ServiceDomains, []string) {
 	serviceDomainsModel := models.ServiceDomains{}
-	serviceExistDomains := serviceDomainsModel.DomainInfosByServiceIds([]string{serviceId})
+	serviceExistDomains, err := serviceDomainsModel.DomainInfosByServiceIds([]string{serviceId})
+	if err != nil {
+		// @todo 处理错误
+	}
 
 	updateDomainsMap := make(map[string]string)
 	for _, updateDomain := range *updateDomains {

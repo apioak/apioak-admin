@@ -3,6 +3,7 @@ package models
 import (
 	"apioak-admin/app/packages"
 	"apioak-admin/app/utils"
+	"strings"
 )
 
 type ServiceDomains struct {
@@ -60,9 +61,32 @@ func (s *ServiceDomains) DomainInfoByDomain(domains []string, filterServiceIds [
 	return domainInfos
 }
 
-func (s *ServiceDomains) DomainInfosByServiceIds(serviceIds []string) []ServiceDomains {
+func (s *ServiceDomains) DomainInfosByServiceIds(serviceIds []string) ([]ServiceDomains, error) {
 	domainInfos := []ServiceDomains{}
-	packages.GetDb().Table(s.TableName()).Where("service_id IN ?", serviceIds).Find(&domainInfos)
+	if len(serviceIds) == 0 {
+		return domainInfos, nil
+	}
+	err := packages.GetDb().Table(s.TableName()).Where("service_id IN ?", serviceIds).Find(&domainInfos).Error
+	if err != nil {
+		return nil, err
+	}
+	return domainInfos, nil
+}
 
-	return domainInfos
+func (s *ServiceDomains) ServiceDomainInfosLikeDomain(domain string) ([]ServiceDomains, error) {
+	domainInfos := []ServiceDomains{}
+	domain = strings.TrimSpace(domain)
+	if len(domain) == 0 {
+		return domainInfos, nil
+	}
+
+	domain = "%" + domain + "%"
+	err := packages.GetDb().Table(s.TableName()).
+		Where("domain LIKE ?", domain).
+		Find(&domainInfos).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return domainInfos, nil
 }

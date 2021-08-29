@@ -9,22 +9,6 @@ import (
 	"strings"
 )
 
-const (
-	IdTypeUser          = "u"
-	IdTypeService       = "svc"
-	IdTypeServiceDomain = "sdm"
-	IdTypeServiceNode   = "snd"
-	IdTypeRoute         = "rt"
-	IdTypeRoutePlugin   = "rpu"
-	IdTypeCertificate   = "cer"
-	IdTypeClusterNode   = "cnd"
-)
-
-var (
-	IPV4 = "ipv4"
-	IPV6 = "ipv6"
-)
-
 func createRandomString(len int) string {
 	var container string
 	var str = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890"
@@ -39,8 +23,7 @@ func createRandomString(len int) string {
 }
 
 func IdGenerate(idType string) (string, error) {
-
-	randomId := createRandomString(15)
+	randomId := createRandomString(IdLength)
 
 	var id string
 	switch strings.ToLower(idType) {

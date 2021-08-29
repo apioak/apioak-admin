@@ -123,3 +123,54 @@ func ServiceUpdate(
 
 	return updateErr
 }
+
+func ServiceListPage(param *validators.ServiceList) ([]models.Services, int, error) {
+	serviceModel := models.Services{}
+	searchContent := strings.TrimSpace(param.Search)
+
+	serviceIds := []string{}
+	var listError error
+	if len(searchContent) != 0 {
+		serviceInfos, serviceErr := serviceModel.ServiceInfosLikeIdName(searchContent)
+		if serviceErr != nil {
+			listError = serviceErr
+		}
+
+		serviceDomainModel := models.ServiceDomains{}
+		serviceDomains, domainErr:= serviceDomainModel.ServiceDomainInfosLikeDomain(searchContent)
+		if domainErr != nil {
+			listError = domainErr
+		}
+
+		tpmServiceIds := map[string]string{}
+		if len(serviceInfos) != 0 {
+			for _, serviceInfo := range serviceInfos {
+				_, serviceExist := tpmServiceIds[serviceInfo.ID]
+				if !serviceExist {
+					tpmServiceIds[serviceInfo.ID] = serviceInfo.ID
+				}
+			}
+		}
+		if len(serviceDomains) != 0 {
+			for _, serviceDomain := range serviceDomains {
+				_, domainExist := tpmServiceIds[serviceDomain.ServiceID]
+				if !domainExist {
+					tpmServiceIds[serviceDomain.ServiceID] = serviceDomain.ServiceID
+				}
+			}
+		}
+
+		if len(tpmServiceIds) > 0 {
+			for _, tpmServiceId := range tpmServiceIds {
+				serviceIds = append(serviceIds, tpmServiceId)
+			}
+		}
+
+		if len(serviceIds) == 0 {
+			serviceIds = append(serviceIds, "search-content-exist-set-default-service-id")
+		}
+	}
+	list, total, listError := serviceModel.ServiceAllInfosListPage(serviceIds, param)
+
+	return list, total, listError
+}

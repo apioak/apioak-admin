@@ -25,6 +25,13 @@ type ServiceAddUpdate struct {
 	ServiceNames string `json:"service_domains" zh:"域名" en:"Service domains" binding:"required,CheckServiceDomain"`
 }
 
+type ServiceList struct {
+	Protocol int    `form:"protocol" zh:"请求协议" en:"Protocol" binding:"omitempty,oneof=1 2 3"`
+	IsEnable int    `form:"is_enable" zh:"服务开关" en:"Service enable" binding:"omitempty,oneof=1 2"`
+	Search   string `form:"search" zh:"搜索内容" en:"Search content" binding:"omitempty"`
+	BaseListPage
+}
+
 func defaultServiceTimeOut() map[string]uint32 {
 	timeInterface := make(map[string]uint32)
 

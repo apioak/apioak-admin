@@ -12,6 +12,13 @@ type result struct {
 	Data interface{} // 结果数据
 }
 
+type ResultPage struct {
+	Page int
+	PageSize int
+	Total int
+	Data interface{}
+}
+
 func Ok(c *gin.Context, data ...interface{}) {
 	resultMsg := &result{}
 	resultMsg.Code = enums.Success

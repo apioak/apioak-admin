@@ -36,6 +36,8 @@ func InitValidator(conf *ConfigGlobal) (err error) {
 		}
 
 		RegisterTag(validatorEngine, "json", confLocal)
+		RegisterTag(validatorEngine, "form", confLocal)
+
 		switch confLocal {
 		case LocaleEn:
 			err = enTranslations.RegisterDefaultTranslations(validatorEngine, trans)
