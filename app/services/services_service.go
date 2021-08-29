@@ -35,9 +35,7 @@ func CheckExistDomain(domains string, filterServiceIds []string) error {
 				exist = true
 			}
 		}
-		if exist {
-			continue
-		} else {
+		if !exist {
 			existDomains = append(existDomains, serviceDomain.Domain)
 		}
 	}

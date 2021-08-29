@@ -131,7 +131,6 @@ func (s *Services) ServiceUpdate(
 	deleteNodeIds []string) error {
 
 	tx := packages.GetDb().Begin()
-
 	defer func() {
 		if r := recover(); r != nil {
 			tx.Rollback()
@@ -214,3 +213,40 @@ func (s *Services) ServiceUpdate(
 
 	return tx.Commit().Error
 }
+
+func (s *Services) ServiceDelete(id string) error {
+
+	tx := packages.GetDb().Begin()
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+		}
+	}()
+
+	if err := tx.Error; err != nil {
+		return err
+	}
+
+	deleteServiceError := tx.Table(s.TableName()).Where("id = ?", id).Delete(ServiceNodes{}).Error
+	if deleteServiceError != nil {
+		tx.Rollback()
+		return deleteServiceError
+	}
+
+	serviceDomainsModel := ServiceDomains{}
+	deleteDomainError := tx.Table(serviceDomainsModel.TableName()).Where("service_id = ?", id).Delete(serviceDomainsModel).Error
+	if deleteDomainError != nil {
+		tx.Rollback()
+		return deleteDomainError
+	}
+
+	serviceNodesModel := ServiceNodes{}
+	deleteNodeError := tx.Table(serviceNodesModel.TableName()).Where("service_id = ?", id).Delete(serviceNodesModel).Error
+	if deleteNodeError != nil {
+		tx.Rollback()
+		return deleteNodeError
+	}
+
+	return tx.Commit().Error
+}
+

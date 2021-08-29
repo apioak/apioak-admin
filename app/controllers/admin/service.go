@@ -10,6 +10,16 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// @todo 服务列表
+func ServiceList(c *gin.Context) {
+
+}
+
+// @todo 服务详情
+func ServiceInfo(c *gin.Context) {
+
+}
+
 func ServiceAdd(c *gin.Context) {
 
 	var serviceAddUpdateStruct = validators.ServiceAddUpdate{}
@@ -71,3 +81,23 @@ func ServiceUpdate(c *gin.Context) {
 
 	utils.Ok(c)
 }
+
+func ServiceDelete(c *gin.Context) {
+	serviceId := c.Param("id")
+
+	serviceModel := &models.Services{}
+	serviceInfo := serviceModel.ServiceInfoById(serviceId)
+	if len(serviceInfo.ID) == 0 {
+		utils.Error(c, enums.CodeMessages(enums.ServiceNull))
+		return
+	}
+
+	deleteErr := serviceModel.ServiceDelete(serviceId)
+	if deleteErr != nil {
+		utils.Error(c, deleteErr.Error())
+		return
+	}
+
+	utils.Ok(c)
+}
+
