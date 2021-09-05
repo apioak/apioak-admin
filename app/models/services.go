@@ -363,3 +363,17 @@ func (s *Services) ServiceSwitchWebsocket(id string, webSocket int) error {
 
 	return nil
 }
+
+func (s *Services) ServiceSwitchHealthCheck(id string, healthCheck int) error {
+	id = strings.TrimSpace(id)
+	if len(id) == 0 {
+		return errors.New(enums.CodeMessages(enums.ServiceParamsNull))
+	}
+
+	updateErr := packages.GetDb().Table(s.TableName()).Where("id = ?", id).Update("health_check", healthCheck).Error
+	if updateErr != nil {
+		return updateErr
+	}
+
+	return nil
+}

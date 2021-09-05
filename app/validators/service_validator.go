@@ -44,6 +44,10 @@ type ServiceSwitchWebsocket struct {
 	WebSocket int `json:"web_socket" zh:"WebSocket" en:"WebSocket" binding:"required,oneof=1 2"`
 }
 
+type ServiceSwitchHealthCheck struct {
+	HealthCheck int `json:"health_check" zh:"健康检查" en:"Health" binding:"required,oneof=1 2"`
+}
+
 func defaultServiceTimeOut() map[string]uint32 {
 	timeInterface := make(map[string]uint32)
 

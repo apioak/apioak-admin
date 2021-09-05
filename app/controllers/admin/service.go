@@ -151,9 +151,9 @@ func ServiceUpdateName(c *gin.Context) {
 		return
 	}
 
-	updateNameErr := serviceModel.ServiceUpdateName(serviceId, serviceUpdateNameValidator.Name)
-	if updateNameErr != nil {
-		utils.Error(c, updateNameErr.Error())
+	updateErr := serviceModel.ServiceUpdateName(serviceId, serviceUpdateNameValidator.Name)
+	if updateErr != nil {
+		utils.Error(c, updateErr.Error())
 		return
 	}
 
@@ -181,9 +181,9 @@ func ServiceSwitchEnable(c *gin.Context) {
 		return
 	}
 
-	updateEnableErr := serviceModel.ServiceSwitchEnable(serviceId, serviceSwitchEnableValidator.IsEnable)
-	if updateEnableErr != nil {
-		utils.Error(c, updateEnableErr.Error())
+	updateErr := serviceModel.ServiceSwitchEnable(serviceId, serviceSwitchEnableValidator.IsEnable)
+	if updateErr != nil {
+		utils.Error(c, updateErr.Error())
 		return
 	}
 
@@ -211,11 +211,42 @@ func ServiceSwitchWebsocket(c *gin.Context) {
 		return
 	}
 
-	updateEnableErr := serviceModel.ServiceSwitchWebsocket(serviceId, serviceSwitchWebsocketValidator.WebSocket)
-	if updateEnableErr != nil {
-		utils.Error(c, updateEnableErr.Error())
+	updateErr := serviceModel.ServiceSwitchWebsocket(serviceId, serviceSwitchWebsocketValidator.WebSocket)
+	if updateErr != nil {
+		utils.Error(c, updateErr.Error())
 		return
 	}
 
 	utils.Ok(c)
 }
+
+func ServiceSwitchHealthCheck(c *gin.Context) {
+	serviceId := c.Param("id")
+
+	var serviceSwitchHealthCheckValidator = validators.ServiceSwitchHealthCheck{}
+	if msg, err := packages.ParseRequestParams(c, &serviceSwitchHealthCheckValidator); err != nil {
+		utils.Error(c, msg)
+		return
+	}
+
+	serviceModel := &models.Services{}
+	serviceInfo := serviceModel.ServiceInfoById(serviceId)
+	if len(serviceInfo.ID) == 0 {
+		utils.Error(c, enums.CodeMessages(enums.ServiceNull))
+		return
+	}
+
+	if serviceSwitchHealthCheckValidator.HealthCheck == serviceInfo.HealthCheck {
+		utils.Error(c, enums.CodeMessages(enums.SwitchNoChange))
+		return
+	}
+
+	updateErr := serviceModel.ServiceSwitchHealthCheck(serviceId, serviceSwitchHealthCheckValidator.HealthCheck)
+	if updateErr != nil {
+		utils.Error(c, updateErr.Error())
+		return
+	}
+
+	utils.Ok(c)
+}
+
