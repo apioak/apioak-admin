@@ -14,7 +14,9 @@ const (
 	Success = 0  // 成功
 	Error   = -1 // 失败
 
-	ServiceNull = 10001 // 服务不存在
+	SwitchNoChange = 101 // 开关无变化
+
+	ServiceNull       = 10001 // 服务不存在
 	ServiceParamsNull = 10002 // 服务不存在
 
 	ServiceDomainExist = 10101 // 服务域名已存在
@@ -24,7 +26,9 @@ var ZhMapMessages = map[int]string{
 	Success: "成功",
 	Error:   "失败",
 
-	ServiceNull: "服务不存在",
+	SwitchNoChange: "开关无变化",
+
+	ServiceNull:       "服务不存在",
 	ServiceParamsNull: "服务参数缺失",
 
 	ServiceDomainExist: "[%s]域名已存在",
@@ -34,7 +38,9 @@ var EnMapMessages = map[int]string{
 	Success: "success",
 	Error:   "error",
 
-	ServiceNull: "Service does not exist",
+	SwitchNoChange: "No change in switch",
+
+	ServiceNull:       "Service does not exist",
 	ServiceParamsNull: "Missing service parameters",
 
 	ServiceDomainExist: "[%s]Domain name already exists",

@@ -36,6 +36,10 @@ type ServiceUpdateName struct {
 	Name string `json:"name" zh:"服务名称" en:"Service name" binding:"required,min=1,max=30"`
 }
 
+type ServiceSwitchEnable struct {
+	IsEnable int `json:"is_enable" zh:"服务开关" en:"Service enable" binding:"required,oneof=1 2"`
+}
+
 func defaultServiceTimeOut() map[string]uint32 {
 	timeInterface := make(map[string]uint32)
 

@@ -336,3 +336,18 @@ func (s *Services) ServiceUpdateName(id string, name string) error {
 
 	return nil
 }
+
+func (s *Services) ServiceSwitchEnable(id string, enable int) error {
+	err := errors.New(enums.CodeMessages(enums.ServiceParamsNull))
+	id = strings.TrimSpace(id)
+	if (len(id) == 0) {
+		return err
+	}
+
+	updateErr := packages.GetDb().Table(s.TableName()).Where("id = ?", id).Update("is_enable", enable).Error
+	if updateErr != nil {
+		return updateErr
+	}
+
+	return nil
+}

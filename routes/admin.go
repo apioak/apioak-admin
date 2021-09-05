@@ -25,7 +25,7 @@ func RouteRegister(routeEngine *gin.Engine) {
 			service.PUT("/update/:id", admin.ServiceUpdate)
 			service.DELETE("/delete/:id", admin.ServiceDelete)
 			service.PUT("/update/name/:id/", admin.ServiceUpdateName)
-			//service.PUT("/switch/enable/:id/:enable", admin.ServiceDelete)
+			service.PUT("/switch/enable/:id", admin.ServiceSwitchEnable)
 			//service.PUT("/switch/websocket/:id/:enable", admin.ServiceDelete)
 			//service.PUT("/switch/health-check/:id/:enable", admin.ServiceDelete)
 		}

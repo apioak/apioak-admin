@@ -159,3 +159,33 @@ func ServiceUpdateName(c *gin.Context) {
 
 	utils.Ok(c)
 }
+
+func ServiceSwitchEnable(c *gin.Context) {
+	serviceId := c.Param("id")
+
+	var serviceSwitchEnableValidator = validators.ServiceSwitchEnable{}
+	if msg, err := packages.ParseRequestParams(c, &serviceSwitchEnableValidator); err != nil {
+		utils.Error(c, msg)
+		return
+	}
+
+	serviceModel := &models.Services{}
+	serviceInfo := serviceModel.ServiceInfoById(serviceId)
+	if len(serviceInfo.ID) == 0 {
+		utils.Error(c, enums.CodeMessages(enums.ServiceNull))
+		return
+	}
+
+	if serviceSwitchEnableValidator.IsEnable == serviceInfo.IsEnable {
+		utils.Error(c, enums.CodeMessages(enums.SwitchNoChange))
+		return
+	}
+
+	updateEnableErr := serviceModel.ServiceSwitchEnable(serviceId, serviceSwitchEnableValidator.IsEnable)
+	if updateEnableErr != nil {
+		utils.Error(c, updateEnableErr.Error())
+		return
+	}
+
+	utils.Ok(c)
+}
