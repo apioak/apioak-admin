@@ -18,14 +18,14 @@ func ServiceAdd(c *gin.Context) {
 		return
 	}
 
-	err := services.CheckExistDomain(serviceAddUpdateStruct.ServiceNames, []string{})
+	err := services.CheckExistDomain(serviceAddUpdateStruct.ServiceDomains, []string{})
 	if err != nil {
 		utils.Error(c, err.Error())
 		return
 	}
 
 	serviceAddUpdateStruct.Timeouts = validators.GetServiceAddTimeOut(serviceAddUpdateStruct.Timeouts)
-	serviceDomains := validators.GetServiceAddDomains(serviceAddUpdateStruct.ServiceNames)
+	serviceDomains := validators.GetServiceAddDomains(serviceAddUpdateStruct.ServiceDomains)
 	serviceNodes := validators.GetServiceAddNodes(serviceAddUpdateStruct.ServiceNodes)
 
 	createErr := services.ServiceCreate(&serviceAddUpdateStruct, &serviceDomains, &serviceNodes)
@@ -97,14 +97,14 @@ func ServiceUpdate(c *gin.Context) {
 		return
 	}
 
-	err := services.CheckExistDomain(serviceAddUpdateStruct.ServiceNames, []string{serviceId})
+	err := services.CheckExistDomain(serviceAddUpdateStruct.ServiceDomains, []string{serviceId})
 	if err != nil {
 		utils.Error(c, err.Error())
 		return
 	}
 
 	serviceAddUpdateStruct.Timeouts = validators.GetServiceAddTimeOut(serviceAddUpdateStruct.Timeouts)
-	serviceDomains := validators.GetServiceAddDomains(serviceAddUpdateStruct.ServiceNames)
+	serviceDomains := validators.GetServiceAddDomains(serviceAddUpdateStruct.ServiceDomains)
 	serviceNodes := validators.GetServiceAddNodes(serviceAddUpdateStruct.ServiceNodes)
 
 	updateErr := services.ServiceUpdate(serviceId, &serviceAddUpdateStruct, &serviceDomains, &serviceNodes)
@@ -129,6 +129,31 @@ func ServiceDelete(c *gin.Context) {
 	deleteErr := serviceModel.ServiceDelete(serviceId)
 	if deleteErr != nil {
 		utils.Error(c, deleteErr.Error())
+		return
+	}
+
+	utils.Ok(c)
+}
+
+func ServiceUpdateName(c *gin.Context) {
+	serviceId := c.Param("id")
+
+	var serviceUpdateNameValidator = validators.ServiceUpdateName{}
+	if msg, err := packages.ParseRequestParams(c, &serviceUpdateNameValidator); err != nil {
+		utils.Error(c, msg)
+		return
+	}
+
+	serviceModel := &models.Services{}
+	serviceInfo := serviceModel.ServiceInfoById(serviceId)
+	if len(serviceInfo.ID) == 0 {
+		utils.Error(c, enums.CodeMessages(enums.ServiceNull))
+		return
+	}
+
+	updateNameErr := serviceModel.ServiceUpdateName(serviceId, serviceUpdateNameValidator.Name)
+	if updateNameErr != nil {
+		utils.Error(c, updateNameErr.Error())
 		return
 	}
 

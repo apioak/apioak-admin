@@ -320,3 +320,19 @@ func (s *Services) ServiceInfosLikeIdName(idOrName string) ([]Services, error) {
 
 	return serviceInfos, nil
 }
+
+func (s *Services) ServiceUpdateName(id string, name string) error {
+	err := errors.New(enums.CodeMessages(enums.ServiceParamsNull))
+	id = strings.TrimSpace(id)
+	name = strings.TrimSpace(name)
+	if (len(id) == 0) || (len(name) == 0) {
+		return err
+	}
+
+	updateErr := packages.GetDb().Table(s.TableName()).Where("id = ?", id).Update("name", name).Error
+	if updateErr != nil {
+		return updateErr
+	}
+
+	return nil
+}

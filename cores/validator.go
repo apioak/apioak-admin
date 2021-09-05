@@ -35,8 +35,8 @@ func InitValidator(conf *ConfigGlobal) (err error) {
 			return fmt.Errorf("Custom registration verification error (%s)", registerValidatorErr)
 		}
 
-		RegisterTag(validatorEngine, "json", confLocal)
 		RegisterTag(validatorEngine, "form", confLocal)
+		RegisterTag(validatorEngine, "json", confLocal)
 
 		switch confLocal {
 		case LocaleEn:
