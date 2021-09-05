@@ -22,7 +22,7 @@ func GetToOperateDomains(serviceId string, updateDomains *[]validators.ServiceDo
 		existDomainsMap[existDomain.Domain] = existDomain.Domain
 	}
 
-	addDomains := []models.ServiceDomains{}
+	addDomains := make([]models.ServiceDomains, 0)
 	for _, updateDomain := range *updateDomains {
 		_, exist := existDomainsMap[updateDomain.Domain]
 		if exist {
@@ -35,7 +35,7 @@ func GetToOperateDomains(serviceId string, updateDomains *[]validators.ServiceDo
 		addDomains = append(addDomains, domain)
 	}
 
-	deleteDomainIds := []string{}
+	deleteDomainIds := make([]string, 0)
 	for _, existDomain := range serviceExistDomains {
 		_, exist := updateDomainsMap[existDomain.Domain]
 		if !exist {

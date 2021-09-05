@@ -51,7 +51,7 @@ func (s *ServiceDomains) ServiceDomainIdUnique(sDomainIds map[string]string) (st
 }
 
 func (s *ServiceDomains) DomainInfoByDomain(domains []string, filterServiceIds []string) []ServiceDomains {
-	domainInfos := []ServiceDomains{}
+	domainInfos := make([]ServiceDomains, 0)
 	if len(filterServiceIds) == 0 {
 		packages.GetDb().Table(s.TableName()).Where("domain IN ?", domains).Find(&domainInfos)
 	} else {
@@ -62,7 +62,7 @@ func (s *ServiceDomains) DomainInfoByDomain(domains []string, filterServiceIds [
 }
 
 func (s *ServiceDomains) DomainInfosByServiceIds(serviceIds []string) ([]ServiceDomains, error) {
-	domainInfos := []ServiceDomains{}
+	domainInfos := make([]ServiceDomains, 0)
 	if len(serviceIds) == 0 {
 		return domainInfos, nil
 	}
@@ -74,7 +74,7 @@ func (s *ServiceDomains) DomainInfosByServiceIds(serviceIds []string) ([]Service
 }
 
 func (s *ServiceDomains) ServiceDomainInfosLikeDomain(domain string) ([]ServiceDomains, error) {
-	domainInfos := []ServiceDomains{}
+	domainInfos := make([]ServiceDomains, 0)
 	domain = strings.TrimSpace(domain)
 	if len(domain) == 0 {
 		return domainInfos, nil

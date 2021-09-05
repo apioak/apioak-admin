@@ -85,7 +85,7 @@ func domainValidator(tag string, field string) string {
 }
 
 func GetServiceAddDomains(serviceNames string) []ServiceDomainAddUpdate {
-	serviceDomains := []ServiceDomainAddUpdate{}
+	serviceDomains := make([]ServiceDomainAddUpdate, 0)
 
 	domains := strings.Split(serviceNames, ",")
 	for _, domain := range domains {

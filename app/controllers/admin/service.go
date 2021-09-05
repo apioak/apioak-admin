@@ -189,3 +189,33 @@ func ServiceSwitchEnable(c *gin.Context) {
 
 	utils.Ok(c)
 }
+
+func ServiceSwitchWebsocket(c *gin.Context) {
+	serviceId := c.Param("id")
+
+	var serviceSwitchWebsocketValidator = validators.ServiceSwitchWebsocket{}
+	if msg, err := packages.ParseRequestParams(c, &serviceSwitchWebsocketValidator); err != nil {
+		utils.Error(c, msg)
+		return
+	}
+
+	serviceModel := &models.Services{}
+	serviceInfo := serviceModel.ServiceInfoById(serviceId)
+	if len(serviceInfo.ID) == 0 {
+		utils.Error(c, enums.CodeMessages(enums.ServiceNull))
+		return
+	}
+
+	if serviceSwitchWebsocketValidator.WebSocket == serviceInfo.WebSocket {
+		utils.Error(c, enums.CodeMessages(enums.SwitchNoChange))
+		return
+	}
+
+	updateEnableErr := serviceModel.ServiceSwitchWebsocket(serviceId, serviceSwitchWebsocketValidator.WebSocket)
+	if updateEnableErr != nil {
+		utils.Error(c, updateEnableErr.Error())
+		return
+	}
+
+	utils.Ok(c)
+}

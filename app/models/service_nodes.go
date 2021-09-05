@@ -67,7 +67,7 @@ func (s *ServiceNodes) ServiceNodeIdUnique(sNodeIds map[string]string) (string, 
 }
 
 func (s *ServiceNodes) NodeInfosByServiceIds(serviceIds []string) []ServiceNodes {
-	nodeInfos := []ServiceNodes{}
+	nodeInfos := make([]ServiceNodes, 0)
 	packages.GetDb().Table(s.TableName()).Where("service_id IN ?", serviceIds).Find(&nodeInfos)
 
 	return nodeInfos

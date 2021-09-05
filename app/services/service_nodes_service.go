@@ -25,7 +25,7 @@ func GetToOperateNodes(serviceId string, serviceNodes *[]validators.ServiceNodeA
 		existNodesMap[existNodeValue] = existNodeValue
 	}
 
-	addNodes := []models.ServiceNodes{}
+	addNodes := make([]models.ServiceNodes, 0)
 	for _, addNode := range *serviceNodes {
 		nodePort := strconv.Itoa(addNode.NodePort)
 		updateNodeValue := addNode.NodeIp + "-" + nodePort
@@ -49,8 +49,8 @@ func GetToOperateNodes(serviceId string, serviceNodes *[]validators.ServiceNodeA
 		addNodes = append(addNodes, nodeInfo)
 	}
 
-	updateNodes := []models.ServiceNodes{}
-	deleteNodeIds := []string{}
+	updateNodes := make([]models.ServiceNodes, 0)
+	deleteNodeIds := make([]string, 0)
 	for _, serviceExistNode := range serviceExistNodes {
 		nodePort := strconv.Itoa(serviceExistNode.NodePort)
 		existNodeValue := serviceExistNode.NodeIP + "-" + nodePort

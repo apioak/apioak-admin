@@ -7,7 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// @todo 用户注册
+// UserRegister @todo 用户注册
 func UserRegister(c *gin.Context) {
 
 	//获取参数结构体

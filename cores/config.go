@@ -41,7 +41,7 @@ type ConfigGlobal struct {
 	Runtime   ConfigRuntime
 }
 
-// 全局配置初始化
+// InitConfig 全局配置初始化
 func InitConfig(conf *ConfigGlobal) error {
 
 	// 读取配置文件

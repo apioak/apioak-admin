@@ -32,7 +32,7 @@ func InitValidator(conf *ConfigGlobal) (err error) {
 
 		registerValidatorErr := RegisterCustomizeValidator(validatorEngine)
 		if registerValidatorErr != nil {
-			return fmt.Errorf("Custom registration verification error (%s)", registerValidatorErr)
+			return fmt.Errorf("custom registration verification error (%s)", registerValidatorErr)
 		}
 
 		RegisterTag(validatorEngine, "form", confLocal)

@@ -20,7 +20,7 @@ func CheckExistDomain(domains string, filterServiceIds []string) error {
 		return nil
 	}
 
-	var existDomains = []string{}
+	var existDomains = make([]string, 0)
 	for _, serviceDomain := range serviceDomains {
 		if len(serviceDomain.Domain) == 0 {
 			continue
@@ -55,8 +55,8 @@ func ServiceCreate(
 	serviceNodes *[]validators.ServiceNodeAddUpdate) error {
 
 	serviceModel := &models.Services{}
-	serviceDomainInfos := []models.ServiceDomains{}
-	serviceNodeInfos := []models.ServiceNodes{}
+	serviceDomainInfos := make([]models.ServiceDomains, 0)
+	serviceNodeInfos := make([]models.ServiceNodes, 0)
 
 	createServiceData := models.Services{
 		Protocol:    serviceData.Protocol,
@@ -148,7 +148,7 @@ func (structServiceList *StructServiceList) ServiceListPage(param *validators.Se
 	serviceModel := models.Services{}
 	searchContent := strings.TrimSpace(param.Search)
 
-	serviceIds := []string{}
+	serviceIds := make([]string, 0)
 	var listError error
 	if len(searchContent) != 0 {
 		serviceInfos, serviceErr := serviceModel.ServiceInfosLikeIdName(searchContent)
@@ -192,7 +192,7 @@ func (structServiceList *StructServiceList) ServiceListPage(param *validators.Se
 	}
 	list, total, listError := serviceModel.ServiceAllInfosListPage(serviceIds, param)
 
-	serviceList := []StructServiceList{}
+	serviceList := make([]StructServiceList, 0)
 	if len(list) != 0 {
 		for _, serviceInfo := range list {
 			tmpServiceInfo := StructServiceList{}

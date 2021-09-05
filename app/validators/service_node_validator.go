@@ -65,7 +65,7 @@ func CheckServiceNode(fl validator.FieldLevel) bool {
 	for _, ipInfos := range nodeIps {
 		nodeIpPortWeight, ok := ipInfos.(map[string]interface{})
 		if ok == false {
-			packages.SetAllCustomizeValidatorErrMsgs("CheckServiceNode", ("json.Unmarshal: parsed ip type is wrong"))
+			packages.SetAllCustomizeValidatorErrMsgs("CheckServiceNode", "json.Unmarshal: parsed ip type is wrong")
 			return false
 		}
 
@@ -150,7 +150,7 @@ func nodeWeightValidator(tag string, field string) string {
 }
 
 func GetServiceAddNodes(serviceNodesString string) []ServiceNodeAddUpdate {
-	serviceNodes := []ServiceNodeAddUpdate{}
+	serviceNodes := make([]ServiceNodeAddUpdate, 0)
 	nodeIpInfos, err := parsingNodeIpInfos(serviceNodesString)
 	if err != nil {
 		return serviceNodes

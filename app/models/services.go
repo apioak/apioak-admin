@@ -221,7 +221,7 @@ func (s *Services) ServiceUpdate(
 }
 
 func (s *Services) ServiceDomainNodeByIds(serviceIds []string) ([]Services, error) {
-	serviceInfos := []Services{}
+	serviceInfos := make([]Services, 0)
 	err := errors.New(enums.CodeMessages(enums.ServiceParamsNull))
 	if len(serviceIds) == 0 {
 		return serviceInfos, err
@@ -303,7 +303,7 @@ func (s *Services) ServiceAllInfosListPage(
 }
 
 func (s *Services) ServiceInfosLikeIdName(idOrName string) ([]Services, error) {
-	serviceInfos := []Services{}
+	serviceInfos := make([]Services, 0)
 	idOrName = strings.TrimSpace(idOrName)
 	if len(idOrName) == 0 {
 		return serviceInfos, nil
@@ -322,11 +322,10 @@ func (s *Services) ServiceInfosLikeIdName(idOrName string) ([]Services, error) {
 }
 
 func (s *Services) ServiceUpdateName(id string, name string) error {
-	err := errors.New(enums.CodeMessages(enums.ServiceParamsNull))
 	id = strings.TrimSpace(id)
 	name = strings.TrimSpace(name)
 	if (len(id) == 0) || (len(name) == 0) {
-		return err
+		return errors.New(enums.CodeMessages(enums.ServiceParamsNull))
 	}
 
 	updateErr := packages.GetDb().Table(s.TableName()).Where("id = ?", id).Update("name", name).Error
@@ -338,13 +337,26 @@ func (s *Services) ServiceUpdateName(id string, name string) error {
 }
 
 func (s *Services) ServiceSwitchEnable(id string, enable int) error {
-	err := errors.New(enums.CodeMessages(enums.ServiceParamsNull))
 	id = strings.TrimSpace(id)
-	if (len(id) == 0) {
-		return err
+	if len(id) == 0 {
+		return errors.New(enums.CodeMessages(enums.ServiceParamsNull))
 	}
 
 	updateErr := packages.GetDb().Table(s.TableName()).Where("id = ?", id).Update("is_enable", enable).Error
+	if updateErr != nil {
+		return updateErr
+	}
+
+	return nil
+}
+
+func (s *Services) ServiceSwitchWebsocket(id string, webSocket int) error {
+	id = strings.TrimSpace(id)
+	if len(id) == 0 {
+		return errors.New(enums.CodeMessages(enums.ServiceParamsNull))
+	}
+
+	updateErr := packages.GetDb().Table(s.TableName()).Where("id = ?", id).Update("web_socket", webSocket).Error
 	if updateErr != nil {
 		return updateErr
 	}
