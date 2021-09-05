@@ -1,9 +1,11 @@
 package models
 
 import (
+	"apioak-admin/app/enums"
 	"apioak-admin/app/packages"
 	"apioak-admin/app/utils"
 	"apioak-admin/app/validators"
+	"errors"
 	"strings"
 )
 
@@ -18,7 +20,7 @@ type Services struct {
 	Timeouts    string `gorm:"column:timeouts"`       //Time out
 	ModelTime
 	Domains []ServiceDomains `gorm:"foreignKey:ServiceID"`
-	Nodes []ServiceNodes `gorm:"foreignKey:ServiceID"`
+	Nodes   []ServiceNodes   `gorm:"foreignKey:ServiceID"`
 }
 
 // TableName sets the insert table name for this struct type
@@ -119,8 +121,8 @@ func (s *Services) ServiceAdd(serviceInfo *Services, serviceDomains *[]ServiceDo
 	return tx.Commit().Error
 }
 
-func (s *Services) ServiceInfoById(id string) *Services {
-	serviceInfo := s
+func (s *Services) ServiceInfoById(id string) Services {
+	serviceInfo := Services{}
 	packages.GetDb().Table(s.TableName()).Where("id = ?", id).First(&serviceInfo)
 	return serviceInfo
 }
@@ -218,6 +220,28 @@ func (s *Services) ServiceUpdate(
 	return tx.Commit().Error
 }
 
+func (s *Services) ServiceDomainNodeByIds(serviceIds []string) ([]Services, error) {
+	serviceInfos := []Services{}
+	err := errors.New(enums.CodeMessages(enums.ServiceParamsNull))
+	if len(serviceIds) == 0 {
+		return serviceInfos, err
+	}
+
+	packages.GetDb().Table(s.TableName()).
+		Where("id IN ?", serviceIds).
+		Preload("Domains").
+		Preload("Nodes").
+		Order("updated_at desc").
+		Find(&serviceInfos)
+	if len(serviceInfos) == 0 {
+		err = errors.New(enums.CodeMessages(enums.ServiceNull))
+	} else {
+		err = nil
+	}
+
+	return serviceInfos, err
+}
+
 func (s *Services) ServiceDelete(id string) error {
 
 	tx := packages.GetDb().Begin()
@@ -254,7 +278,9 @@ func (s *Services) ServiceDelete(id string) error {
 	return tx.Commit().Error
 }
 
-func (s *Services) ServiceAllInfosListPage(serviceIds []string, param *validators.ServiceList) (list []Services, total int, listError error) {
+func (s *Services) ServiceAllInfosListPage(
+	serviceIds []string,
+	param *validators.ServiceList) (list []Services, total int, listError error) {
 	tx := packages.GetDb().Table(s.TableName())
 	if len(serviceIds) != 0 {
 		tx = tx.Where("id IN ?", serviceIds)
@@ -289,7 +315,7 @@ func (s *Services) ServiceInfosLikeIdName(idOrName string) ([]Services, error) {
 		Or("name LIKE ?", idOrName).
 		Find(&serviceInfos).Error
 	if err != nil {
-		 return nil, err
+		return nil, err
 	}
 
 	return serviceInfos, nil

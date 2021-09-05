@@ -10,36 +10,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// @todo 服务列表
-func ServiceList(c *gin.Context) {
-	var serviceListStruct = validators.ServiceList{}
-	if msg, err := packages.ParseRequestParams(c, &serviceListStruct); err != nil {
-		utils.Error(c, msg)
-		return
-	}
-
-	structServiceList := services.StructServiceList{}
-	serviceList, total, err := structServiceList.ServiceListPage(&serviceListStruct)
-	if err != nil {
-		utils.Error(c, err.Error())
-		return
-	}
-	
-	result := utils.ResultPage{}
-	result.Param= serviceListStruct
-	result.Page = serviceListStruct.Page
-	result.PageSize = serviceListStruct.PageSize
-	result.Total = total
-	result.Data = serviceList
-
-	utils.Ok(c, result)
-}
-
-// @todo 服务详情
-func ServiceInfo(c *gin.Context) {
-
-}
-
 func ServiceAdd(c *gin.Context) {
 
 	var serviceAddUpdateStruct = validators.ServiceAddUpdate{}
@@ -65,6 +35,50 @@ func ServiceAdd(c *gin.Context) {
 	}
 
 	utils.Ok(c)
+}
+
+func ServiceInfo(c *gin.Context) {
+	serviceId := c.Param("id")
+
+	serviceModel := &models.Services{}
+	serviceInfo := serviceModel.ServiceInfoById(serviceId)
+	if len(serviceInfo.ID) == 0 {
+		utils.Error(c, enums.CodeMessages(enums.ServiceNull))
+		return
+	}
+
+	structServiceInfo := services.StructServiceInfo{}
+	serviceDomainNodeInfo, err := structServiceInfo.ServiceInfoById(serviceId)
+	if err != nil {
+		utils.Error(c, err.Error())
+		return
+	}
+
+	utils.Ok(c, serviceDomainNodeInfo)
+}
+
+func ServiceList(c *gin.Context) {
+	var serviceListStruct = validators.ServiceList{}
+	if msg, err := packages.ParseRequestParams(c, &serviceListStruct); err != nil {
+		utils.Error(c, msg)
+		return
+	}
+
+	structServiceList := services.StructServiceList{}
+	serviceList, total, err := structServiceList.ServiceListPage(&serviceListStruct)
+	if err != nil {
+		utils.Error(c, err.Error())
+		return
+	}
+
+	result := utils.ResultPage{}
+	result.Param = serviceListStruct
+	result.Page = serviceListStruct.Page
+	result.PageSize = serviceListStruct.PageSize
+	result.Total = total
+	result.Data = serviceList
+
+	utils.Ok(c, result)
 }
 
 func ServiceUpdate(c *gin.Context) {

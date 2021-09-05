@@ -19,9 +19,9 @@ func RouteRegister(routeEngine *gin.Engine) {
 		// 服务
 		service := adminRoute.Group("service")
 		{
-			service.GET("/list", admin.ServiceList)
-			//service.GET("/info/:id", admin.ServiceInfo)
 			service.POST("/add", admin.ServiceAdd)
+			service.GET("/list", admin.ServiceList)
+			service.GET("/info/:id", admin.ServiceInfo)
 			service.PUT("/update/:id", admin.ServiceUpdate)
 			service.DELETE("/delete/:id", admin.ServiceDelete)
 			//service.PUT("/name/update/:id/", admin.ServiceDelete)

@@ -6,6 +6,7 @@ import (
 	"apioak-admin/app/utils"
 	"apioak-admin/app/validators"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 )
@@ -125,22 +126,22 @@ func ServiceUpdate(
 	return updateErr
 }
 
-type timeouts struct {
+type structTimeouts struct {
 	ConnectionTimeout int `json:"connection_timeout"`
 	ReadTimeout       int `json:"read_timeout"`
 	SendTimeout       int `json:"send_timeout"`
 }
 
 type StructServiceList struct {
-	ID          string   `json:"id"`           //Service id
-	Name        string   `json:"name"`         //Service name
-	Protocol    int      `json:"protocol"`     //Protocol  1:HTTP  2:HTTPS  3:HTTP&HTTPS
-	HealthCheck int      `json:"health_check"` //Health check switch  1:on  2:off
-	WebSocket   int      `json:"web_socket"`   //WebSocket  1:on  2:off
-	IsEnable    int      `json:"is_enable"`    //Service enable  1:on  2:off
-	LoadBalance int      `json:"load_balance"` //Load balancing algorithm
-	Timeouts    timeouts `json:"timeouts"`     //Time out
-	DomainList  []string `json:"domain_list"`  //Domain name
+	ID          string         `json:"id"`           //Service id
+	Name        string         `json:"name"`         //Service name
+	Protocol    int            `json:"protocol"`     //Protocol  1:HTTP  2:HTTPS  3:HTTP&HTTPS
+	HealthCheck int            `json:"health_check"` //Health check switch  1:on  2:off
+	WebSocket   int            `json:"web_socket"`   //WebSocket  1:on  2:off
+	IsEnable    int            `json:"is_enable"`    //Service enable  1:on  2:off
+	LoadBalance int            `json:"load_balance"` //Load balancing algorithm
+	Timeouts    structTimeouts `json:"timeouts"`     //Time out
+	DomainList  []string       `json:"domain_list"`  //Domain name
 }
 
 func (structServiceList *StructServiceList) ServiceListPage(param *validators.ServiceList) ([]StructServiceList, int, error) {
@@ -203,7 +204,7 @@ func (structServiceList *StructServiceList) ServiceListPage(param *validators.Se
 			tmpServiceInfo.IsEnable = serviceInfo.IsEnable
 			tmpServiceInfo.LoadBalance = serviceInfo.LoadBalance
 
-			tmpTimeOuts := timeouts{}
+			tmpTimeOuts := structTimeouts{}
 			tmpServiceInfo.Timeouts = tmpTimeOuts
 			if len(serviceInfo.Timeouts) != 0 {
 				tmpTimeOutsErr := json.Unmarshal([]byte(serviceInfo.Timeouts), &tmpTimeOuts)
@@ -224,4 +225,77 @@ func (structServiceList *StructServiceList) ServiceListPage(param *validators.Se
 	}
 
 	return serviceList, total, listError
+}
+
+type structServiceNode struct {
+	NodeIP     string `json:"node_ip"`     //Node IP
+	NodePort   int    `json:"node_port"`   //Node port
+	NodeWeight int    `json:"node_weight"` //Node weight
+}
+
+type StructServiceInfo struct {
+	ID          string              `json:"id"`           //Service id
+	Name        string              `json:"name"`         //Service name
+	Protocol    int                 `json:"protocol"`     //Protocol  1:HTTP  2:HTTPS  3:HTTP&HTTPS
+	HealthCheck int                 `json:"health_check"` //Health check switch  1:on  2:off
+	WebSocket   int                 `json:"web_socket"`   //WebSocket  1:on  2:off
+	IsEnable    int                 `json:"is_enable"`    //Service enable  1:on  2:off
+	LoadBalance int                 `json:"load_balance"` //Load balancing algorithm
+	Timeouts    structTimeouts      `json:"timeouts"`     //Time out
+	DomainList  []string            `json:"domain_list"`  //Domain name
+	NodeList    []structServiceNode `json:"node_list"`    //Domain name
+}
+
+func (s *StructServiceInfo) ServiceInfoById(serviceId string) (StructServiceInfo, error) {
+	serviceInfo := StructServiceInfo{}
+	serviceId = strings.TrimSpace(serviceId)
+	err := errors.New(enums.CodeMessages(enums.ServiceParamsNull))
+	if len(serviceId) == 0 {
+		return serviceInfo, err
+	}
+
+	serviceModel := models.Services{}
+	serviceList, err := serviceModel.ServiceDomainNodeByIds([]string{serviceId})
+	if err != nil {
+		return serviceInfo, err
+	}
+
+	serviceListInfo := serviceList[0]
+	serviceInfo.ID = serviceListInfo.ID
+	serviceInfo.Name = serviceListInfo.Name
+	serviceInfo.Protocol = serviceListInfo.Protocol
+	serviceInfo.HealthCheck = serviceListInfo.HealthCheck
+	serviceInfo.WebSocket = serviceListInfo.WebSocket
+	serviceInfo.IsEnable = serviceListInfo.IsEnable
+	serviceInfo.LoadBalance = serviceListInfo.LoadBalance
+
+	tmpTimeOuts := structTimeouts{}
+	serviceInfo.Timeouts = tmpTimeOuts
+	if len(serviceListInfo.Timeouts) != 0 {
+		tmpTimeOutsErr := json.Unmarshal([]byte(serviceListInfo.Timeouts), &tmpTimeOuts)
+		if tmpTimeOutsErr == nil {
+			serviceInfo.Timeouts = tmpTimeOuts
+		}
+	}
+
+	serviceInfo.DomainList = make([]string, 0)
+	if len(serviceListInfo.Domains) != 0 {
+		for _, domainInfo := range serviceListInfo.Domains {
+			serviceInfo.DomainList = append(serviceInfo.DomainList, domainInfo.Domain)
+		}
+	}
+
+	serviceInfo.NodeList = make([]structServiceNode, 0)
+	if len(serviceListInfo.Nodes) != 0 {
+		for _, nodeInfo := range serviceListInfo.Nodes {
+			tmpNodeInfo := structServiceNode{}
+			tmpNodeInfo.NodeIP = nodeInfo.NodeIP
+			tmpNodeInfo.NodePort = nodeInfo.NodePort
+			tmpNodeInfo.NodeWeight = nodeInfo.NodeWeight
+
+			serviceInfo.NodeList = append(serviceInfo.NodeList, tmpNodeInfo)
+		}
+	}
+
+	return serviceInfo, nil
 }

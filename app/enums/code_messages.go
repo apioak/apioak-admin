@@ -15,6 +15,7 @@ const (
 	Error   = -1 // 失败
 
 	ServiceNull = 10001 // 服务不存在
+	ServiceParamsNull = 10002 // 服务不存在
 
 	ServiceDomainExist = 10101 // 服务域名已存在
 )
@@ -24,6 +25,7 @@ var ZhMapMessages = map[int]string{
 	Error:   "失败",
 
 	ServiceNull: "服务不存在",
+	ServiceParamsNull: "服务参数缺失",
 
 	ServiceDomainExist: "[%s]域名已存在",
 }
@@ -33,6 +35,7 @@ var EnMapMessages = map[int]string{
 	Error:   "error",
 
 	ServiceNull: "Service does not exist",
+	ServiceParamsNull: "Missing service parameters",
 
 	ServiceDomainExist: "[%s]Domain name already exists",
 }
