@@ -2,21 +2,20 @@ package validators
 
 import (
 	"apioak-admin/app/packages"
+	"apioak-admin/app/utils"
 	"fmt"
 	"github.com/go-playground/validator/v10"
 	"strings"
 )
 
 var (
-	domainLocalEn            = "en"
-	domainLocalZh            = "zh"
 	domainLocalErrorMessages = map[string]map[string]string{
-		domainLocalEn: {
+		utils.LocalEn: {
 			"required": " is a required field",
 			"max":      " must be %d or less",
 			"min":      " must be %d or greater",
 		},
-		domainLocalZh: {
+		utils.LocalZh: {
 			"required": "为必填字段",
 			"max":      "长度必须小于或等于%d",
 			"min":      "长度最小只能为%d",

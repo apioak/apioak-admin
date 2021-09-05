@@ -27,18 +27,16 @@ func RegisterTag(validatorEngine *validator.Validate, tag string, translation st
 }
 
 func RegisterCustomizeValidator(validatorEngine *validator.Validate) error {
-	if err := validatorEngine.RegisterValidation("CheckServiceDomain", validators.CheckServiceDomain); err != nil { return err }
-	if err := validatorEngine.RegisterValidation("CheckServiceNode", validators.CheckServiceNode); err != nil { return err }
-
-
+	if err := validatorEngine.RegisterValidation("CheckServiceDomain", validators.CheckServiceDomain); err != nil {
+		return err
+	}
+	if err := validatorEngine.RegisterValidation("CheckServiceNode", validators.CheckServiceNode); err != nil {
+		return err
+	}
+	if err := validatorEngine.RegisterValidation("LoadBalanceOneOf", validators.LoadBalanceOneOf); err != nil {
+		return err
+	}
 
 	packages.SetCustomizeValidator(validatorEngine)
 	return nil
 }
-
-
-
-
-
-
-

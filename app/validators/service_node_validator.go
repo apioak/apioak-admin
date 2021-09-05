@@ -2,6 +2,7 @@ package validators
 
 import (
 	"apioak-admin/app/packages"
+	"apioak-admin/app/utils"
 	"encoding/json"
 	"fmt"
 	"github.com/go-playground/validator/v10"
@@ -9,16 +10,14 @@ import (
 )
 
 var (
-	nodeLocalEn            = "en"
-	nodeLocalZh            = "zh"
 	nodeLocalErrorMessages = map[string]map[string]string{
-		nodeLocalEn: {
+		utils.LocalEn: {
 			"required": " is a required field",
 			"ip":       " must be a valid IP address",
 			"max":      " must be %d or less",
 			"min":      " must be %d or greater",
 		},
-		nodeLocalZh: {
+		utils.LocalZh: {
 			"required": "为必填字段",
 			"ip":       "必须是一个有效的IP地址",
 			"max":      "必须小于或等于%d",

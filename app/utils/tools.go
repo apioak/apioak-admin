@@ -66,3 +66,23 @@ func DiscernIP(s string) (string, error) {
 	}
 	return "", nil
 }
+
+type LoadBalance struct {
+	Id   int    `json:"id"`
+	Name string `json:"name"`
+}
+
+func (l *LoadBalance) LoadBalanceList() []LoadBalance {
+	loadBalance := LoadBalance{}
+	loadBalanceList := make([]LoadBalance, 0)
+
+	loadBalance.Id = LoadBalanceRoundRobin
+	loadBalance.Name = LoadBalanceNameRoundRobin
+	loadBalanceList = append(loadBalanceList, loadBalance)
+
+	loadBalance.Id = LoadBalanceIPHash
+	loadBalance.Name = LoadBalanceNameIPHash
+	loadBalanceList = append(loadBalanceList, loadBalance)
+
+	return loadBalanceList
+}

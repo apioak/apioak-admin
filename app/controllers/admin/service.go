@@ -10,6 +10,12 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+func ServiceLoadBalanceList(c *gin.Context) {
+	loadBalance := utils.LoadBalance{}
+	loadBalanceList := loadBalance.LoadBalanceList()
+	utils.Ok(c, loadBalanceList)
+}
+
 func ServiceAdd(c *gin.Context) {
 
 	var serviceAddUpdateStruct = validators.ServiceAddUpdate{}
@@ -24,6 +30,7 @@ func ServiceAdd(c *gin.Context) {
 		return
 	}
 
+	serviceAddUpdateStruct = validators.GetServiceAttributesDefault(serviceAddUpdateStruct)
 	serviceAddUpdateStruct.Timeouts = validators.GetServiceAddTimeOut(serviceAddUpdateStruct.Timeouts)
 	serviceDomains := validators.GetServiceAddDomains(serviceAddUpdateStruct.ServiceDomains)
 	serviceNodes := validators.GetServiceAddNodes(serviceAddUpdateStruct.ServiceNodes)
@@ -249,4 +256,3 @@ func ServiceSwitchHealthCheck(c *gin.Context) {
 
 	utils.Ok(c)
 }
-
