@@ -26,9 +26,9 @@ type ServiceAddUpdate struct {
 }
 
 type ServiceList struct {
-	Protocol int    `form:"protocol" zh:"请求协议" en:"Protocol" binding:"omitempty,oneof=1 2 3"`
-	IsEnable int    `form:"is_enable" zh:"服务开关" en:"Service enable" binding:"omitempty,oneof=1 2"`
-	Search   string `form:"search" zh:"搜索内容" en:"Search content" binding:"omitempty"`
+	Protocol int    `form:"protocol" zh:"请求协议" json:"protocol" en:"Protocol" binding:"omitempty,oneof=1 2 3"`
+	IsEnable int    `form:"is_enable" zh:"服务开关" json:"is_enable" en:"Service enable" binding:"omitempty,oneof=1 2"`
+	Search   string `form:"search" zh:"搜索内容" json:"search" en:"Search content" binding:"omitempty"`
 	BaseListPage
 }
 

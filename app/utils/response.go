@@ -13,10 +13,11 @@ type result struct {
 }
 
 type ResultPage struct {
-	Page int
-	PageSize int
-	Total int
-	Data interface{}
+	Param    interface{} `json:"param"`
+	Page     int         `json:"page"`
+	PageSize int         `json:"page_size"`
+	Total    int         `json:"total"`
+	Data     interface{} `json:"data"`
 }
 
 func Ok(c *gin.Context, data ...interface{}) {

@@ -18,13 +18,15 @@ func ServiceList(c *gin.Context) {
 		return
 	}
 
-	serviceList, total, err := services.ServiceListPage(&serviceListStruct)
+	structServiceList := services.StructServiceList{}
+	serviceList, total, err := structServiceList.ServiceListPage(&serviceListStruct)
 	if err != nil {
 		utils.Error(c, err.Error())
 		return
 	}
 	
 	result := utils.ResultPage{}
+	result.Param= serviceListStruct
 	result.Page = serviceListStruct.Page
 	result.PageSize = serviceListStruct.PageSize
 	result.Total = total

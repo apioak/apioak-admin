@@ -5,6 +5,7 @@ import (
 	"apioak-admin/app/models"
 	"apioak-admin/app/utils"
 	"apioak-admin/app/validators"
+	"encoding/json"
 	"fmt"
 	"strings"
 )
@@ -124,7 +125,25 @@ func ServiceUpdate(
 	return updateErr
 }
 
-func ServiceListPage(param *validators.ServiceList) ([]models.Services, int, error) {
+type timeouts struct {
+	ConnectionTimeout int `json:"connection_timeout"`
+	ReadTimeout       int `json:"read_timeout"`
+	SendTimeout       int `json:"send_timeout"`
+}
+
+type StructServiceList struct {
+	ID          string   `json:"id"`           //Service id
+	Name        string   `json:"name"`         //Service name
+	Protocol    int      `json:"protocol"`     //Protocol  1:HTTP  2:HTTPS  3:HTTP&HTTPS
+	HealthCheck int      `json:"health_check"` //Health check switch  1:on  2:off
+	WebSocket   int      `json:"web_socket"`   //WebSocket  1:on  2:off
+	IsEnable    int      `json:"is_enable"`    //Service enable  1:on  2:off
+	LoadBalance int      `json:"load_balance"` //Load balancing algorithm
+	Timeouts    timeouts `json:"timeouts"`     //Time out
+	DomainList  []string `json:"domain_list"`  //Domain name
+}
+
+func (structServiceList *StructServiceList) ServiceListPage(param *validators.ServiceList) ([]StructServiceList, int, error) {
 	serviceModel := models.Services{}
 	searchContent := strings.TrimSpace(param.Search)
 
@@ -137,7 +156,7 @@ func ServiceListPage(param *validators.ServiceList) ([]models.Services, int, err
 		}
 
 		serviceDomainModel := models.ServiceDomains{}
-		serviceDomains, domainErr:= serviceDomainModel.ServiceDomainInfosLikeDomain(searchContent)
+		serviceDomains, domainErr := serviceDomainModel.ServiceDomainInfosLikeDomain(searchContent)
 		if domainErr != nil {
 			listError = domainErr
 		}
@@ -172,5 +191,37 @@ func ServiceListPage(param *validators.ServiceList) ([]models.Services, int, err
 	}
 	list, total, listError := serviceModel.ServiceAllInfosListPage(serviceIds, param)
 
-	return list, total, listError
+	serviceList := []StructServiceList{}
+	if len(list) != 0 {
+		for _, serviceInfo := range list {
+			tmpServiceInfo := StructServiceList{}
+			tmpServiceInfo.ID = serviceInfo.ID
+			tmpServiceInfo.Name = serviceInfo.Name
+			tmpServiceInfo.Protocol = serviceInfo.Protocol
+			tmpServiceInfo.HealthCheck = serviceInfo.HealthCheck
+			tmpServiceInfo.WebSocket = serviceInfo.WebSocket
+			tmpServiceInfo.IsEnable = serviceInfo.IsEnable
+			tmpServiceInfo.LoadBalance = serviceInfo.LoadBalance
+
+			tmpTimeOuts := timeouts{}
+			tmpServiceInfo.Timeouts = tmpTimeOuts
+			if len(serviceInfo.Timeouts) != 0 {
+				tmpTimeOutsErr := json.Unmarshal([]byte(serviceInfo.Timeouts), &tmpTimeOuts)
+				if tmpTimeOutsErr == nil {
+					tmpServiceInfo.Timeouts = tmpTimeOuts
+				}
+			}
+
+			tmpServiceInfo.DomainList = make([]string, 0)
+			if len(serviceInfo.Domains) != 0 {
+				for _, domainInfo := range serviceInfo.Domains {
+					tmpServiceInfo.DomainList = append(tmpServiceInfo.DomainList, domainInfo.Domain)
+				}
+			}
+
+			serviceList = append(serviceList, tmpServiceInfo)
+		}
+	}
+
+	return serviceList, total, listError
 }

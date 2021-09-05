@@ -24,10 +24,10 @@ func RouteRegister(routeEngine *gin.Engine) {
 			service.POST("/add", admin.ServiceAdd)
 			service.PUT("/update/:id", admin.ServiceUpdate)
 			service.DELETE("/delete/:id", admin.ServiceDelete)
+			//service.PUT("/name/update/:id/", admin.ServiceDelete)
 			//service.PUT("/switch/health-check/:id/:enable", admin.ServiceDelete)
 			//service.PUT("/switch/websocket/:id/:enable", admin.ServiceDelete)
 			//service.PUT("/switch/enable/:id/:enable", admin.ServiceDelete)
-			//service.PUT("/name/update/:id/", admin.ServiceDelete)
 		}
 
 		// 路由

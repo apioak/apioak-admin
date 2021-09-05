@@ -271,7 +271,7 @@ func (s *Services) ServiceAllInfosListPage(serviceIds []string, param *validator
 		return
 	}
 
-	tx = tx.Preload("Domains").Preload("Nodes").Order("updated_at desc")
+	tx = tx.Preload("Domains").Order("updated_at desc")
 	listError = ListPaginate(tx, &list, &param.BaseListPage)
 	return
 }
