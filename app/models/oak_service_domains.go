@@ -50,15 +50,16 @@ func (s *ServiceDomains) ServiceDomainIdUnique(sDomainIds map[string]string) (st
 	return sDomainId, nil
 }
 
-func (s *ServiceDomains) DomainInfoByDomain(domains []string, filterServiceIds []string) []ServiceDomains {
+func (s *ServiceDomains) DomainInfosByDomain(domains []string, filterServiceIds []string) ([]ServiceDomains, error) {
 	domainInfos := make([]ServiceDomains, 0)
-	if len(filterServiceIds) == 0 {
-		packages.GetDb().Table(s.TableName()).Where("domain IN ?", domains).Find(&domainInfos)
-	} else {
-		packages.GetDb().Table(s.TableName()).Where("domain IN ?", domains).Where("service_id NOT IN ?", filterServiceIds).Find(&domainInfos)
-	}
 
-	return domainInfos
+	db := packages.GetDb().Table(s.TableName()).Where("domain IN ?", domains)
+	if len(filterServiceIds) != 0 {
+		db = db.Where("service_id NOT IN ?", filterServiceIds)
+	}
+	err := db.Find(&domainInfos).Error
+
+	return domainInfos, err
 }
 
 func (s *ServiceDomains) DomainInfosByServiceIds(serviceIds []string) ([]ServiceDomains, error) {

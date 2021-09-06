@@ -33,7 +33,14 @@ func RegisterCustomizeValidator(validatorEngine *validator.Validate) error {
 	if err := validatorEngine.RegisterValidation("CheckServiceNode", validators.CheckServiceNode); err != nil {
 		return err
 	}
-	if err := validatorEngine.RegisterValidation("LoadBalanceOneOf", validators.LoadBalanceOneOf); err != nil {
+	if err := validatorEngine.RegisterValidation("CheckLoadBalanceOneOf", validators.CheckLoadBalanceOneOf); err != nil {
+		return err
+	}
+
+	if err := validatorEngine.RegisterValidation("CheckRoutePathPrefix", validators.CheckRoutePathPrefix); err != nil {
+		return err
+	}
+	if err := validatorEngine.RegisterValidation("CheckRouteRequestMethodOneOf", validators.CheckRouteRequestMethodOneOf); err != nil {
 		return err
 	}
 

@@ -17,9 +17,12 @@ const (
 	SwitchNoChange = 101 // 开关无变化
 
 	ServiceNull       = 10001 // 服务不存在
-	ServiceParamsNull = 10002 // 服务不存在
+	ServiceParamsNull = 10002 // 服务参数缺失
 
 	ServiceDomainExist = 10101 // 服务域名已存在
+
+	RouteDefaultPathNoPermission = 10201 // [/*]默认路径暂无权限操作
+	RoutePathExist               = 10202 // 路由路径已存在
 )
 
 var ZhMapMessages = map[int]string{
@@ -32,6 +35,9 @@ var ZhMapMessages = map[int]string{
 	ServiceParamsNull: "服务参数缺失",
 
 	ServiceDomainExist: "[%s]域名已存在",
+
+	RouteDefaultPathNoPermission: "[/*]默认路径暂无权限操作",
+	RoutePathExist:               "[%s]路由路径已存在",
 }
 
 var EnMapMessages = map[int]string{
@@ -44,6 +50,9 @@ var EnMapMessages = map[int]string{
 	ServiceParamsNull: "Missing service parameters",
 
 	ServiceDomainExist: "[%s]Domain name already exists",
+
+	RouteDefaultPathNoPermission: "[/*]The default path does not have permission to operate temporarily",
+	RoutePathExist:               "[%s]Routing path already exists",
 }
 
 func CodeMessages(code int) string {

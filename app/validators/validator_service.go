@@ -25,7 +25,7 @@ var (
 
 type ServiceAddUpdate struct {
 	Timeouts       string `json:"timeouts" zh:"超时时间" en:"Time out" binding:"omitempty,json"`
-	LoadBalance    int    `json:"load_balance" zh:"负载均衡算法" en:"Load balancing algorithm" binding:"omitempty,LoadBalanceOneOf"`
+	LoadBalance    int    `json:"load_balance" zh:"负载均衡算法" en:"Load balancing algorithm" binding:"omitempty,CheckLoadBalanceOneOf"`
 	IsEnable       int    `json:"is_enable" zh:"服务开关" en:"Service enable" binding:"omitempty,oneof=1 2"`
 	WebSocket      int    `json:"web_socket" zh:"WebSocket" en:"WebSocket" binding:"omitempty,oneof=1 2"`
 	HealthCheck    int    `json:"health_check" zh:"健康检查" en:"Health" binding:"omitempty,oneof=1 2"`
@@ -57,7 +57,7 @@ type ServiceSwitchHealthCheck struct {
 	HealthCheck int `json:"health_check" zh:"健康检查" en:"Health" binding:"required,oneof=1 2"`
 }
 
-func LoadBalanceOneOf(fl validator.FieldLevel) bool {
+func CheckLoadBalanceOneOf(fl validator.FieldLevel) bool {
 	serviceLoadBalanceId := fl.Field().Int()
 
 	loadBalance := utils.LoadBalance{}
@@ -150,7 +150,7 @@ func GetServiceAddTimeOut(times string) string {
 	return string(timeStr)
 }
 
-func GetServiceAttributesDefault(serviceInfo ServiceAddUpdate) ServiceAddUpdate {
+func GetServiceAttributesDefault(serviceInfo *ServiceAddUpdate) {
 	if serviceInfo.Protocol == 0 {
 		serviceInfo.Protocol = utils.ProtocolHTTP
 	}
@@ -166,6 +166,4 @@ func GetServiceAttributesDefault(serviceInfo ServiceAddUpdate) ServiceAddUpdate 
 	if serviceInfo.LoadBalance == 0 {
 		serviceInfo.LoadBalance = utils.LoadBalanceRoundRobin
 	}
-
-	return serviceInfo
 }

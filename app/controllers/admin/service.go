@@ -18,24 +18,24 @@ func ServiceLoadBalanceList(c *gin.Context) {
 
 func ServiceAdd(c *gin.Context) {
 
-	var serviceAddUpdateStruct = validators.ServiceAddUpdate{}
-	if msg, err := packages.ParseRequestParams(c, &serviceAddUpdateStruct); err != nil {
+	var serviceAddUpdateValidator = validators.ServiceAddUpdate{}
+	if msg, err := packages.ParseRequestParams(c, &serviceAddUpdateValidator); err != nil {
 		utils.Error(c, msg)
 		return
 	}
 
-	err := services.CheckExistDomain(serviceAddUpdateStruct.ServiceDomains, []string{})
+	err := services.CheckExistDomain(serviceAddUpdateValidator.ServiceDomains, []string{})
 	if err != nil {
 		utils.Error(c, err.Error())
 		return
 	}
 
-	serviceAddUpdateStruct = validators.GetServiceAttributesDefault(serviceAddUpdateStruct)
-	serviceAddUpdateStruct.Timeouts = validators.GetServiceAddTimeOut(serviceAddUpdateStruct.Timeouts)
-	serviceDomains := validators.GetServiceAddDomains(serviceAddUpdateStruct.ServiceDomains)
-	serviceNodes := validators.GetServiceAddNodes(serviceAddUpdateStruct.ServiceNodes)
+	validators.GetServiceAttributesDefault(&serviceAddUpdateValidator)
+	serviceAddUpdateValidator.Timeouts = validators.GetServiceAddTimeOut(serviceAddUpdateValidator.Timeouts)
+	serviceDomains := validators.GetServiceAddDomains(serviceAddUpdateValidator.ServiceDomains)
+	serviceNodes := validators.GetServiceAddNodes(serviceAddUpdateValidator.ServiceNodes)
 
-	createErr := services.ServiceCreate(&serviceAddUpdateStruct, &serviceDomains, &serviceNodes)
+	createErr := services.ServiceCreate(&serviceAddUpdateValidator, &serviceDomains, &serviceNodes)
 	if createErr != nil {
 		utils.Error(c, createErr.Error())
 		return
@@ -91,8 +91,8 @@ func ServiceList(c *gin.Context) {
 func ServiceUpdate(c *gin.Context) {
 	serviceId := c.Param("id")
 
-	var serviceAddUpdateStruct = validators.ServiceAddUpdate{}
-	if msg, err := packages.ParseRequestParams(c, &serviceAddUpdateStruct); err != nil {
+	var serviceAddUpdateValidator = validators.ServiceAddUpdate{}
+	if msg, err := packages.ParseRequestParams(c, &serviceAddUpdateValidator); err != nil {
 		utils.Error(c, msg)
 		return
 	}
@@ -104,17 +104,17 @@ func ServiceUpdate(c *gin.Context) {
 		return
 	}
 
-	err := services.CheckExistDomain(serviceAddUpdateStruct.ServiceDomains, []string{serviceId})
+	err := services.CheckExistDomain(serviceAddUpdateValidator.ServiceDomains, []string{serviceId})
 	if err != nil {
 		utils.Error(c, err.Error())
 		return
 	}
 
-	serviceAddUpdateStruct.Timeouts = validators.GetServiceAddTimeOut(serviceAddUpdateStruct.Timeouts)
-	serviceDomains := validators.GetServiceAddDomains(serviceAddUpdateStruct.ServiceDomains)
-	serviceNodes := validators.GetServiceAddNodes(serviceAddUpdateStruct.ServiceNodes)
+	serviceAddUpdateValidator.Timeouts = validators.GetServiceAddTimeOut(serviceAddUpdateValidator.Timeouts)
+	serviceDomains := validators.GetServiceAddDomains(serviceAddUpdateValidator.ServiceDomains)
+	serviceNodes := validators.GetServiceAddNodes(serviceAddUpdateValidator.ServiceNodes)
 
-	updateErr := services.ServiceUpdate(serviceId, &serviceAddUpdateStruct, &serviceDomains, &serviceNodes)
+	updateErr := services.ServiceUpdate(serviceId, &serviceAddUpdateValidator, &serviceDomains, &serviceNodes)
 	if updateErr != nil {
 		utils.Error(c, updateErr.Error())
 		return

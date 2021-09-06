@@ -86,3 +86,14 @@ func (l *LoadBalance) LoadBalanceList() []LoadBalance {
 
 	return loadBalanceList
 }
+
+func AllRequestMethod() []string {
+	return []string{
+		RequestMethodALL,
+		RequestMethodGET,
+		RequestMethodPOST,
+		RequestMethodPUT,
+		RequestMethodDELETE,
+		RequestMethodOPTIONS,
+	}
+}

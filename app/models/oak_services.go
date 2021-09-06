@@ -28,7 +28,7 @@ func (s *Services) TableName() string {
 	return "oak_services"
 }
 
-var sId = ""
+var serviceId = ""
 
 func (s *Services) ServiceIdUnique(sIds map[string]string) (string, error) {
 	if s.ID == "" {
@@ -42,9 +42,9 @@ func (s *Services) ServiceIdUnique(sIds map[string]string) (string, error) {
 	result := packages.GetDb().Table(s.TableName()).Select("id").First(&s)
 	mapId := sIds[s.ID]
 	if (result.RowsAffected == 0) && (s.ID != mapId) {
-		sId = s.ID
+		serviceId = s.ID
 		sIds[s.ID] = s.ID
-		return sId, nil
+		return serviceId, nil
 	} else {
 		svcId, svcErr := utils.IdGenerate(utils.IdTypeService)
 		if svcErr != nil {
@@ -57,7 +57,7 @@ func (s *Services) ServiceIdUnique(sIds map[string]string) (string, error) {
 		}
 	}
 
-	return sId, nil
+	return serviceId, nil
 }
 
 func (s *Services) ServiceAdd(serviceInfo *Services, serviceDomains *[]ServiceDomains, serviceNodes *[]ServiceNodes) error {
@@ -117,6 +117,8 @@ func (s *Services) ServiceAdd(serviceInfo *Services, serviceDomains *[]ServiceDo
 			return nodeErr
 		}
 	}
+
+	// @todo 默认增加一个路径为 /* 的路由
 
 	return tx.Commit().Error
 }

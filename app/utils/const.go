@@ -26,13 +26,26 @@ const (
 	EnableOn  = 1
 	EnableOff = 2
 
+	// ===================================== service =====================================
+
 	LoadBalanceRoundRobin = 1 // 轮询
 	LoadBalanceIPHash     = 2 // ip_hash
 
-	LoadBalanceNameRoundRobin = "加权轮询 (Weighted Round Robin)" // 轮询
-	LoadBalanceNameIPHash     = "ip_hash"                     // ip_hash
+	LoadBalanceNameRoundRobin = "加权轮询 (Weighted Round Robin)"
+	LoadBalanceNameIPHash     = "ip_hash"
 
 	ProtocolHTTP         = 1
 	ProtocolHTTPS        = 2
 	ProtocolHTTPAndHTTPS = 3
+
+	// ===================================== route =====================================
+
+	DefaultRoutePath = "/*"
+
+	RequestMethodALL     = "ALL"
+	RequestMethodGET     = "GET"
+	RequestMethodPOST    = "POST"
+	RequestMethodPUT     = "PUT"
+	RequestMethodDELETE  = "DELETE"
+	RequestMethodOPTIONS = "OPTIONS"
 )

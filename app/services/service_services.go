@@ -14,32 +14,25 @@ import (
 func CheckExistDomain(domains string, filterServiceIds []string) error {
 	serviceDomainInfo := models.ServiceDomains{}
 	domainInfos := strings.Split(strings.TrimSpace(domains), ",")
-	serviceDomains := serviceDomainInfo.DomainInfoByDomain(domainInfos, filterServiceIds)
+	serviceDomains, err := serviceDomainInfo.DomainInfosByDomain(domainInfos, filterServiceIds)
+	if err != nil {
+		return nil
+	}
 
 	if len(serviceDomains) == 0 {
 		return nil
 	}
 
-	var existDomains = make([]string, 0)
+	existDomains := make([]string, 0)
+	tmpExistDomainsMap := make(map[string]byte, 0)
 	for _, serviceDomain := range serviceDomains {
-		if len(serviceDomain.Domain) == 0 {
+		_, exist := tmpExistDomainsMap[serviceDomain.Domain]
+		if exist {
 			continue
 		}
 
-		if len(existDomains) == 0 {
-			existDomains = append(existDomains, serviceDomain.Domain)
-			continue
-		}
-
-		var exist = false
-		for _, existDomain := range existDomains {
-			if existDomain == serviceDomain.Domain {
-				exist = true
-			}
-		}
-		if !exist {
-			existDomains = append(existDomains, serviceDomain.Domain)
-		}
+		existDomains = append(existDomains, serviceDomain.Domain)
+		tmpExistDomainsMap[serviceDomain.Domain] = 0
 	}
 
 	if len(existDomains) != 0 {
@@ -92,6 +85,8 @@ func ServiceCreate(
 	// @todo 选择 请求协议： HTTP 和 HTTP&HTTPS 时校验证书是否存在
 
 	createErr := serviceModel.ServiceAdd(&createServiceData, &serviceDomainInfos, &serviceNodeInfos)
+
+	// @todo 如果状态是"开启"，则需要同步远程数据中心
 
 	// @todo 记录错误信息的日志，并返回定义的业务提示错误信息
 
