@@ -8,9 +8,9 @@ import (
 	"strings"
 )
 
-func CheckExistRoutePath(path string, filterRouteIds []string) error {
+func CheckExistServiceRoutePath(serviceId string, path string, filterRouteIds []string) error {
 	routeModel := models.Routes{}
-	routePaths, err := routeModel.RouteInfosByRoutePath([]string{path}, filterRouteIds)
+	routePaths, err := routeModel.RouteInfosByServiceRoutePath(serviceId, []string{path}, filterRouteIds)
 	if err != nil {
 		return err
 	}
@@ -38,7 +38,7 @@ func CheckExistRoutePath(path string, filterRouteIds []string) error {
 	return nil
 }
 
-func RouteCreate(routeData *validators.RouteAddUpdate) error {
+func RouteCreate(routeData *validators.ValidatorRouteAddUpdate) error {
 
 	createRouteData := models.Routes{
 		ServiceID:      routeData.ServiceID,
@@ -56,4 +56,55 @@ func RouteCreate(routeData *validators.RouteAddUpdate) error {
 	// @todo 如果状态是"开启"，则需要同步远程数据中心
 
 	return nil
+}
+
+type routePlugin struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+	Icon string `json:"icon"`
+}
+
+type StructRouteList struct {
+	ID             string        `json:"id"`
+	RouteName      string        `json:"route_name"`
+	RequestMethods []string      `json:"request_methods"`
+	RoutePath      string        `json:"route_path"`
+	IsEnable       int           `json:"is_enable"`
+	PluginList     []routePlugin `json:"plugin_list"`
+}
+
+func (s *StructRouteList) RouteListPage(
+	serviceId string,
+	param *validators.ValidatorRouteList) ([]StructRouteList, int, error) {
+
+	routeModel := models.Routes{}
+	routeInfos, total, listError := routeModel.RouteListPage(serviceId, param)
+
+	routeList := make([]StructRouteList, 0)
+	if len(routeInfos) != 0 {
+		for _, routeInfo := range routeInfos {
+			structRouteList := StructRouteList{}
+			structRouteList.ID = routeInfo.ID
+			structRouteList.RouteName = routeInfo.RouteName
+			structRouteList.RequestMethods = strings.Split(routeInfo.RequestMethods, ",")
+			structRouteList.RoutePath = routeInfo.RoutePath
+			structRouteList.IsEnable = routeInfo.IsEnable
+
+			routePluginInfos := make([]routePlugin, 0)
+			if len(routeInfo.Plugins) != 0 {
+				for _, routePluginInfo := range routeInfo.Plugins {
+					tmpRoutePluginInfo := routePlugin{}
+					tmpRoutePluginInfo.ID = routePluginInfo.ID
+					tmpRoutePluginInfo.Name = routePluginInfo.Name
+					tmpRoutePluginInfo.Icon = routePluginInfo.Icon
+					routePluginInfos = append(routePluginInfos, tmpRoutePluginInfo)
+				}
+			}
+			structRouteList.PluginList = routePluginInfos
+
+			routeList = append(routeList, structRouteList)
+		}
+	}
+
+	return routeList, total, listError
 }

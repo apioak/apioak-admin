@@ -6,6 +6,7 @@ const (
 	IdTypeServiceDomain = "sdm"
 	IdTypeServiceNode   = "snd"
 	IdTypeRoute         = "rt"
+	IdTypePlugin        = "plu"
 	IdTypeRoutePlugin   = "rpu"
 	IdTypeCertificate   = "cer"
 	IdTypeClusterNode   = "cnd"

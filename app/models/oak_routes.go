@@ -3,6 +3,8 @@ package models
 import (
 	"apioak-admin/app/packages"
 	"apioak-admin/app/utils"
+	"apioak-admin/app/validators"
+	"strings"
 )
 
 type Routes struct {
@@ -13,6 +15,7 @@ type Routes struct {
 	RoutePath      string `gorm:"column:route_path"`      //Routing path
 	IsEnable       int    `gorm:"column:is_enable"`       //Routing enable  1:on  2:off
 	ModelTime
+	Plugins []Plugins `gorm:"many2many:oak_route_plugins;foreignKey:ID;joinForeignKey:RouteID;References:ID;JoinReferences:PluginID"`
 }
 
 // TableName sets the insert table name for this struct type
@@ -52,10 +55,10 @@ func (r *Routes) RouteIdUnique(routeIds map[string]string) (string, error) {
 	return routeId, nil
 }
 
-func (r *Routes) RouteInfosByRoutePath(routePaths []string, filterRouteIds []string) ([]Routes, error) {
+func (r *Routes) RouteInfosByServiceRoutePath(serviceId string, routePaths []string, filterRouteIds []string) ([]Routes, error) {
 	routesInfos := make([]Routes, 0)
 
-	db := packages.GetDb().Table(r.TableName()).Where("route_path IN ?", routePaths)
+	db := packages.GetDb().Table(r.TableName()).Where("service_id = ?", serviceId).Where("route_path IN ?", routePaths)
 	if len(filterRouteIds) != 0 {
 		db = db.Where("id NOT IN ?", filterRouteIds)
 	}
@@ -80,4 +83,35 @@ func (r *Routes) RouteAdd(routeData Routes) error {
 	}
 
 	return nil
+}
+
+func (r *Routes) RouteListPage(
+	serviceId string,
+	param *validators.ValidatorRouteList) (list []Routes, total int, listError error) {
+
+	tx := packages.GetDb().Table(r.TableName()).Where("service_id = ?", serviceId)
+	param.Search = strings.TrimSpace(param.Search)
+	if len(param.Search) != 0 {
+		search := "%" + param.Search + "%"
+		orWhere := packages.GetDb().
+			Or("id LIKE ?", search).
+			Or("route_name LIKE ?", search).
+			Or("route_path LIKE ?", search).
+			Or("request_methods LIKE ?", strings.ToUpper(search))
+
+		tx = tx.Where(orWhere)
+	}
+	if param.IsEnable != 0 {
+		tx = tx.Where("is_enable = ?", param.IsEnable)
+	}
+
+	countError := ListCount(tx, &total)
+	if countError != nil {
+		listError = countError
+		return
+	}
+
+	tx = tx.Preload("Plugins").Order("updated_at desc")
+	listError = ListPaginate(tx, &list, &param.BaseListPage)
+	return
 }

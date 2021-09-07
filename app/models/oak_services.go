@@ -118,7 +118,25 @@ func (s *Services) ServiceAdd(serviceInfo *Services, serviceDomains *[]ServiceDo
 		}
 	}
 
-	// @todo 默认增加一个路径为 /* 的路由
+	serviceRoute := Routes{}
+	routeId, routeIdErr := serviceRoute.RouteIdUnique(tpmIds)
+	if routeIdErr != nil {
+		tx.Rollback()
+		return routeIdErr
+	}
+
+	serviceRoute.ServiceID = serviceId
+	serviceRoute.ID = routeId
+	serviceRoute.RouteName = routeId
+	serviceRoute.RoutePath = utils.DefaultRoutePath
+	serviceRoute.IsEnable = utils.EnableOff
+	serviceRoute.RequestMethods = utils.RequestMethodALL
+
+	routeCreateErr := tx.Create(&serviceRoute).Error
+	if routeCreateErr != nil {
+		tx.Rollback()
+		return routeCreateErr
+	}
 
 	return tx.Commit().Error
 }

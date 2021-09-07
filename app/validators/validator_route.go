@@ -23,7 +23,7 @@ var (
 	}
 )
 
-type RouteAddUpdate struct {
+type ValidatorRouteAddUpdate struct {
 	IsEnable       int    `json:"is_enable" zh:"路由开关" en:"Routing enable" binding:"required,oneof=1 2"`
 	RouteName      string `json:"route_name" zh:"路由名称" en:"Route name" binding:"omitempty"`
 	RequestMethods string `json:"request_methods" zh:"请求方法" en:"Request method" binding:"required,min=3,CheckRouteRequestMethodOneOf"`
@@ -31,8 +31,14 @@ type RouteAddUpdate struct {
 	ServiceID      string `json:"service_id" zh:"服务ID" en:"Service id" binding:"required"`
 }
 
+type ValidatorRouteList struct {
+	Search   string `form:"search" json:"search" zh:"搜索内容" en:"Search content" binding:"omitempty"`
+	IsEnable int    `form:"is_enable" json:"is_enable" zh:"路由开关" en:"Routing enable" binding:"omitempty,oneof=1 2"`
+	BaseListPage
+}
+
 func CheckRoutePathPrefix(fl validator.FieldLevel) bool {
-	routePath := fl.Field().String()
+	routePath := strings.TrimSpace(fl.Field().String())
 
 	match := strings.Index(routePath, "/")
 	if match != 0 {
@@ -54,7 +60,7 @@ func CheckRoutePathPrefix(fl validator.FieldLevel) bool {
 }
 
 func CheckRouteRequestMethodOneOf(fl validator.FieldLevel) bool {
-	requestMethods := fl.Field().String()
+	requestMethods := strings.TrimSpace(fl.Field().String())
 
 	requestMethodsSlice := strings.Split(requestMethods, ",")
 	allRequestMethods := utils.AllRequestMethod()
@@ -93,7 +99,12 @@ func CheckRouteRequestMethodOneOf(fl validator.FieldLevel) bool {
 	return true
 }
 
-func GetRouteAttributesDefault(routeAddUpdate *RouteAddUpdate) {
+func GetRouteAttributesDefault(routeAddUpdate *ValidatorRouteAddUpdate) {
+	routeAddUpdate.ServiceID = strings.TrimSpace(routeAddUpdate.ServiceID)
+	routeAddUpdate.RoutePath = strings.TrimSpace(routeAddUpdate.RoutePath)
+	routeAddUpdate.RequestMethods = strings.TrimSpace(routeAddUpdate.RequestMethods)
+	routeAddUpdate.RouteName = strings.TrimSpace(routeAddUpdate.RouteName)
+
 	requestMethodsSlice := strings.Split(routeAddUpdate.RequestMethods, ",")
 	allRequestMethods := utils.AllRequestMethod()
 
