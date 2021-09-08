@@ -108,3 +108,30 @@ func (s *StructRouteList) RouteListPage(
 
 	return routeList, total, listError
 }
+
+type StructRouteInfo struct {
+	ID             string   `json:"id"`
+	ServiceID      string   `json:"service_id"`
+	RouteName      string   `json:"route_name"`
+	RequestMethods []string `json:"request_methods"`
+	RoutePath      string   `json:"route_path"`
+	IsEnable       int      `json:"is_enable"`
+}
+
+func (s *StructRouteInfo) RouteInfoByServiceRouteId(serviceId string, routeId string) (StructRouteInfo, error) {
+	routeInfo := StructRouteInfo{}
+	routeModel := &models.Routes{}
+	routeModelInfo, routeModelInfoErr := routeModel.RouteInfosByServiceRouteId(serviceId, routeId)
+	if routeModelInfoErr != nil {
+		return routeInfo, routeModelInfoErr
+	}
+
+	routeInfo.ID = routeModelInfo.ID
+	routeInfo.ServiceID = routeModelInfo.ServiceID
+	routeInfo.RouteName = routeModelInfo.RouteName
+	routeInfo.RequestMethods = strings.Split(routeModelInfo.RequestMethods, ",")
+	routeInfo.RoutePath = routeModelInfo.RoutePath
+	routeInfo.IsEnable = routeModelInfo.IsEnable
+
+	return routeInfo, nil
+}

@@ -67,6 +67,23 @@ func (r *Routes) RouteInfosByServiceRoutePath(serviceId string, routePaths []str
 	return routesInfos, err
 }
 
+func (r *Routes) RouteInfosById(routeId string) (Routes, error) {
+	routeInfo := Routes{}
+	err := packages.GetDb().Table(r.TableName()).Where("id = ?", routeId).First(&routeInfo).Error
+
+	return routeInfo, err
+}
+
+func (r *Routes) RouteInfosByServiceRouteId(serviceId string, routeId string) (Routes, error) {
+	routeInfo := Routes{}
+	err := packages.GetDb().Table(r.TableName()).
+		Where("service_id = ?", serviceId).
+		Where("id = ?", routeId).
+		First(&routeInfo).Error
+
+	return routeInfo, err
+}
+
 func (r *Routes) RouteAdd(routeData Routes) error {
 	tpmIds := map[string]string{}
 	routeId, routeIdUniqueErr := r.RouteIdUnique(tpmIds)

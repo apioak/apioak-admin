@@ -23,6 +23,8 @@ const (
 
 	RouteDefaultPathNoPermission = 10201 // [/*]默认路径暂无权限操作
 	RoutePathExist               = 10202 // 路由路径已存在
+	RouteNull                    = 10203 // 路由不存在
+	RouteServiceNoMatch          = 10204 // 路由不在指定服务下
 )
 
 var ZhMapMessages = map[int]string{
@@ -38,6 +40,8 @@ var ZhMapMessages = map[int]string{
 
 	RouteDefaultPathNoPermission: "[/*]默认路径暂无权限操作",
 	RoutePathExist:               "[%s]路由路径已存在",
+	RouteNull:                    "路由不存在",
+	RouteServiceNoMatch:          "路由不在指定服务下",
 }
 
 var EnMapMessages = map[int]string{
@@ -53,6 +57,8 @@ var EnMapMessages = map[int]string{
 
 	RouteDefaultPathNoPermission: "[/*]The default path does not have permission to operate temporarily",
 	RoutePathExist:               "[%s]Routing path already exists",
+	RouteNull:                    "Route does not exist",
+	RouteServiceNoMatch:          "The route is not under the specified service",
 }
 
 func CodeMessages(code int) string {

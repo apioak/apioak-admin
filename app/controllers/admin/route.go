@@ -79,3 +79,36 @@ func RouteList(c *gin.Context) {
 
 	utils.Ok(c, result)
 }
+
+func RouteInfo(c *gin.Context) {
+	serviceId := strings.TrimSpace(c.Param("service_id"))
+	routeId := strings.TrimSpace(c.Param("id"))
+
+	serviceModel := &models.Services{}
+	serviceInfo := serviceModel.ServiceInfoById(serviceId)
+	if len(serviceInfo.ID) == 0 {
+		utils.Error(c, enums.CodeMessages(enums.ServiceNull))
+		return
+	}
+
+	routeModel := &models.Routes{}
+	routeModelInfo, routeModelInfoErr := routeModel.RouteInfosById(routeId)
+	if routeModelInfoErr != nil {
+		utils.Error(c, enums.CodeMessages(enums.RouteNull))
+		return
+	}
+
+	if routeModelInfo.ServiceID != serviceId {
+		utils.Error(c, enums.CodeMessages(enums.RouteServiceNoMatch))
+		return
+	}
+
+	structRouteInfo := services.StructRouteInfo{}
+	routeInfo, routeInfoErr := structRouteInfo.RouteInfoByServiceRouteId(serviceId, routeId)
+	if routeInfoErr != nil {
+		utils.Error(c, enums.CodeMessages(enums.RouteNull))
+		return
+	}
+
+	utils.Ok(c, routeInfo)
+}
