@@ -112,3 +112,55 @@ func RouteInfo(c *gin.Context) {
 
 	utils.Ok(c, routeInfo)
 }
+
+func RouteUpdate(c *gin.Context) {
+	var validatorRouteAddUpdate = validators.ValidatorRouteAddUpdate{}
+	if msg, err := packages.ParseRequestParams(c, &validatorRouteAddUpdate); err != nil {
+		utils.Error(c, msg)
+		return
+	}
+	validators.GetRouteAttributesDefault(&validatorRouteAddUpdate)
+
+	if validatorRouteAddUpdate.RoutePath == utils.DefaultRoutePath {
+		utils.Error(c, enums.CodeMessages(enums.RouteDefaultPathNoPermission))
+		return
+	}
+
+	serviceId := strings.TrimSpace(c.Param("service_id"))
+	routeId := strings.TrimSpace(c.Param("id"))
+
+	serviceModel := &models.Services{}
+	serviceInfo := serviceModel.ServiceInfoById(serviceId)
+	if len(serviceInfo.ID) == 0 {
+		utils.Error(c, enums.CodeMessages(enums.ServiceNull))
+		return
+	}
+
+	routeModel := &models.Routes{}
+	routeModelInfo, routeModelInfoErr := routeModel.RouteInfosById(routeId)
+	if routeModelInfoErr != nil {
+		utils.Error(c, enums.CodeMessages(enums.RouteNull))
+		return
+	}
+
+	if routeModelInfo.ServiceID != serviceId {
+		utils.Error(c, enums.CodeMessages(enums.RouteServiceNoMatch))
+		return
+	}
+
+	err := services.CheckExistServiceRoutePath(validatorRouteAddUpdate.ServiceID, validatorRouteAddUpdate.RoutePath, []string{routeId})
+	if err != nil {
+		utils.Error(c, err.Error())
+		return
+	}
+
+	updateErr := services.RouteUpdate(routeId, &validatorRouteAddUpdate)
+	if updateErr != nil {
+		utils.Error(c, updateErr.Error())
+		return
+	}
+
+	utils.Ok(c)
+}
+
+

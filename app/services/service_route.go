@@ -58,6 +58,27 @@ func RouteCreate(routeData *validators.ValidatorRouteAddUpdate) error {
 	return nil
 }
 
+func RouteUpdate(id string, routeData *validators.ValidatorRouteAddUpdate) error {
+	updateRouteData := models.Routes{
+		RequestMethods: routeData.RequestMethods,
+		RoutePath:      routeData.RoutePath,
+		IsEnable:       routeData.IsEnable,
+	}
+	if len(routeData.RouteName) != 0 {
+		updateRouteData.RouteName = routeData.RouteName
+	}
+
+	routeModel := models.Routes{}
+	err := routeModel.RouteUpdate(id, updateRouteData)
+	if err != nil {
+		return err
+	}
+
+	// @todo 如果状态是"开启"，则需要同步远程数据中心
+
+	return nil
+}
+
 type routePlugin struct {
 	ID   string `json:"id"`
 	Name string `json:"name"`

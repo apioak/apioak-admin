@@ -38,7 +38,7 @@ func RouteRegister(routeEngine *gin.Engine) {
 			route.POST("/add", admin.RouteAdd)
 			route.GET("/list/:service_id", admin.RouteList)
 			route.GET("/info/:service_id/:id", admin.RouteInfo)
-			//route.PUT("/update/:id", admin.RouteUpdate)
+			route.PUT("/update/:service_id/:id", admin.RouteUpdate)
 			//route.DELETE("/delete/:id", admin.RouteDelete)
 			//route.PUT("/update/name/:id/", admin.RouteUpdateName)
 			//route.PUT("/switch/enable/:id", admin.RouteSwitchEnable)

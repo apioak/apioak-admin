@@ -102,6 +102,15 @@ func (r *Routes) RouteAdd(routeData Routes) error {
 	return nil
 }
 
+func (r *Routes) RouteUpdate(id string, routeData Routes) error {
+	updateErr := packages.GetDb().Table(r.TableName()).Where("id = ?", id).Updates(&routeData).Error
+	if updateErr != nil {
+		return updateErr
+	}
+
+	return nil
+}
+
 func (r *Routes) RouteListPage(
 	serviceId string,
 	param *validators.ValidatorRouteList) (list []Routes, total int, listError error) {
