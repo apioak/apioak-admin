@@ -41,6 +41,10 @@ type RouteUpdateName struct {
 	Name string `json:"name" zh:"路由名称" en:"Route name" binding:"required,min=1,max=30"`
 }
 
+type RouteSwitchEnable struct {
+	IsEnable int `json:"is_enable" zh:"路由开关" en:"Route enable" binding:"required,oneof=1 2"`
+}
+
 func CheckRoutePathPrefix(fl validator.FieldLevel) bool {
 	routePath := strings.TrimSpace(fl.Field().String())
 

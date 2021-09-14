@@ -168,3 +168,15 @@ func (s *StructRouteInfo) RouteInfoByServiceRouteId(serviceId string, routeId st
 
 	return routeInfo, nil
 }
+
+func ServiceRouteSwitchEnable(id string, enable int) error {
+	routeModel := models.Routes{}
+	err := routeModel.RouteSwitchEnable(id, enable)
+	if err != nil {
+		return err
+	}
+
+	// @todo 触发远程发布数据
+
+	return nil
+}

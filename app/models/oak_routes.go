@@ -187,3 +187,17 @@ func (r *Routes) RouteUpdateName(id string, name string) error {
 
 	return nil
 }
+
+func (r *Routes) RouteSwitchEnable(id string, enable int) error {
+	id = strings.TrimSpace(id)
+	if len(id) == 0 {
+		return errors.New(enums.CodeMessages(enums.ServiceParamsNull))
+	}
+
+	updateErr := packages.GetDb().Table(r.TableName()).Where("id = ?", id).Update("is_enable", enable).Error
+	if updateErr != nil {
+		return updateErr
+	}
+
+	return nil
+}

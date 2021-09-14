@@ -237,3 +237,46 @@ func RouteUpdateName(c *gin.Context) {
 
 	utils.Ok(c)
 }
+
+func RouteSwitchEnable(c *gin.Context) {
+	serviceId := strings.TrimSpace(c.Param("service_id"))
+	routeId := strings.TrimSpace(c.Param("id"))
+
+	var routeSwitchEnableValidator = validators.RouteSwitchEnable{}
+	if msg, err := packages.ParseRequestParams(c, &routeSwitchEnableValidator); err != nil {
+		utils.Error(c, msg)
+		return
+	}
+
+	serviceModel := &models.Services{}
+	serviceInfo := serviceModel.ServiceInfoById(serviceId)
+	if len(serviceInfo.ID) == 0 {
+		utils.Error(c, enums.CodeMessages(enums.ServiceNull))
+		return
+	}
+
+	routeModel := &models.Routes{}
+	routeModelInfo, routeModelInfoErr := routeModel.RouteInfosById(routeId)
+	if routeModelInfoErr != nil {
+		utils.Error(c, enums.CodeMessages(enums.RouteNull))
+		return
+	}
+
+	if routeModelInfo.ServiceID != serviceId {
+		utils.Error(c, enums.CodeMessages(enums.RouteServiceNoMatch))
+		return
+	}
+
+	if routeSwitchEnableValidator.IsEnable == routeModelInfo.IsEnable {
+		utils.Error(c, enums.CodeMessages(enums.SwitchNoChange))
+		return
+	}
+
+	updateErr := services.ServiceRouteSwitchEnable(routeId, routeSwitchEnableValidator.IsEnable)
+	if updateErr != nil {
+		utils.Error(c, updateErr.Error())
+		return
+	}
+
+	utils.Ok(c)
+}

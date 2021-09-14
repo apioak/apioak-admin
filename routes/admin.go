@@ -41,7 +41,7 @@ func RouteRegister(routeEngine *gin.Engine) {
 			route.PUT("/update/:service_id/:id", admin.RouteUpdate)
 			route.DELETE("/delete/:service_id/:id", admin.RouteDelete)
 			route.PUT("/update/name/:service_id/:id", admin.RouteUpdateName)
-			//route.PUT("/switch/enable/:id", admin.RouteSwitchEnable)
+			route.PUT("/switch/enable/:service_id/:id", admin.RouteSwitchEnable)
 		}
 
 		// 插件
