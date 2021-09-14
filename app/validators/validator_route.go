@@ -37,6 +37,10 @@ type ValidatorRouteList struct {
 	BaseListPage
 }
 
+type RouteUpdateName struct {
+	Name string `json:"name" zh:"路由名称" en:"Route name" binding:"required,min=1,max=30"`
+}
+
 func CheckRoutePathPrefix(fl validator.FieldLevel) bool {
 	routePath := strings.TrimSpace(fl.Field().String())
 

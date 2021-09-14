@@ -199,3 +199,41 @@ func RouteDelete(c *gin.Context) {
 
 	utils.Ok(c)
 }
+
+func RouteUpdateName(c *gin.Context) {
+	serviceId := strings.TrimSpace(c.Param("service_id"))
+	routeId := strings.TrimSpace(c.Param("id"))
+
+	var routeUpdateNameValidator = validators.RouteUpdateName{}
+	if msg, err := packages.ParseRequestParams(c, &routeUpdateNameValidator); err != nil {
+		utils.Error(c, msg)
+		return
+	}
+
+	serviceModel := &models.Services{}
+	serviceInfo := serviceModel.ServiceInfoById(serviceId)
+	if len(serviceInfo.ID) == 0 {
+		utils.Error(c, enums.CodeMessages(enums.ServiceNull))
+		return
+	}
+
+	routeModel := &models.Routes{}
+	routeModelInfo, routeModelInfoErr := routeModel.RouteInfosById(routeId)
+	if routeModelInfoErr != nil {
+		utils.Error(c, enums.CodeMessages(enums.RouteNull))
+		return
+	}
+
+	if routeModelInfo.ServiceID != serviceId {
+		utils.Error(c, enums.CodeMessages(enums.RouteServiceNoMatch))
+		return
+	}
+
+	updateErr := routeModel.RouteUpdateName(routeId, routeUpdateNameValidator.Name)
+	if updateErr != nil {
+		utils.Error(c, updateErr.Error())
+		return
+	}
+
+	utils.Ok(c)
+}

@@ -1,9 +1,11 @@
 package models
 
 import (
+	"apioak-admin/app/enums"
 	"apioak-admin/app/packages"
 	"apioak-admin/app/utils"
 	"apioak-admin/app/validators"
+	"errors"
 	"strings"
 )
 
@@ -169,4 +171,19 @@ func (r *Routes) RouteListPage(
 	tx = tx.Preload("Plugins").Order("updated_at desc")
 	listError = ListPaginate(tx, &list, &param.BaseListPage)
 	return
+}
+
+func (r *Routes) RouteUpdateName(id string, name string) error {
+	id = strings.TrimSpace(id)
+	name = strings.TrimSpace(name)
+	if (len(id) == 0) || (len(name) == 0) {
+		return errors.New(enums.CodeMessages(enums.ServiceParamsNull))
+	}
+
+	updateErr := packages.GetDb().Table(r.TableName()).Where("id = ?", id).Update("route_name", name).Error
+	if updateErr != nil {
+		return updateErr
+	}
+
+	return nil
 }
