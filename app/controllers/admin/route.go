@@ -163,4 +163,39 @@ func RouteUpdate(c *gin.Context) {
 	utils.Ok(c)
 }
 
+func RouteDelete(c *gin.Context) {
+	serviceId := strings.TrimSpace(c.Param("service_id"))
+	routeId := strings.TrimSpace(c.Param("id"))
 
+	serviceModel := &models.Services{}
+	serviceInfo := serviceModel.ServiceInfoById(serviceId)
+	if len(serviceInfo.ID) == 0 {
+		utils.Error(c, enums.CodeMessages(enums.ServiceNull))
+		return
+	}
+
+	routeModel := &models.Routes{}
+	routeModelInfo, routeModelInfoErr := routeModel.RouteInfosById(routeId)
+	if routeModelInfoErr != nil {
+		utils.Error(c, enums.CodeMessages(enums.RouteNull))
+		return
+	}
+
+	if routeModelInfo.ServiceID != serviceId {
+		utils.Error(c, enums.CodeMessages(enums.RouteServiceNoMatch))
+		return
+	}
+
+	if routeModelInfo.IsEnable == utils.EnableOn {
+		utils.Error(c, enums.CodeMessages(enums.SwitchONProhibitsOp))
+		return
+	}
+
+	deleteErr := services.RouteDelete(routeId)
+	if deleteErr != nil {
+		utils.Error(c, enums.CodeMessages(enums.Error))
+		return
+	}
+
+	utils.Ok(c)
+}

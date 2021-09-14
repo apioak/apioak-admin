@@ -79,6 +79,18 @@ func RouteUpdate(id string, routeData *validators.ValidatorRouteAddUpdate) error
 	return nil
 }
 
+func RouteDelete(id string) error {
+	routeModel := models.Routes{}
+	err := routeModel.RouteDelete(id)
+	if err != nil {
+		return err
+	}
+
+	// @todo 如果状态是"开启"，则需要同步远程数据中心
+
+	return nil
+}
+
 type routePlugin struct {
 	ID   string `json:"id"`
 	Name string `json:"name"`

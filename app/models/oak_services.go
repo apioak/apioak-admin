@@ -295,6 +295,9 @@ func (s *Services) ServiceDelete(id string) error {
 		return deleteNodeError
 	}
 
+	// @todo 删除路由，同时删除路由下的插件
+
+
 	return tx.Commit().Error
 }
 

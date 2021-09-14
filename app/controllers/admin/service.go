@@ -133,6 +133,11 @@ func ServiceDelete(c *gin.Context) {
 		return
 	}
 
+	if serviceInfo.IsEnable == utils.EnableOn {
+		utils.Error(c, enums.CodeMessages(enums.SwitchONProhibitsOp))
+		return
+	}
+
 	deleteErr := serviceModel.ServiceDelete(serviceId)
 	if deleteErr != nil {
 		utils.Error(c, deleteErr.Error())

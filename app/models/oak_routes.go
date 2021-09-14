@@ -111,6 +111,35 @@ func (r *Routes) RouteUpdate(id string, routeData Routes) error {
 	return nil
 }
 
+func (r *Routes) RouteDelete(id string) error {
+
+	tx := packages.GetDb().Begin()
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+		}
+	}()
+
+	if err := tx.Error; err != nil {
+		return err
+	}
+
+	deleteRouteError := tx.Table(r.TableName()).Where("id = ?", id).Delete(Routes{}).Error
+	if deleteRouteError != nil {
+		tx.Rollback()
+		return deleteRouteError
+	}
+
+	routePluginsModel := RoutePlugins{}
+	deleteRoutePluginError := tx.Table(routePluginsModel.TableName()).Where("route_id = ?", id).Delete(routePluginsModel).Error
+	if deleteRoutePluginError != nil {
+		tx.Rollback()
+		return deleteRoutePluginError
+	}
+
+	return tx.Commit().Error
+}
+
 func (r *Routes) RouteListPage(
 	serviceId string,
 	param *validators.ValidatorRouteList) (list []Routes, total int, listError error) {
