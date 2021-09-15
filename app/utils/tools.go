@@ -69,24 +69,27 @@ func DiscernIP(s string) (string, error) {
 	return "", nil
 }
 
-type LoadBalance struct {
+type enumInfo struct {
 	Id   int    `json:"id"`
 	Name string `json:"name"`
 }
 
-func (l *LoadBalance) LoadBalanceList() []LoadBalance {
-	loadBalance := LoadBalance{}
-	loadBalanceList := make([]LoadBalance, 0)
-
-	loadBalance.Id = LoadBalanceRoundRobin
-	loadBalance.Name = LoadBalanceNameRoundRobin
-	loadBalanceList = append(loadBalanceList, loadBalance)
-
-	loadBalance.Id = LoadBalanceIPHash
-	loadBalance.Name = LoadBalanceNameIPHash
-	loadBalanceList = append(loadBalanceList, loadBalance)
+func LoadBalanceList() []enumInfo {
+	loadBalanceList := []enumInfo{
+		{Id: LoadBalanceRoundRobin, Name: LoadBalanceNameRoundRobin},
+		{Id: LoadBalanceIPHash, Name: LoadBalanceNameIPHash},
+	}
 
 	return loadBalanceList
+}
+
+func PluginAllTypes() []enumInfo {
+	pluginTypeList := []enumInfo{
+		{Id: PluginTypeIdAuth, Name: PluginTypeNameAuth},
+		{Id: PluginTypeIdLimit, Name: PluginTypeNameLimit},
+	}
+
+	return pluginTypeList
 }
 
 func AllRequestMethod() []string {

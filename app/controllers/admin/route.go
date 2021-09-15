@@ -52,7 +52,7 @@ func RouteList(c *gin.Context) {
 
 	serviceModel := &models.Services{}
 	serviceInfo := serviceModel.ServiceInfoById(serviceId)
-	if len(serviceInfo.ID) == 0 {
+	if serviceInfo.ID != serviceId {
 		utils.Error(c, enums.CodeMessages(enums.ServiceNull))
 		return
 	}
@@ -86,7 +86,7 @@ func RouteInfo(c *gin.Context) {
 
 	serviceModel := &models.Services{}
 	serviceInfo := serviceModel.ServiceInfoById(serviceId)
-	if len(serviceInfo.ID) == 0 {
+	if serviceInfo.ID != serviceId {
 		utils.Error(c, enums.CodeMessages(enums.ServiceNull))
 		return
 	}
@@ -94,6 +94,11 @@ func RouteInfo(c *gin.Context) {
 	routeModel := &models.Routes{}
 	routeModelInfo, routeModelInfoErr := routeModel.RouteInfosById(routeId)
 	if routeModelInfoErr != nil {
+		utils.Error(c, routeModelInfoErr.Error())
+		return
+	}
+
+	if routeModelInfo.ID != routeId {
 		utils.Error(c, enums.CodeMessages(enums.RouteNull))
 		return
 	}
@@ -131,7 +136,7 @@ func RouteUpdate(c *gin.Context) {
 
 	serviceModel := &models.Services{}
 	serviceInfo := serviceModel.ServiceInfoById(serviceId)
-	if len(serviceInfo.ID) == 0 {
+	if serviceInfo.ID != serviceId {
 		utils.Error(c, enums.CodeMessages(enums.ServiceNull))
 		return
 	}
@@ -139,6 +144,11 @@ func RouteUpdate(c *gin.Context) {
 	routeModel := &models.Routes{}
 	routeModelInfo, routeModelInfoErr := routeModel.RouteInfosById(routeId)
 	if routeModelInfoErr != nil {
+		utils.Error(c, routeModelInfoErr.Error())
+		return
+	}
+
+	if routeModelInfo.ID != routeId {
 		utils.Error(c, enums.CodeMessages(enums.RouteNull))
 		return
 	}
@@ -177,6 +187,11 @@ func RouteDelete(c *gin.Context) {
 	routeModel := &models.Routes{}
 	routeModelInfo, routeModelInfoErr := routeModel.RouteInfosById(routeId)
 	if routeModelInfoErr != nil {
+		utils.Error(c, routeModelInfoErr.Error())
+		return
+	}
+
+	if routeModelInfo.ID != routeId {
 		utils.Error(c, enums.CodeMessages(enums.RouteNull))
 		return
 	}
@@ -220,6 +235,11 @@ func RouteUpdateName(c *gin.Context) {
 	routeModel := &models.Routes{}
 	routeModelInfo, routeModelInfoErr := routeModel.RouteInfosById(routeId)
 	if routeModelInfoErr != nil {
+		utils.Error(c, routeModelInfoErr.Error())
+		return
+	}
+
+	if routeModelInfo.ID != routeId {
 		utils.Error(c, enums.CodeMessages(enums.RouteNull))
 		return
 	}
@@ -250,7 +270,7 @@ func RouteSwitchEnable(c *gin.Context) {
 
 	serviceModel := &models.Services{}
 	serviceInfo := serviceModel.ServiceInfoById(serviceId)
-	if len(serviceInfo.ID) == 0 {
+	if serviceInfo.ID != serviceId {
 		utils.Error(c, enums.CodeMessages(enums.ServiceNull))
 		return
 	}
@@ -258,6 +278,11 @@ func RouteSwitchEnable(c *gin.Context) {
 	routeModel := &models.Routes{}
 	routeModelInfo, routeModelInfoErr := routeModel.RouteInfosById(routeId)
 	if routeModelInfoErr != nil {
+		utils.Error(c, routeModelInfoErr.Error())
+		return
+	}
+
+	if routeModelInfo.ID != routeId {
 		utils.Error(c, enums.CodeMessages(enums.RouteNull))
 		return
 	}
@@ -279,4 +304,28 @@ func RouteSwitchEnable(c *gin.Context) {
 	}
 
 	utils.Ok(c)
+}
+
+func RoutePluginFilterList(c *gin.Context) {
+	serviceId := strings.TrimSpace(c.Param("service_id"))
+	routeId := strings.TrimSpace(c.Param("id"))
+
+	serviceModel := &models.Services{}
+	serviceInfo := serviceModel.ServiceInfoById(serviceId)
+	if serviceInfo.ID != serviceId {
+		utils.Error(c, enums.CodeMessages(enums.ServiceNull))
+		return
+	}
+
+	routeModel := &models.Routes{}
+	routeModelInfo, routeModelInfoErr := routeModel.RouteInfosById(routeId)
+	if routeModelInfoErr != nil {
+		utils.Error(c, routeModelInfoErr.Error())
+		return
+	}
+	if routeModelInfo.ID != routeId {
+		utils.Error(c, enums.CodeMessages(enums.RouteNull))
+		return
+	}
+
 }

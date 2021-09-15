@@ -26,6 +26,8 @@ const (
 	RoutePathExist               = 10202 // 路由路径已存在
 	RouteNull                    = 10203 // 路由不存在
 	RouteServiceNoMatch          = 10204 // 路由不在指定服务下
+
+	PluginTagExist = 10301 // 插件标识已存在
 )
 
 var ZhMapMessages = map[int]string{
@@ -44,6 +46,8 @@ var ZhMapMessages = map[int]string{
 	RoutePathExist:               "[%s]路由路径已存在",
 	RouteNull:                    "路由不存在",
 	RouteServiceNoMatch:          "路由不在指定服务下",
+
+	PluginTagExist: "插件标识已存在",
 }
 
 var EnMapMessages = map[int]string{
@@ -62,6 +66,8 @@ var EnMapMessages = map[int]string{
 	RoutePathExist:               "[%s]Routing path already exists",
 	RouteNull:                    "Route does not exist",
 	RouteServiceNoMatch:          "The route is not under the specified service",
+
+	PluginTagExist: "Plugin tag already exists",
 }
 
 func CodeMessages(code int) string {

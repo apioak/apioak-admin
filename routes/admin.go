@@ -8,10 +8,10 @@ import (
 
 func RouteRegister(routeEngine *gin.Engine) {
 
-	adminRoute := routeEngine.Group("admin")
+	adminRoute := routeEngine.Group("admin", middlewares.CheckUserLogin)
 	{
 		// 用户
-		user := adminRoute.Group("user").Use(middlewares.CheckUserLogin)
+		user := adminRoute.Group("user")
 		{
 			user.POST("/register", admin.UserRegister)
 		}
@@ -42,12 +42,23 @@ func RouteRegister(routeEngine *gin.Engine) {
 			route.DELETE("/delete/:service_id/:id", admin.RouteDelete)
 			route.PUT("/update/name/:service_id/:id", admin.RouteUpdateName)
 			route.PUT("/switch/enable/:service_id/:id", admin.RouteSwitchEnable)
+
+			route.GET("/plugin/filter-route/list/:service_id/:id", admin.RoutePluginFilterList)
+			//route.GET("/plugin/list/:id", admin.RoutePluginList)
+			//route.POST("/plugin/add/:id/:plugin_id", admin.RoutePluginAdd)
+			//route.GET("/plugin/info/:id/:plugin_id", admin.RoutePluginInfo)
+			//route.PUT("/plugin/update/:id/:plugin_id", admin.RoutePluginUpdate)
+			//route.DELETE("/plugin/delete/:id/:plugin_id", admin.RoutePluginDelete)
+			//route.DELETE("/plugin/switch/enable/:id/:plugin_id", admin.RoutePluginSwitchEnable)
 		}
 
 		// 插件
 		plugin := adminRoute.Group("plugin")
 		{
-			plugin.GET("/info")
+			plugin.POST("/add", admin.PluginAdd)
+			plugin.GET("/list")
+			plugin.PUT("/update/:id")
+			plugin.DELETE("/delete/:id")
 		}
 
 		// 证书

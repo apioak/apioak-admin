@@ -60,8 +60,7 @@ type ServiceSwitchHealthCheck struct {
 func CheckLoadBalanceOneOf(fl validator.FieldLevel) bool {
 	serviceLoadBalanceId := fl.Field().Int()
 
-	loadBalance := utils.LoadBalance{}
-	loadBalanceInfos := loadBalance.LoadBalanceList()
+	loadBalanceInfos := utils.LoadBalanceList()
 
 	loadBalanceIdsMap := make(map[int]byte, 0)
 	loadBalanceIds := make([]string, 0)

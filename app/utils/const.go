@@ -49,4 +49,12 @@ const (
 	RequestMethodPUT     = "PUT"
 	RequestMethodDELETE  = "DELETE"
 	RequestMethodOPTIONS = "OPTIONS"
+
+	// ===================================== plugin =====================================
+
+	PluginTypeIdAuth  = 1
+	PluginTypeIdLimit = 2
+
+	PluginTypeNameAuth  = "鉴权"
+	PluginTypeNameLimit = "限流"
 )

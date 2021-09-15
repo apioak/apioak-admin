@@ -11,8 +11,7 @@ import (
 )
 
 func ServiceLoadBalanceList(c *gin.Context) {
-	loadBalance := utils.LoadBalance{}
-	loadBalanceList := loadBalance.LoadBalanceList()
+	loadBalanceList := utils.LoadBalanceList()
 	utils.Ok(c, loadBalanceList)
 }
 
