@@ -8,6 +8,7 @@ import (
 	"apioak-admin/app/utils"
 	"apioak-admin/app/validators"
 	"github.com/gin-gonic/gin"
+	"strings"
 )
 
 func PluginAdd(c *gin.Context) {
@@ -37,4 +38,93 @@ func PluginAdd(c *gin.Context) {
 	}
 
 	utils.Ok(c)
+}
+
+func PluginUpdate(c *gin.Context) {
+	pluginId := strings.TrimSpace(c.Param("id"))
+
+	var validatorPluginUpdate = validators.ValidatorPluginUpdate{}
+	if msg, err := packages.ParseRequestParams(c, &validatorPluginUpdate); err != nil {
+		utils.Error(c, msg)
+		return
+	}
+	validators.GetPluginUpdateAttributesDefault(&validatorPluginUpdate)
+
+	pluginModel := models.Plugins{}
+	pluginInfos, pluginInfosErr := pluginModel.PluginInfosByIds([]string{pluginId})
+	if pluginInfosErr != nil {
+		utils.Error(c, pluginInfosErr.Error())
+		return
+	}
+	if len(pluginInfos) == 0 {
+		utils.Error(c, enums.CodeMessages(enums.PluginNull))
+		return
+	}
+
+	updateErr := services.PluginUpdate(pluginId, &validatorPluginUpdate)
+	if updateErr != nil {
+		utils.Error(c, updateErr.Error())
+		return
+	}
+
+	utils.Ok(c)
+}
+
+func PluginDelete(c *gin.Context) {
+	pluginId := strings.TrimSpace(c.Param("id"))
+
+	pluginModel := models.Plugins{}
+	pluginInfos, pluginInfosErr := pluginModel.PluginInfosByIds([]string{pluginId})
+	if pluginInfosErr != nil {
+		utils.Error(c, pluginInfosErr.Error())
+		return
+	}
+
+	if len(pluginInfos) == 0 {
+		utils.Error(c, enums.CodeMessages(enums.PluginNull))
+		return
+	}
+
+	routePluginModel := models.RoutePlugins{}
+	routePluginInfos, routePluginInfosErr := routePluginModel.RoutePluginInfosByPluginIds([]string{pluginId})
+	if routePluginInfosErr != nil {
+		utils.Error(c, routePluginInfosErr.Error())
+		return
+	}
+	if len(routePluginInfos) != 0 {
+		utils.Error(c, enums.CodeMessages(enums.PluginRouteExist))
+		return
+	}
+
+	deleteErr := pluginModel.PluginDelete(pluginId)
+	if deleteErr != nil {
+		utils.Error(c, deleteErr.Error())
+		return
+	}
+
+	utils.Ok(c)
+}
+
+func PluginList(c *gin.Context) {
+	var validatorPluginList = validators.PluginList{}
+	if msg, err := packages.ParseRequestParams(c, &validatorPluginList); err != nil {
+		utils.Error(c, msg)
+		return
+	}
+
+	structPluginInfo := services.StructPluginInfo{}
+	routeList, total, err := structPluginInfo.PluginListPage(&validatorPluginList)
+	if err != nil {
+		utils.Error(c, err.Error())
+		return
+	}
+
+	result := utils.ResultPage{}
+	result.Param = validatorPluginList
+	result.Page = validatorPluginList.Page
+	result.PageSize = validatorPluginList.PageSize
+	result.Total = total
+	result.Data = routeList
+
+	utils.Ok(c, result)
 }

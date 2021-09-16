@@ -3,6 +3,8 @@ package models
 import (
 	"apioak-admin/app/packages"
 	"apioak-admin/app/utils"
+	"apioak-admin/app/validators"
+	"strings"
 )
 
 type Plugins struct {
@@ -76,4 +78,52 @@ func (p *Plugins) PluginAdd(pluginData *Plugins) error {
 	err := packages.GetDb().Table(p.TableName()).Create(pluginData).Error
 
 	return err
+}
+
+func (p *Plugins) PluginInfosByIds(ids []string) ([]Plugins, error) {
+	pluginInfos := make([]Plugins, 0)
+
+	err := packages.GetDb().Table(p.TableName()).Where("id IN ?", ids).Find(&pluginInfos).Error
+
+	return pluginInfos, err
+}
+
+func (p *Plugins) PluginUpdate(id string, pluginInfo *Plugins) error {
+	updateError := packages.GetDb().Table(p.TableName()).Where("id = ?", id).Updates(pluginInfo).Error
+
+	return updateError
+}
+
+func (p *Plugins) PluginDelete(id string) error {
+	deleteError := packages.GetDb().Table(p.TableName()).Where("id = ?", id).Delete(p).Error
+
+	return deleteError
+}
+
+func (p *Plugins) PluginListPage(param *validators.PluginList) (list []Plugins, total int, listError error) {
+
+	tx := packages.GetDb().Table(p.TableName())
+	if param.Type != 0 {
+		tx = tx.Where("type = ?", param.Type)
+	}
+
+	param.Search = strings.TrimSpace(param.Search)
+	if len(param.Search) != 0 {
+		search := "%" + param.Search + "%"
+		orWhere := packages.GetDb().
+			Where("name LIKE ?", search).
+			Or("Tag LIKE ?", search).
+			Or("description LIKE ?", search)
+		tx = tx.Where(orWhere)
+	}
+
+	countError := ListCount(tx, &total)
+	if countError != nil {
+		listError = countError
+		return
+	}
+
+	tx = tx.Order("updated_at desc")
+	listError = ListPaginate(tx, &list, &param.BaseListPage)
+	return
 }

@@ -24,6 +24,18 @@ type ValidatorPluginAdd struct {
 	Description string `json:"description" zh:"插件描述" en:"Plugin description" binding:"omitempty,max=150"`
 }
 
+type ValidatorPluginUpdate struct {
+	Name        string `json:"name" zh:"插件名称" en:"Plugin name" binding:"required,min=1,max=30"`
+	Icon        string `json:"icon" zh:"插件ICON" en:"Plugin icon" binding:"required,min=1,max=30"`
+	Description string `json:"description" zh:"插件描述" en:"Plugin description" binding:"omitempty,max=150"`
+}
+
+type PluginList struct {
+	Type   int    `form:"type" json:"type" zh:"插件类型" en:"Plugin type" binding:"omitempty,CheckPluginTypeOneOf"`
+	Search string `form:"search" json:"search" zh:"搜索内容" en:"Search content" binding:"omitempty"`
+	BaseListPage
+}
+
 func CheckPluginTypeOneOf(fl validator.FieldLevel) bool {
 	pluginTypeId := fl.Field().Int()
 
@@ -58,4 +70,10 @@ func GetPluginAddAttributesDefault(pluginAdd *ValidatorPluginAdd) {
 	pluginAdd.Tag = strings.TrimSpace(pluginAdd.Tag)
 	pluginAdd.Icon = strings.TrimSpace(pluginAdd.Icon)
 	pluginAdd.Description = strings.TrimSpace(pluginAdd.Description)
+}
+
+func GetPluginUpdateAttributesDefault(pluginUpdate *ValidatorPluginUpdate) {
+	pluginUpdate.Name = strings.TrimSpace(pluginUpdate.Name)
+	pluginUpdate.Icon = strings.TrimSpace(pluginUpdate.Icon)
+	pluginUpdate.Description = strings.TrimSpace(pluginUpdate.Description)
 }

@@ -56,9 +56,9 @@ func RouteRegister(routeEngine *gin.Engine) {
 		plugin := adminRoute.Group("plugin")
 		{
 			plugin.POST("/add", admin.PluginAdd)
-			plugin.GET("/list")
-			plugin.PUT("/update/:id")
-			plugin.DELETE("/delete/:id")
+			plugin.GET("/list", admin.PluginList)
+			plugin.PUT("/update/:id", admin.PluginUpdate)
+			plugin.DELETE("/delete/:id", admin.PluginDelete)
 		}
 
 		// 证书
