@@ -16,6 +16,7 @@ const (
 
 	SwitchNoChange      = 101 // 开关无变化
 	SwitchONProhibitsOp = 102 // 开关打开状态禁止该操作
+	ParamsError         = 103 // 参数异常
 
 	ServiceNull       = 10001 // 服务不存在
 	ServiceParamsNull = 10002 // 服务参数缺失
@@ -38,6 +39,7 @@ var ZhMapMessages = map[int]string{
 
 	SwitchNoChange:      "开关无变化",
 	SwitchONProhibitsOp: "开关打开状态禁止该操作",
+	ParamsError:         "参数异常",
 
 	ServiceNull:       "服务不存在",
 	ServiceParamsNull: "服务参数缺失",
@@ -60,6 +62,7 @@ var EnMapMessages = map[int]string{
 
 	SwitchNoChange:      "No change in switch",
 	SwitchONProhibitsOp: "This operation is prohibited when the switch is open",
+	ParamsError:         "Parameter abnormal",
 
 	ServiceNull:       "Service does not exist",
 	ServiceParamsNull: "Missing service parameters",

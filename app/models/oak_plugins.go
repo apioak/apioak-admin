@@ -82,7 +82,6 @@ func (p *Plugins) PluginAdd(pluginData *Plugins) error {
 
 func (p *Plugins) PluginInfosByIds(ids []string) ([]Plugins, error) {
 	pluginInfos := make([]Plugins, 0)
-
 	err := packages.GetDb().Table(p.TableName()).Where("id IN ?", ids).Find(&pluginInfos).Error
 
 	return pluginInfos, err
@@ -126,4 +125,11 @@ func (p *Plugins) PluginListPage(param *validators.PluginList) (list []Plugins, 
 	tx = tx.Order("updated_at desc")
 	listError = ListPaginate(tx, &list, &param.BaseListPage)
 	return
+}
+
+func (p *Plugins) PluginAllList() []Plugins {
+	pluginAllList := make([]Plugins, 0)
+	packages.GetDb().Table(p.TableName()).Find(&pluginAllList)
+
+	return pluginAllList
 }

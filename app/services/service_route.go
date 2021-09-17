@@ -4,6 +4,7 @@ import (
 	"apioak-admin/app/enums"
 	"apioak-admin/app/models"
 	"apioak-admin/app/validators"
+	"errors"
 	"fmt"
 	"strings"
 )
@@ -179,4 +180,47 @@ func ServiceRouteSwitchEnable(id string, enable int) error {
 	// @todo 触发远程发布数据
 
 	return nil
+}
+
+type RouteAddPluginInfo struct {
+	ID          string `json:"id"`
+	Name        string `json:"name"`
+	Tag         string `json:"tag"`
+	Type        int    `json:"type"`
+	Description string `json:"description"`
+}
+
+func (r *RouteAddPluginInfo) RouteAddPluginList(filterRouteId string) ([]RouteAddPluginInfo, error) {
+	routeAddPluginList := make([]RouteAddPluginInfo, 0)
+	if len(filterRouteId) == 0 {
+		return routeAddPluginList, errors.New(enums.CodeMessages(enums.ParamsError))
+	}
+
+	pluginsModel := models.Plugins{}
+	allPluginList := pluginsModel.PluginAllList()
+
+	routePluginsModel := models.RoutePlugins{}
+	routePluginAllList := routePluginsModel.RoutePluginAllListByRouteIds([]string{filterRouteId})
+
+	routePluginAllPluginIdsMap := make(map[string]byte, 0)
+	for _, routePluginInfo := range routePluginAllList {
+		routePluginAllPluginIdsMap[routePluginInfo.PluginID] = 0
+	}
+
+	for _, allPluginInfo := range allPluginList {
+		_, routePluginExist := routePluginAllPluginIdsMap[allPluginInfo.ID]
+
+		if !routePluginExist {
+			routeAddPluginInfo := RouteAddPluginInfo{}
+			routeAddPluginInfo.ID = allPluginInfo.ID
+			routeAddPluginInfo.Name = allPluginInfo.Name
+			routeAddPluginInfo.Tag = allPluginInfo.Tag
+			routeAddPluginInfo.Type = allPluginInfo.Type
+			routeAddPluginInfo.Description = allPluginInfo.Description
+
+			routeAddPluginList = append(routeAddPluginList, routeAddPluginInfo)
+		}
+	}
+
+	return routeAddPluginList, nil
 }

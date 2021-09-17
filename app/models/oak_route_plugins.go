@@ -27,3 +27,10 @@ func (r *RoutePlugins) RoutePluginInfosByPluginIds(pluginIds []string) ([]RouteP
 
 	return routePluginInfos, err
 }
+
+func (r *RoutePlugins) RoutePluginAllListByRouteIds(routeIds []string) []RoutePlugins {
+	routePluginAllList := make([]RoutePlugins, 0)
+	packages.GetDb().Table(r.TableName()).Where("route_id IN ?", routeIds).Find(&routePluginAllList)
+
+	return routePluginAllList
+}

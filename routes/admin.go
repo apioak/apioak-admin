@@ -43,7 +43,7 @@ func RouteRegister(routeEngine *gin.Engine) {
 			route.PUT("/update/name/:service_id/:id", admin.RouteUpdateName)
 			route.PUT("/switch/enable/:service_id/:id", admin.RouteSwitchEnable)
 
-			route.GET("/plugin/filter-route/list/:service_id/:id", admin.RoutePluginFilterList)
+			route.GET("/add-plugin/list/:service_id/:id", admin.RoutePluginFilterList)
 			//route.GET("/plugin/list/:id", admin.RoutePluginList)
 			//route.POST("/plugin/add/:id/:plugin_id", admin.RoutePluginAdd)
 			//route.GET("/plugin/info/:id/:plugin_id", admin.RoutePluginInfo)

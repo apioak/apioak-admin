@@ -318,14 +318,22 @@ func RoutePluginFilterList(c *gin.Context) {
 	}
 
 	routeModel := &models.Routes{}
-	routeModelInfo, routeModelInfoErr := routeModel.RouteInfosById(routeId)
-	if routeModelInfoErr != nil {
-		utils.Error(c, routeModelInfoErr.Error())
+	routeInfo, routeInfoErr := routeModel.RouteInfosById(routeId)
+	if routeInfoErr != nil {
+		utils.Error(c, routeInfoErr.Error())
 		return
 	}
-	if routeModelInfo.ID != routeId {
+	if routeInfo.ID != routeId {
 		utils.Error(c, enums.CodeMessages(enums.RouteNull))
 		return
 	}
 
+	routeAddPluginInfo := services.RouteAddPluginInfo{}
+	routeAddPluginList, routeAddPluginListErr := routeAddPluginInfo.RouteAddPluginList(routeId)
+	if routeAddPluginListErr != nil {
+		utils.Error(c, routeAddPluginListErr.Error())
+		return
+	}
+
+	utils.Ok(c, routeAddPluginList)
 }
