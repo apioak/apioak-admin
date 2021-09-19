@@ -302,7 +302,7 @@ func RoutePluginAdd(c *gin.Context) {
 	routeId := strings.TrimSpace(c.Param("route_id"))
 	pluginId := strings.TrimSpace(c.Param("plugin_id"))
 
-	var routePluginAddValidator = validators.RoutePluginAdd{}
+	var routePluginAddValidator = validators.RoutePluginAddUpdate{}
 	if msg, err := packages.ParseRequestParams(c, &routePluginAddValidator); err != nil {
 		utils.Error(c, msg)
 		return
@@ -328,15 +328,15 @@ func RoutePluginAdd(c *gin.Context) {
 		return
 	}
 
-	checkRoutePluginExistErr := services.CheckRoutePluginExist(routeId, pluginId)
+	checkRoutePluginExistErr := services.CheckRoutePluginExistByRoutePluginId(routeId, pluginId)
 	if checkRoutePluginExistErr != nil {
 		utils.Error(c, checkRoutePluginExistErr.Error())
 		return
 	}
 
-	CheckPluginConfigErr := services.CheckPluginConfig(pluginId, routePluginAddValidator.Config)
-	if CheckPluginConfigErr != nil {
-		utils.Error(c, CheckPluginConfigErr.Error())
+	checkPluginConfigErr := services.CheckPluginConfig(pluginId, routePluginAddValidator.Config)
+	if checkPluginConfigErr != nil {
+		utils.Error(c, checkPluginConfigErr.Error())
 		return
 	}
 
@@ -350,7 +350,47 @@ func RoutePluginAdd(c *gin.Context) {
 }
 
 func RoutePluginUpdate(c *gin.Context) {
+	routeId := strings.TrimSpace(c.Param("route_id"))
+	pluginId := strings.TrimSpace(c.Param("plugin_id"))
+	id := strings.TrimSpace(c.Param("id"))
 
+	var routePluginUpdateValidator = validators.RoutePluginAddUpdate{}
+	if msg, err := packages.ParseRequestParams(c, &routePluginUpdateValidator); err != nil {
+		utils.Error(c, msg)
+		return
+	}
+
+	checkExistRouteErr := services.CheckRouteExist(routeId, "")
+	if checkExistRouteErr != nil {
+		utils.Error(c, checkExistRouteErr.Error())
+		return
+	}
+
+	checkPluginExistErr := services.CheckPluginExist(pluginId)
+	if checkPluginExistErr != nil {
+		utils.Error(c, checkPluginExistErr.Error())
+		return
+	}
+
+	checkRoutePluginExist := services.CheckRoutePluginNull(id, routeId, pluginId)
+	if checkRoutePluginExist != nil {
+		utils.Error(c, checkRoutePluginExist.Error())
+		return
+	}
+
+	checkPluginConfigErr := services.CheckPluginConfig(pluginId, routePluginUpdateValidator.Config)
+	if checkPluginConfigErr != nil {
+		utils.Error(c, checkPluginConfigErr.Error())
+		return
+	}
+
+	updateErr := services.RoutePluginUpdate(id, &routePluginUpdateValidator)
+	if updateErr != nil {
+		utils.Error(c, updateErr.Error())
+		return
+	}
+
+	utils.Ok(c)
 }
 
 func RoutePluginDelete(c *gin.Context) {

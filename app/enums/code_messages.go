@@ -28,6 +28,7 @@ const (
 	RouteNull                    = 10203 // 路由不存在
 	RouteServiceNoMatch          = 10204 // 路由不在指定服务下
 	RoutePluginExist             = 10205 // 路由插件已存在
+	RoutePluginNull              = 10206 // 路由插件不存在
 
 	PluginTagExist   = 10301 // 插件标识已存在
 	PluginNull       = 10302 // 插件不存在
@@ -52,6 +53,7 @@ var ZhMapMessages = map[int]string{
 	RouteNull:                    "路由不存在",
 	RouteServiceNoMatch:          "路由不在指定服务下",
 	RoutePluginExist:             "路由插件已存在",
+	RoutePluginNull:              "路由插件不存在",
 
 	PluginTagExist:   "插件标识已存在",
 	PluginNull:       "插件不存在",
@@ -76,6 +78,7 @@ var EnMapMessages = map[int]string{
 	RouteNull:                    "Route does not exist",
 	RouteServiceNoMatch:          "The route is not under the specified service",
 	RoutePluginExist:             "Routing plugin already exists",
+	RoutePluginNull:              "The routing plugin does not exist",
 
 	PluginTagExist:   "Plugin tag already exists",
 	PluginNull:       "Plugin does not exist",

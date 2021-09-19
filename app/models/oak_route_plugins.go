@@ -95,6 +95,24 @@ func (r *RoutePlugins) RoutePluginInfoConfigListByRouteIds(routeIds []string) []
 	return routePluginInfoConfigList
 }
 
+func (r *RoutePlugins) RoutePluginInfoById(id string, routeId string, pluginId string) RoutePlugins {
+	routePluginInfo := RoutePlugins{}
+	db := packages.GetDb().
+		Table(r.TableName()).
+		Where("id = ?", id)
+
+	if len(routeId) != 0 {
+		db = db.Where("route_id = ?", routeId)
+	}
+	if len(pluginId) != 0 {
+		db = db.Where("plugin_id = ?", pluginId)
+	}
+
+	db.First(&routePluginInfo)
+
+	return routePluginInfo
+}
+
 func (r *RoutePlugins) RoutePluginInfoByRoutePluginId(routeId string, pluginId string) RoutePlugins {
 	routePluginInfo := RoutePlugins{}
 	packages.GetDb().
@@ -117,6 +135,15 @@ func (r *RoutePlugins) RoutePluginAdd(routePluginData *RoutePlugins) error {
 	err := packages.GetDb().
 		Table(r.TableName()).
 		Create(routePluginData).Error
+
+	return err
+}
+
+func (r *RoutePlugins) RoutePluginUpdate(id string, routePluginData *RoutePlugins) error {
+	err := packages.GetDb().
+		Table(r.TableName()).
+		Where("id = ?", id).
+		Updates(routePluginData).Error
 
 	return err
 }
