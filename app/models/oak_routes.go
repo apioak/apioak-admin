@@ -36,7 +36,11 @@ func (r *Routes) RouteIdUnique(routeIds map[string]string) (string, error) {
 		r.ID = tmpID
 	}
 
-	result := packages.GetDb().Table(r.TableName()).Select("id").First(&r)
+	result := packages.GetDb().
+		Table(r.TableName()).
+		Select("id").
+		First(&r)
+
 	mapId := routeIds[r.ID]
 	if (result.RowsAffected == 0) && (r.ID != mapId) {
 		routeId = r.ID
@@ -57,13 +61,20 @@ func (r *Routes) RouteIdUnique(routeIds map[string]string) (string, error) {
 	return routeId, nil
 }
 
-func (r *Routes) RouteInfosByServiceRoutePath(serviceId string, routePaths []string, filterRouteIds []string) ([]Routes, error) {
+func (r *Routes) RouteInfosByServiceRoutePath(
+	serviceId string,
+	routePaths []string,
+	filterRouteIds []string) ([]Routes, error) {
 	routesInfos := make([]Routes, 0)
+	db := packages.GetDb().
+		Table(r.TableName()).
+		Where("service_id = ?", serviceId).
+		Where("route_path IN ?", routePaths)
 
-	db := packages.GetDb().Table(r.TableName()).Where("service_id = ?", serviceId).Where("route_path IN ?", routePaths)
 	if len(filterRouteIds) != 0 {
 		db = db.Where("id NOT IN ?", filterRouteIds)
 	}
+
 	err := db.Find(&routesInfos).Error
 
 	return routesInfos, err
@@ -71,14 +82,33 @@ func (r *Routes) RouteInfosByServiceRoutePath(serviceId string, routePaths []str
 
 func (r *Routes) RouteInfosById(routeId string) (Routes, error) {
 	routeInfo := Routes{}
-	err := packages.GetDb().Table(r.TableName()).Where("id = ?", routeId).First(&routeInfo).Error
+	err := packages.GetDb().
+		Table(r.TableName()).
+		Where("id = ?", routeId).
+		First(&routeInfo).Error
 
 	return routeInfo, err
 }
 
+func (r *Routes) RouteInfoByIdServiceId(routeId string, serviceId string) Routes {
+	routeInfo := Routes{}
+	db := packages.GetDb().
+		Table(r.TableName()).
+		Where("id = ?", routeId)
+
+	if len(serviceId) != 0 {
+		db = db.Where("service_id = ?", serviceId)
+	}
+
+	db.First(&routeInfo)
+
+	return routeInfo
+}
+
 func (r *Routes) RouteInfosByServiceRouteId(serviceId string, routeId string) (Routes, error) {
 	routeInfo := Routes{}
-	err := packages.GetDb().Table(r.TableName()).
+	err := packages.GetDb().
+		Table(r.TableName()).
 		Where("service_id = ?", serviceId).
 		Where("id = ?", routeId).
 		First(&routeInfo).Error
@@ -96,7 +126,10 @@ func (r *Routes) RouteAdd(routeData Routes) error {
 	routeData.ID = routeId
 	routeData.RouteName = routeId
 
-	addErr := packages.GetDb().Table(r.TableName()).Create(&routeData).Error
+	addErr := packages.GetDb().
+		Table(r.TableName()).
+		Create(&routeData).Error
+
 	if addErr != nil {
 		return addErr
 	}
@@ -105,7 +138,11 @@ func (r *Routes) RouteAdd(routeData Routes) error {
 }
 
 func (r *Routes) RouteUpdate(id string, routeData Routes) error {
-	updateErr := packages.GetDb().Table(r.TableName()).Where("id = ?", id).Updates(&routeData).Error
+	updateErr := packages.GetDb().
+		Table(r.TableName()).
+		Where("id = ?", id).
+		Updates(&routeData).Error
+
 	if updateErr != nil {
 		return updateErr
 	}
@@ -126,14 +163,22 @@ func (r *Routes) RouteDelete(id string) error {
 		return err
 	}
 
-	deleteRouteError := tx.Table(r.TableName()).Where("id = ?", id).Delete(Routes{}).Error
+	deleteRouteError := tx.
+		Table(r.TableName()).
+		Where("id = ?", id).
+		Delete(Routes{}).Error
+
 	if deleteRouteError != nil {
 		tx.Rollback()
 		return deleteRouteError
 	}
 
 	routePluginsModel := RoutePlugins{}
-	deleteRoutePluginError := tx.Table(routePluginsModel.TableName()).Where("route_id = ?", id).Delete(routePluginsModel).Error
+	deleteRoutePluginError := tx.
+		Table(routePluginsModel.TableName()).
+		Where("route_id = ?", id).
+		Delete(routePluginsModel).Error
+
 	if deleteRoutePluginError != nil {
 		tx.Rollback()
 		return deleteRoutePluginError
@@ -145,8 +190,10 @@ func (r *Routes) RouteDelete(id string) error {
 func (r *Routes) RouteListPage(
 	serviceId string,
 	param *validators.ValidatorRouteList) (list []Routes, total int, listError error) {
+	tx := packages.GetDb().
+		Table(r.TableName()).
+		Where("service_id = ?", serviceId)
 
-	tx := packages.GetDb().Table(r.TableName()).Where("service_id = ?", serviceId)
 	param.Search = strings.TrimSpace(param.Search)
 	if len(param.Search) != 0 {
 		search := "%" + param.Search + "%"
@@ -158,6 +205,7 @@ func (r *Routes) RouteListPage(
 
 		tx = tx.Where(orWhere)
 	}
+
 	if param.IsEnable != 0 {
 		tx = tx.Where("is_enable = ?", param.IsEnable)
 	}
@@ -168,8 +216,12 @@ func (r *Routes) RouteListPage(
 		return
 	}
 
-	tx = tx.Preload("Plugins").Order("updated_at desc")
+	tx = tx.
+		Preload("Plugins").
+		Order("updated_at desc")
+
 	listError = ListPaginate(tx, &list, &param.BaseListPage)
+
 	return
 }
 
@@ -180,7 +232,11 @@ func (r *Routes) RouteUpdateName(id string, name string) error {
 		return errors.New(enums.CodeMessages(enums.ServiceParamsNull))
 	}
 
-	updateErr := packages.GetDb().Table(r.TableName()).Where("id = ?", id).Update("route_name", name).Error
+	updateErr := packages.GetDb().
+		Table(r.TableName()).
+		Where("id = ?", id).
+		Update("route_name", name).Error
+
 	if updateErr != nil {
 		return updateErr
 	}
@@ -194,7 +250,11 @@ func (r *Routes) RouteSwitchEnable(id string, enable int) error {
 		return errors.New(enums.CodeMessages(enums.ServiceParamsNull))
 	}
 
-	updateErr := packages.GetDb().Table(r.TableName()).Where("id = ?", id).Update("is_enable", enable).Error
+	updateErr := packages.GetDb().
+		Table(r.TableName()).
+		Where("id = ?", id).
+		Update("is_enable", enable).Error
+	
 	if updateErr != nil {
 		return updateErr
 	}

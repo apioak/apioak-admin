@@ -29,7 +29,11 @@ func (s *ServiceDomains) ServiceDomainIdUnique(sDomainIds map[string]string) (st
 		s.ID = tmpID
 	}
 
-	result := packages.GetDb().Table(s.TableName()).Select("id").First(&s)
+	result := packages.GetDb().
+		Table(s.TableName()).
+		Select("id").
+		First(&s)
+
 	mapId := sDomainIds[s.ID]
 	if (result.RowsAffected == 0) && (s.ID != mapId) {
 		sDomainId = s.ID
@@ -52,11 +56,14 @@ func (s *ServiceDomains) ServiceDomainIdUnique(sDomainIds map[string]string) (st
 
 func (s *ServiceDomains) DomainInfosByDomain(domains []string, filterServiceIds []string) ([]ServiceDomains, error) {
 	domainInfos := make([]ServiceDomains, 0)
+	db := packages.GetDb().
+		Table(s.TableName()).
+		Where("domain IN ?", domains)
 
-	db := packages.GetDb().Table(s.TableName()).Where("domain IN ?", domains)
 	if len(filterServiceIds) != 0 {
 		db = db.Where("service_id NOT IN ?", filterServiceIds)
 	}
+
 	err := db.Find(&domainInfos).Error
 
 	return domainInfos, err
@@ -67,10 +74,15 @@ func (s *ServiceDomains) DomainInfosByServiceIds(serviceIds []string) ([]Service
 	if len(serviceIds) == 0 {
 		return domainInfos, nil
 	}
-	err := packages.GetDb().Table(s.TableName()).Where("service_id IN ?", serviceIds).Find(&domainInfos).Error
+	err := packages.GetDb().
+		Table(s.TableName()).
+		Where("service_id IN ?", serviceIds).
+		Find(&domainInfos).Error
+
 	if err != nil {
 		return nil, err
 	}
+
 	return domainInfos, nil
 }
 
@@ -82,9 +94,11 @@ func (s *ServiceDomains) ServiceDomainInfosLikeDomain(domain string) ([]ServiceD
 	}
 
 	domain = "%" + domain + "%"
-	err := packages.GetDb().Table(s.TableName()).
+	err := packages.GetDb().
+		Table(s.TableName()).
 		Where("domain LIKE ?", domain).
 		Find(&domainInfos).Error
+	
 	if err != nil {
 		return nil, err
 	}

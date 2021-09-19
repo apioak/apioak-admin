@@ -3,11 +3,42 @@ package services
 import (
 	"apioak-admin/app/enums"
 	"apioak-admin/app/models"
+	"apioak-admin/app/utils"
 	"apioak-admin/app/validators"
 	"errors"
 	"fmt"
 	"strings"
 )
+
+func CheckRouteExist(routeId string, serviceId string) error {
+	routeModel := &models.Routes{}
+	routeInfo := routeModel.RouteInfoByIdServiceId(routeId, serviceId)
+	if routeInfo.ID != routeId {
+		return errors.New(enums.CodeMessages(enums.RouteNull))
+	}
+
+	return nil
+}
+
+func CheckRouteEnableChange(routeId string, enable int) error {
+	routeModel := &models.Routes{}
+	routeInfo := routeModel.RouteInfoByIdServiceId(routeId, "")
+	if routeInfo.IsEnable == enable {
+		return errors.New(enums.CodeMessages(enums.SwitchNoChange))
+	}
+
+	return nil
+}
+
+func CheckRouteEnableOnProhibitedOp(routeId string) error {
+	routeModel := &models.Routes{}
+	routeInfo := routeModel.RouteInfoByIdServiceId(routeId, "")
+	if routeInfo.IsEnable == utils.EnableOn {
+		return errors.New(enums.CodeMessages(enums.SwitchONProhibitsOp))
+	}
+
+	return nil
+}
 
 func CheckExistServiceRoutePath(serviceId string, path string, filterRouteIds []string) error {
 	routeModel := models.Routes{}
@@ -107,9 +138,7 @@ type StructRouteList struct {
 	PluginList     []routePlugin `json:"plugin_list"`
 }
 
-func (s *StructRouteList) RouteListPage(
-	serviceId string,
-	param *validators.ValidatorRouteList) ([]StructRouteList, int, error) {
+func (s *StructRouteList) RouteListPage(serviceId string, param *validators.ValidatorRouteList) ([]StructRouteList, int, error) {
 
 	routeModel := models.Routes{}
 	routeInfos, total, listError := routeModel.RouteListPage(serviceId, param)
@@ -223,4 +252,38 @@ func (r *RouteAddPluginInfo) RouteAddPluginList(filterRouteId string) ([]RouteAd
 	}
 
 	return routeAddPluginList, nil
+}
+
+type RoutePluginInfo struct {
+	ID          string `json:"id"`
+	Name        string `json:"name"`
+	Tag         string `json:"tag"`
+	Type        int    `json:"type"`
+	Description string `json:"description"`
+	Order       int    `json:"order"`
+	Config      string `json:"config"`
+	IsEnable    int    `json:"is_enable"`
+}
+
+func (r *RoutePluginInfo) RoutePluginList(routeId string) []RoutePluginInfo {
+	routePluginList := make([]RoutePluginInfo, 0)
+
+	routePluginsModel := models.RoutePlugins{}
+	routePluginConfigInfos := routePluginsModel.RoutePluginInfoConfigListByRouteIds([]string{routeId})
+
+	for _, routePluginConfigInfo := range routePluginConfigInfos {
+		routePluginInfo := RoutePluginInfo{}
+		routePluginInfo.ID = routePluginConfigInfo.Plugin.ID
+		routePluginInfo.Name = routePluginConfigInfo.Plugin.Name
+		routePluginInfo.Tag = routePluginConfigInfo.Plugin.Tag
+		routePluginInfo.Type = routePluginConfigInfo.Plugin.Type
+		routePluginInfo.Description = routePluginConfigInfo.Plugin.Description
+		routePluginInfo.Order = routePluginConfigInfo.Order
+		routePluginInfo.Config = routePluginConfigInfo.Config
+		routePluginInfo.IsEnable = routePluginConfigInfo.IsEnable
+
+		routePluginList = append(routePluginList, routePluginInfo)
+	}
+
+	return routePluginList
 }

@@ -39,7 +39,11 @@ func (s *Services) ServiceIdUnique(sIds map[string]string) (string, error) {
 		s.ID = tmpID
 	}
 
-	result := packages.GetDb().Table(s.TableName()).Select("id").First(&s)
+	result := packages.GetDb().
+		Table(s.TableName()).
+		Select("id").
+		First(&s)
+
 	mapId := sIds[s.ID]
 	if (result.RowsAffected == 0) && (s.ID != mapId) {
 		serviceId = s.ID
@@ -60,7 +64,10 @@ func (s *Services) ServiceIdUnique(sIds map[string]string) (string, error) {
 	return serviceId, nil
 }
 
-func (s *Services) ServiceAdd(serviceInfo *Services, serviceDomains *[]ServiceDomains, serviceNodes *[]ServiceNodes) error {
+func (s *Services) ServiceAdd(
+	serviceInfo *Services,
+	serviceDomains *[]ServiceDomains,
+	serviceNodes *[]ServiceNodes) error {
 
 	tpmIds := map[string]string{}
 	serviceId, serviceIdUniqueErr := s.ServiceIdUnique(tpmIds)
@@ -82,7 +89,9 @@ func (s *Services) ServiceAdd(serviceInfo *Services, serviceDomains *[]ServiceDo
 
 	serviceInfo.ID = serviceId
 	serviceInfo.Name = serviceId
-	createServiceErr := tx.Create(&serviceInfo).Error
+	createServiceErr := tx.
+		Create(&serviceInfo).Error
+
 	if createServiceErr != nil {
 		tx.Rollback()
 		return createServiceErr
@@ -96,7 +105,9 @@ func (s *Services) ServiceAdd(serviceInfo *Services, serviceDomains *[]ServiceDo
 
 		serviceDomain.ID = domainId
 		serviceDomain.ServiceID = serviceId
-		domainErr := tx.Create(&serviceDomain).Error
+		domainErr := tx.
+			Create(&serviceDomain).Error
+
 		if domainErr != nil {
 			tx.Rollback()
 			return domainErr
@@ -111,7 +122,9 @@ func (s *Services) ServiceAdd(serviceInfo *Services, serviceDomains *[]ServiceDo
 
 		serviceNode.ID = nodeId
 		serviceNode.ServiceID = serviceId
-		nodeErr := tx.Create(&serviceNode).Error
+		nodeErr := tx.
+			Create(&serviceNode).Error
+
 		if nodeErr != nil {
 			tx.Rollback()
 			return nodeErr
@@ -132,7 +145,9 @@ func (s *Services) ServiceAdd(serviceInfo *Services, serviceDomains *[]ServiceDo
 	serviceRoute.IsEnable = utils.EnableOff
 	serviceRoute.RequestMethods = utils.RequestMethodALL
 
-	routeCreateErr := tx.Create(&serviceRoute).Error
+	routeCreateErr := tx.
+		Create(&serviceRoute).Error
+
 	if routeCreateErr != nil {
 		tx.Rollback()
 		return routeCreateErr
@@ -143,7 +158,11 @@ func (s *Services) ServiceAdd(serviceInfo *Services, serviceDomains *[]ServiceDo
 
 func (s *Services) ServiceInfoById(id string) Services {
 	serviceInfo := Services{}
-	packages.GetDb().Table(s.TableName()).Where("id = ?", id).First(&serviceInfo)
+	packages.GetDb().
+		Table(s.TableName()).
+		Where("id = ?", id).
+		First(&serviceInfo)
+
 	return serviceInfo
 }
 
@@ -167,7 +186,11 @@ func (s *Services) ServiceUpdate(
 		return err
 	}
 
-	updateError := tx.Table(s.TableName()).Where("id = ?", id).Updates(serviceInfo).Error
+	updateError := tx.
+		Table(s.TableName()).
+		Where("id = ?", id).
+		Updates(serviceInfo).Error
+
 	if updateError != nil {
 		tx.Rollback()
 		return updateError
@@ -175,7 +198,11 @@ func (s *Services) ServiceUpdate(
 
 	if len(deleteDomainIds) != 0 {
 		serviceDomainsModel := ServiceDomains{}
-		domainDeleteError := tx.Table(serviceDomainsModel.TableName()).Where("id IN ?", deleteDomainIds).Delete(&serviceDomainsModel).Error
+		domainDeleteError := tx.
+			Table(serviceDomainsModel.TableName()).
+			Where("id IN ?", deleteDomainIds).
+			Delete(&serviceDomainsModel).Error
+
 		if domainDeleteError != nil {
 			tx.Rollback()
 			return domainDeleteError
@@ -184,7 +211,11 @@ func (s *Services) ServiceUpdate(
 
 	if len(deleteNodeIds) != 0 {
 		serviceNodesModel := ServiceNodes{}
-		nodeDeleteError := tx.Table(serviceNodesModel.TableName()).Where("id IN ?", deleteNodeIds).Delete(&serviceNodesModel).Error
+		nodeDeleteError := tx.
+			Table(serviceNodesModel.TableName()).
+			Where("id IN ?", deleteNodeIds).
+			Delete(&serviceNodesModel).Error
+
 		if nodeDeleteError != nil {
 			tx.Rollback()
 			return nodeDeleteError
@@ -201,7 +232,9 @@ func (s *Services) ServiceUpdate(
 
 			serviceDomain.ID = domainId
 			serviceDomain.ServiceID = id
-			domainErr := tx.Create(&serviceDomain).Error
+			domainErr := tx.
+				Create(&serviceDomain).Error
+
 			if domainErr != nil {
 				tx.Rollback()
 				return domainErr
@@ -211,7 +244,11 @@ func (s *Services) ServiceUpdate(
 
 	if len(*updateNodes) > 0 {
 		for _, updateNode := range *updateNodes {
-			updateNodeError := tx.Table(updateNode.TableName()).Where("id = ?", updateNode.ID).Updates(ServiceNodes{NodeWeight: updateNode.NodeWeight}).Error
+			updateNodeError := tx.
+				Table(updateNode.TableName()).
+				Where("id = ?", updateNode.ID).
+				Updates(ServiceNodes{NodeWeight: updateNode.NodeWeight}).Error
+
 			if updateNodeError != nil {
 				tx.Rollback()
 				return updateNodeError
@@ -229,7 +266,9 @@ func (s *Services) ServiceUpdate(
 
 			serviceNode.ID = nodeId
 			serviceNode.ServiceID = id
-			nodeErr := tx.Create(&serviceNode).Error
+			nodeErr := tx.
+				Create(&serviceNode).Error
+
 			if nodeErr != nil {
 				tx.Rollback()
 				return nodeErr
@@ -247,12 +286,14 @@ func (s *Services) ServiceDomainNodeByIds(serviceIds []string) ([]Services, erro
 		return serviceInfos, err
 	}
 
-	packages.GetDb().Table(s.TableName()).
+	packages.GetDb().
+		Table(s.TableName()).
 		Where("id IN ?", serviceIds).
 		Preload("Domains").
 		Preload("Nodes").
 		Order("updated_at desc").
 		Find(&serviceInfos)
+
 	if len(serviceInfos) == 0 {
 		err = errors.New(enums.CodeMessages(enums.ServiceNull))
 	} else {
@@ -275,21 +316,33 @@ func (s *Services) ServiceDelete(id string) error {
 		return err
 	}
 
-	deleteServiceError := tx.Table(s.TableName()).Where("id = ?", id).Delete(ServiceNodes{}).Error
+	deleteServiceError := tx.
+		Table(s.TableName()).
+		Where("id = ?", id).
+		Delete(ServiceNodes{}).Error
+
 	if deleteServiceError != nil {
 		tx.Rollback()
 		return deleteServiceError
 	}
 
 	serviceDomainsModel := ServiceDomains{}
-	deleteDomainError := tx.Table(serviceDomainsModel.TableName()).Where("service_id = ?", id).Delete(serviceDomainsModel).Error
+	deleteDomainError := tx.
+		Table(serviceDomainsModel.TableName()).
+		Where("service_id = ?", id).
+		Delete(serviceDomainsModel).Error
+
 	if deleteDomainError != nil {
 		tx.Rollback()
 		return deleteDomainError
 	}
 
 	serviceNodesModel := ServiceNodes{}
-	deleteNodeError := tx.Table(serviceNodesModel.TableName()).Where("service_id = ?", id).Delete(serviceNodesModel).Error
+	deleteNodeError := tx.
+		Table(serviceNodesModel.TableName()).
+		Where("service_id = ?", id).
+		Delete(serviceNodesModel).Error
+
 	if deleteNodeError != nil {
 		tx.Rollback()
 		return deleteNodeError
@@ -303,7 +356,9 @@ func (s *Services) ServiceDelete(id string) error {
 func (s *Services) ServiceAllInfosListPage(
 	serviceIds []string,
 	param *validators.ServiceList) (list []Services, total int, listError error) {
-	tx := packages.GetDb().Table(s.TableName())
+	tx := packages.GetDb().
+		Table(s.TableName())
+
 	if len(serviceIds) != 0 {
 		tx = tx.Where("id IN ?", serviceIds)
 	}
@@ -313,13 +368,17 @@ func (s *Services) ServiceAllInfosListPage(
 	if param.IsEnable != 0 {
 		tx = tx.Where("is_enable = ?", param.IsEnable)
 	}
+
 	countError := ListCount(tx, &total)
 	if countError != nil {
 		listError = countError
 		return
 	}
 
-	tx = tx.Preload("Domains").Order("updated_at desc")
+	tx = tx.
+		Preload("Domains").
+		Order("updated_at desc")
+
 	listError = ListPaginate(tx, &list, &param.BaseListPage)
 	return
 }
@@ -332,10 +391,12 @@ func (s *Services) ServiceInfosLikeIdName(idOrName string) ([]Services, error) {
 	}
 
 	idOrName = "%" + idOrName + "%"
-	err := packages.GetDb().Table(s.TableName()).
+	err := packages.GetDb().
+		Table(s.TableName()).
 		Where("id LIKE ?", idOrName).
 		Or("name LIKE ?", idOrName).
 		Find(&serviceInfos).Error
+
 	if err != nil {
 		return nil, err
 	}
@@ -350,7 +411,11 @@ func (s *Services) ServiceUpdateName(id string, name string) error {
 		return errors.New(enums.CodeMessages(enums.ServiceParamsNull))
 	}
 
-	updateErr := packages.GetDb().Table(s.TableName()).Where("id = ?", id).Update("name", name).Error
+	updateErr := packages.GetDb().
+		Table(s.TableName()).
+		Where("id = ?", id).
+		Update("name", name).Error
+
 	if updateErr != nil {
 		return updateErr
 	}
@@ -364,7 +429,11 @@ func (s *Services) ServiceSwitchEnable(id string, enable int) error {
 		return errors.New(enums.CodeMessages(enums.ServiceParamsNull))
 	}
 
-	updateErr := packages.GetDb().Table(s.TableName()).Where("id = ?", id).Update("is_enable", enable).Error
+	updateErr := packages.GetDb().
+		Table(s.TableName()).
+		Where("id = ?", id).
+		Update("is_enable", enable).Error
+
 	if updateErr != nil {
 		return updateErr
 	}
@@ -378,7 +447,11 @@ func (s *Services) ServiceSwitchWebsocket(id string, webSocket int) error {
 		return errors.New(enums.CodeMessages(enums.ServiceParamsNull))
 	}
 
-	updateErr := packages.GetDb().Table(s.TableName()).Where("id = ?", id).Update("web_socket", webSocket).Error
+	updateErr := packages.GetDb().
+		Table(s.TableName()).
+		Where("id = ?", id).
+		Update("web_socket", webSocket).Error
+
 	if updateErr != nil {
 		return updateErr
 	}
@@ -392,7 +465,11 @@ func (s *Services) ServiceSwitchHealthCheck(id string, healthCheck int) error {
 		return errors.New(enums.CodeMessages(enums.ServiceParamsNull))
 	}
 
-	updateErr := packages.GetDb().Table(s.TableName()).Where("id = ?", id).Update("health_check", healthCheck).Error
+	updateErr := packages.GetDb().
+		Table(s.TableName()).
+		Where("id = ?", id).
+		Update("health_check", healthCheck).Error
+	
 	if updateErr != nil {
 		return updateErr
 	}

@@ -45,7 +45,11 @@ func (s *ServiceNodes) ServiceNodeIdUnique(sNodeIds map[string]string) (string, 
 		s.ID = tmpID
 	}
 
-	result := packages.GetDb().Table(s.TableName()).Select("id").First(&s)
+	result := packages.GetDb().
+		Table(s.TableName()).
+		Select("id").
+		First(&s)
+
 	mapId := sNodeIds[s.ID]
 	if (result.RowsAffected == 0) && (s.ID != mapId) {
 		sNodeId = s.ID
@@ -68,7 +72,10 @@ func (s *ServiceNodes) ServiceNodeIdUnique(sNodeIds map[string]string) (string, 
 
 func (s *ServiceNodes) NodeInfosByServiceIds(serviceIds []string) []ServiceNodes {
 	nodeInfos := make([]ServiceNodes, 0)
-	packages.GetDb().Table(s.TableName()).Where("service_id IN ?", serviceIds).Find(&nodeInfos)
+	packages.GetDb().
+		Table(s.TableName()).
+		Where("service_id IN ?", serviceIds).
+		Find(&nodeInfos)
 
 	return nodeInfos
 }

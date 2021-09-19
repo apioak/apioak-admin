@@ -11,6 +11,16 @@ import (
 	"strings"
 )
 
+func CheckServiceExist(serviceId string) error {
+	serviceModel := &models.Services{}
+	serviceInfo := serviceModel.ServiceInfoById(serviceId)
+	if serviceInfo.ID != serviceId {
+		return errors.New(enums.CodeMessages(enums.ServiceNull))
+	}
+
+	return nil
+}
+
 func CheckExistDomain(domains string, filterServiceIds []string) error {
 	serviceDomainInfo := models.ServiceDomains{}
 	domainInfos := strings.Split(strings.TrimSpace(domains), ",")

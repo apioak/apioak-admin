@@ -7,9 +7,9 @@ import (
 )
 
 type result struct {
-	Code int         // 状态码
-	Msg  string      // 状态码信息
-	Data interface{} // 结果数据
+	Code int         `json:"code"` // 状态码
+	Msg  string      `json:"msg"`  // 状态码信息
+	Data interface{} `json:"data"` // 结果数据
 }
 
 type ResultPage struct {

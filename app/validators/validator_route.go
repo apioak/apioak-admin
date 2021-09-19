@@ -28,7 +28,7 @@ type ValidatorRouteAddUpdate struct {
 	RouteName      string `json:"route_name" zh:"路由名称" en:"Route name" binding:"omitempty"`
 	RequestMethods string `json:"request_methods" zh:"请求方法" en:"Request method" binding:"required,min=3,CheckRouteRequestMethodOneOf"`
 	RoutePath      string `json:"route_path" zh:"路由路径" en:"Routing path" binding:"required,min=2,CheckRoutePathPrefix"`
-	ServiceID      string `json:"service_id" zh:"服务ID" en:"Service id" binding:"required"`
+	ServiceID      string `json:"service_id" zh:"服务ID" en:"Service id" binding:"omitempty"`
 }
 
 type ValidatorRouteList struct {

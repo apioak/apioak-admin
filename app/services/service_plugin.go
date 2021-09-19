@@ -1,10 +1,29 @@
 package services
 
 import (
+	"apioak-admin/app/enums"
 	"apioak-admin/app/models"
 	"apioak-admin/app/validators"
+	"errors"
 	"strings"
 )
+
+func CheckPluginExist(pluginId string) error {
+	pluginModel := &models.Plugins{}
+	pluginInfo := pluginModel.PluginInfoByIdRouteServiceId(pluginId)
+	if pluginInfo.ID != pluginId {
+		return errors.New(enums.CodeMessages(enums.PluginNull))
+	}
+
+	return nil
+}
+
+func CheckPluginConfig(pluginId string, config string) error {
+
+	// @todo 根据插件ID校验插件的配置数据是否正确（每个插件有自定义的插件结构体，然后根据传递的数据进行解析）
+
+	return nil
+}
 
 func PluginCreate(pluginData *validators.ValidatorPluginAdd) error {
 

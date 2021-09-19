@@ -10,13 +10,13 @@ func RouteRegister(routeEngine *gin.Engine) {
 
 	adminRoute := routeEngine.Group("admin", middlewares.CheckUserLogin)
 	{
-		// 用户
+		// user
 		user := adminRoute.Group("user")
 		{
 			user.POST("/register", admin.UserRegister)
 		}
 
-		// 服务
+		// service
 		service := adminRoute.Group("service")
 		{
 			service.GET("/common/load-balance/list", admin.ServiceLoadBalanceList)
@@ -32,10 +32,11 @@ func RouteRegister(routeEngine *gin.Engine) {
 			service.PUT("/switch/health-check/:id", admin.ServiceSwitchHealthCheck)
 		}
 
-		// 路由
+		// route
 		route := adminRoute.Group("route")
 		{
-			route.POST("/add", admin.RouteAdd)
+			// route
+			route.POST("/add/:service_id", admin.RouteAdd)
 			route.GET("/list/:service_id", admin.RouteList)
 			route.GET("/info/:service_id/:id", admin.RouteInfo)
 			route.PUT("/update/:service_id/:id", admin.RouteUpdate)
@@ -43,16 +44,16 @@ func RouteRegister(routeEngine *gin.Engine) {
 			route.PUT("/update/name/:service_id/:id", admin.RouteUpdateName)
 			route.PUT("/switch/enable/:service_id/:id", admin.RouteSwitchEnable)
 
+			// route plugin
 			route.GET("/add-plugin/list/:service_id/:id", admin.RoutePluginFilterList)
-			//route.GET("/plugin/list/:id", admin.RoutePluginList)
-			//route.POST("/plugin/add/:id/:plugin_id", admin.RoutePluginAdd)
-			//route.GET("/plugin/info/:id/:plugin_id", admin.RoutePluginInfo)
-			//route.PUT("/plugin/update/:id/:plugin_id", admin.RoutePluginUpdate)
-			//route.DELETE("/plugin/delete/:id/:plugin_id", admin.RoutePluginDelete)
-			//route.DELETE("/plugin/switch/enable/:id/:plugin_id", admin.RoutePluginSwitchEnable)
+			route.GET("/plugin/list/:service_id/:id", admin.RoutePluginList)
+			route.POST("/plugin/add/:service_id/:route_id/:plugin_id", admin.RoutePluginAdd)
+			//route.PUT("/plugin/update/:route_id/:plugin_id/:id", admin.RoutePluginUpdate)
+			//route.DELETE("/plugin/delete/:route_id/:plugin_id/:id", admin.RoutePluginDelete)
+			//route.PUT("/plugin/switch/enable/:route_id/:plugin_id/:id", admin.RoutePluginSwitchEnable)
 		}
 
-		// 插件
+		// plugin
 		plugin := adminRoute.Group("plugin")
 		{
 			plugin.POST("/add", admin.PluginAdd)
@@ -61,13 +62,13 @@ func RouteRegister(routeEngine *gin.Engine) {
 			plugin.DELETE("/delete/:id", admin.PluginDelete)
 		}
 
-		// 证书
+		// certificate
 		certificate := adminRoute.Group("certificate")
 		{
 			certificate.GET("/info")
 		}
 
-		// 节点
+		// cluster node
 		node := adminRoute.Group("node")
 		{
 			node.GET("info")
