@@ -1,12 +1,17 @@
 package utils
 
 import (
+	"apioak-admin/app/enums"
 	"bytes"
 	"crypto/rand"
+	"crypto/x509"
+	"encoding/pem"
+	"errors"
 	"fmt"
 	"math/big"
 	"net"
 	"strings"
+	"time"
 )
 
 func createRandomString(len int) string {
@@ -67,6 +72,31 @@ func DiscernIP(s string) (string, error) {
 		}
 	}
 	return "", nil
+}
+
+type CertificateInfo struct {
+	CommonName string
+	NotBefore  time.Time
+	NotAfter   time.Time
+}
+
+func DiscernCertificate(certificate *string) (CertificateInfo, error) {
+	certificateInfo := CertificateInfo{}
+	pemBlock, _ := pem.Decode([]byte(*certificate))
+	if pemBlock == nil {
+		return certificateInfo, errors.New(enums.CodeMessages(enums.CertificateFormatError))
+	}
+
+	parseCert, parseCertErr := x509.ParseCertificate(pemBlock.Bytes)
+	if parseCertErr != nil {
+		return certificateInfo, errors.New(enums.CodeMessages(enums.CertificateParseError))
+	}
+
+	certificateInfo.CommonName = parseCert.Subject.CommonName
+	certificateInfo.NotBefore = parseCert.NotBefore
+	certificateInfo.NotAfter = parseCert.NotAfter
+
+	return certificateInfo, nil
 }
 
 type enumInfo struct {

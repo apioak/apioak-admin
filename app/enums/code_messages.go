@@ -33,6 +33,10 @@ const (
 	PluginTagExist   = 10301 // 插件标识已存在
 	PluginNull       = 10302 // 插件不存在
 	PluginRouteExist = 10303 // 插件已被路由绑定，暂不允许该操作
+
+	CertificateFormatError = 10401 // 证书格式错误
+	CertificateParseError  = 10402 // 证书解析失败
+	CertificateExist       = 10403 // 证书已存在
 )
 
 var ZhMapMessages = map[int]string{
@@ -58,6 +62,10 @@ var ZhMapMessages = map[int]string{
 	PluginTagExist:   "插件标识已存在",
 	PluginNull:       "插件不存在",
 	PluginRouteExist: "插件已被路由绑定，暂不允许该操作",
+
+	CertificateFormatError: "证书格式错误",
+	CertificateParseError:  "证书解析失败",
+	CertificateExist:       "证书已存在",
 }
 
 var EnMapMessages = map[int]string{
@@ -83,6 +91,10 @@ var EnMapMessages = map[int]string{
 	PluginTagExist:   "Plugin tag already exists",
 	PluginNull:       "Plugin does not exist",
 	PluginRouteExist: "Plugin routing binding, operation is not allowed",
+
+	CertificateFormatError: "Incorrect certificate format",
+	CertificateParseError:  "Certificate parsing failed",
+	CertificateExist:       "Certificate already exists",
 }
 
 func CodeMessages(code int) string {

@@ -48,6 +48,10 @@ func RegisterCustomizeValidator(validatorEngine *validator.Validate) error {
 		return err
 	}
 
+	if err := validatorEngine.RegisterValidation("CheckCertificateContentRequired", validators.CheckCertificateContentRequired); err != nil {
+		return err
+	}
+
 	packages.SetCustomizeValidator(validatorEngine)
 	return nil
 }
