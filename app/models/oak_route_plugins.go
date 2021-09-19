@@ -147,3 +147,29 @@ func (r *RoutePlugins) RoutePluginUpdate(id string, routePluginData *RoutePlugin
 
 	return err
 }
+
+func (r *RoutePlugins) RoutePluginSwitchEnable(id string, enable int) error {
+	updateErr := packages.GetDb().
+		Table(r.TableName()).
+		Where("id = ?", id).
+		Update("is_enable", enable).Error
+
+	if updateErr != nil {
+		return updateErr
+	}
+
+	return nil
+}
+
+func (r *RoutePlugins) RoutePluginDelete(id string) error {
+	deleteErr := packages.GetDb().
+		Table(r.TableName()).
+		Where("id = ?", id).
+		Delete(r).Error
+
+	if deleteErr != nil {
+		return deleteErr
+	}
+
+	return nil
+}

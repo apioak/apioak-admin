@@ -7,3 +7,7 @@ type RoutePluginAddUpdate struct {
 	PluginID string `json:"plugin_id" binding:"omitempty"`
 	RouteID  string `json:"route_id" binding:"omitempty"`
 }
+
+type RoutePluginSwitchEnable struct {
+	IsEnable int `json:"is_enable" zh:"路由插件开关" en:"Routing plugin enable" binding:"required,oneof=1 2"`
+}
