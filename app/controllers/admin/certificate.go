@@ -48,3 +48,18 @@ func CertificateUpdate(c *gin.Context) {
 
 	utils.Ok(c)
 }
+
+func CertificateInfo(c *gin.Context) {
+	id := strings.TrimSpace(c.Param("id"))
+
+	checkCertificateNull := services.CheckCertificateNull(id)
+	if checkCertificateNull != nil {
+		utils.Error(c, checkCertificateNull.Error())
+		return
+	}
+
+	certificateContent := services.CertificateContent{}
+	certificateContentInfo := certificateContent.CertificateContentInfo(id)
+
+	utils.Ok(c, certificateContentInfo)
+}

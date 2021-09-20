@@ -144,3 +144,27 @@ func CertificateUpdate(id string, certificateData *validators.CertificateAddUpda
 
 	return nil
 }
+
+type CertificateContent struct {
+	ID          string `json:"id"`
+	Certificate string `json:"certificate"`
+	PrivateKey  string `json:"private_key"`
+	IsEnable    int    `json:"is_enable"`
+}
+
+func (c *CertificateContent) CertificateContentInfo(id string) CertificateContent {
+	certificateContent := CertificateContent{}
+
+	certificatesModel := models.Certificates{}
+	certificateInfo := certificatesModel.CertificateInfoById(id)
+	if certificateInfo.ID != id {
+		return certificateContent
+	}
+
+	certificateContent.ID = certificateInfo.ID
+	certificateContent.Certificate = certificateInfo.Certificate
+	certificateContent.PrivateKey = certificateInfo.PrivateKey
+	certificateContent.IsEnable = certificateInfo.IsEnable
+
+	return certificateContent
+}
