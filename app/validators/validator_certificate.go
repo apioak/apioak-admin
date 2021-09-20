@@ -16,7 +16,7 @@ var (
 	}
 )
 
-type CertificateAdd struct {
+type CertificateAddUpdate struct {
 	Certificate string `json:"certificate" zh:"证书内容" en:"Certificate content" binding:"required,json,CheckCertificateContentRequired"`
 	PrivateKey  string `json:"private_key" zh:"私钥内容" en:"Private key content" binding:"required,json,CheckCertificateContentRequired"`
 	IsEnable    int    `json:"is_enable" zh:"证书开关" en:"Certificate enable" binding:"required,oneof=1 2"`

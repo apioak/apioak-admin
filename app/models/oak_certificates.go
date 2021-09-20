@@ -72,6 +72,25 @@ func (c *Certificates) CertificatesAdd(certificatesData *Certificates) error {
 	return err
 }
 
+func (c *Certificates) CertificatesUpdate(id string, certificatesData *Certificates) error {
+	updateError := packages.GetDb().
+		Table(c.TableName()).
+		Where("id = ?", id).
+		Updates(certificatesData).Error
+
+	return updateError
+}
+
+func (c *Certificates) CertificateInfoById(id string) Certificates {
+	certificateInfo := Certificates{}
+	packages.GetDb().
+		Table(c.TableName()).
+		Where("id = ?", id).
+		First(&certificateInfo)
+
+	return certificateInfo
+}
+
 func (c *Certificates) CertificateInfoBySni(sni string, filterId string) Certificates {
 	certificateInfo := Certificates{}
 	db := packages.GetDb().

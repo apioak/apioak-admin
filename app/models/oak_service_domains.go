@@ -105,3 +105,13 @@ func (s *ServiceDomains) ServiceDomainInfosLikeDomain(domain string) ([]ServiceD
 
 	return domainInfos, nil
 }
+
+func (s *ServiceDomains) DomainListByLikeSni(sni string) []ServiceDomains {
+	domainList := make([]ServiceDomains, 0)
+	packages.GetDb().
+		Table(s.TableName()).
+		Where("domain LIKE ?", "%" + sni).
+		Find(&domainList)
+
+	return domainList
+}

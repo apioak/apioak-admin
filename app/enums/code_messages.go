@@ -37,6 +37,8 @@ const (
 	CertificateFormatError = 10401 // 证书格式错误
 	CertificateParseError  = 10402 // 证书解析失败
 	CertificateExist       = 10403 // 证书已存在
+	CertificateNull        = 10404 // 证书不存在
+	CertificateDomainExist = 10405 // 证书已被域名绑定
 )
 
 var ZhMapMessages = map[int]string{
@@ -66,6 +68,8 @@ var ZhMapMessages = map[int]string{
 	CertificateFormatError: "证书格式错误",
 	CertificateParseError:  "证书解析失败",
 	CertificateExist:       "证书已存在",
+	CertificateNull:        "证书不存在",
+	CertificateDomainExist: "证书已被域名绑定",
 }
 
 var EnMapMessages = map[int]string{
@@ -95,6 +99,8 @@ var EnMapMessages = map[int]string{
 	CertificateFormatError: "Incorrect certificate format",
 	CertificateParseError:  "Certificate parsing failed",
 	CertificateExist:       "Certificate already exists",
+	CertificateNull:        "Certificate does not exist",
+	CertificateDomainExist: "The certificate has been bound by the domain name",
 }
 
 func CodeMessages(code int) string {
