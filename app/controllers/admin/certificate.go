@@ -63,3 +63,28 @@ func CertificateInfo(c *gin.Context) {
 
 	utils.Ok(c, certificateContentInfo)
 }
+
+func CertificateList(c *gin.Context) {
+	var certificateListValidator = validators.CertificateList{}
+	if msg, err := packages.ParseRequestParams(c, &certificateListValidator); err != nil {
+		utils.Error(c, msg)
+		return
+	}
+
+	certificateInfo := services.CertificateInfo{}
+	certificateList, total, err := certificateInfo.CertificateListPage(&certificateListValidator)
+	if err != nil {
+		utils.Error(c, err.Error())
+		return
+	}
+
+	result := utils.ResultPage{}
+	result.Param = certificateListValidator
+	result.Page = certificateListValidator.Page
+	result.PageSize = certificateListValidator.PageSize
+	result.Total = total
+	result.Data = certificateList
+
+	utils.Ok(c, result)
+
+}

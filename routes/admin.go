@@ -65,7 +65,7 @@ func RouteRegister(routeEngine *gin.Engine) {
 		// certificate
 		certificate := adminRoute.Group("certificate")
 		{
-			certificate.GET("/list")
+			certificate.GET("/list", admin.CertificateList)
 			certificate.POST("/add", admin.CertificateAdd)
 			certificate.GET("/info/:id", admin.CertificateInfo)
 			certificate.PUT("/update/:id", admin.CertificateUpdate)

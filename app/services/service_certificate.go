@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"strings"
+	"time"
 )
 
 func CheckCertificateNull(id string) error {
@@ -167,4 +168,31 @@ func (c *CertificateContent) CertificateContentInfo(id string) CertificateConten
 	certificateContent.IsEnable = certificateInfo.IsEnable
 
 	return certificateContent
+}
+
+type CertificateInfo struct {
+	ID        string    `json:"id"`
+	Sni       string    `json:"sni"`
+	ExpiredAt time.Time `json:"expired_at"`
+	IsEnable  int       `json:"is_enable"`
+}
+
+func (c *CertificateInfo) CertificateListPage(param *validators.CertificateList) ([]CertificateInfo, int, error) {
+	certificatesModel := models.Certificates{}
+	certificateListInfos, total, certificateListInfosErr := certificatesModel.CertificateListPage(param)
+
+	certificateList := make([]CertificateInfo, 0)
+	if len(certificateListInfos) != 0 {
+		for _, certificateListInfo := range certificateListInfos {
+			certificateInfo := CertificateInfo{}
+			certificateInfo.ID = certificateListInfo.ID
+			certificateInfo.Sni = certificateListInfo.Sni
+			certificateInfo.ExpiredAt = certificateListInfo.ExpiredAt
+			certificateInfo.IsEnable = certificateListInfo.IsEnable
+
+			certificateList = append(certificateList, certificateInfo)
+		}
+	}
+
+	return certificateList, total, certificateListInfosErr
 }

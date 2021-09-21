@@ -3,6 +3,8 @@ package models
 import (
 	"apioak-admin/app/packages"
 	"apioak-admin/app/utils"
+	"apioak-admin/app/validators"
+	"strings"
 	"time"
 )
 
@@ -104,4 +106,29 @@ func (c *Certificates) CertificateInfoBySni(sni string, filterId string) Certifi
 	db.First(&certificateInfo)
 
 	return certificateInfo
+}
+
+func (c *Certificates) CertificateListPage(param *validators.CertificateList) (list []Certificates, total int, listError error) {
+	tx := packages.GetDb().
+		Table(c.TableName())
+
+	if param.IsEnable != 0 {
+		tx = tx.Where("is_enable = ?", param.IsEnable)
+	}
+
+	param.Search = strings.TrimSpace(param.Search)
+	if len(param.Search) != 0 {
+		search := "%" + param.Search + "%"
+		tx = tx.Where("sni LIKE ?", search)
+	}
+
+	countError := ListCount(tx, &total)
+	if countError != nil {
+		listError = countError
+		return
+	}
+
+	tx = tx.Order("expired_at ASC")
+	listError = ListPaginate(tx, &list, &param.BaseListPage)
+	return
 }
