@@ -28,6 +28,10 @@ type CertificateList struct {
 	BaseListPage
 }
 
+type CertificateSwitchEnable struct {
+	IsEnable int `json:"is_enable" zh:"证书开关" en:"Certificate enable" binding:"required,oneof=1 2"`
+}
+
 func CheckCertificateContentRequired(fl validator.FieldLevel) bool {
 	certificateContent := strings.TrimSpace(fl.Field().String())
 

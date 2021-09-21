@@ -68,6 +68,16 @@ func CheckCertificateEnableOn(id string) error {
 	return nil
 }
 
+func CheckCertificateEnableChange(id string, enable int) error {
+	certificatesModel := models.Certificates{}
+	certificateInfo := certificatesModel.CertificateInfoById(id)
+	if certificateInfo.IsEnable == enable {
+		return errors.New(enums.CodeMessages(enums.SwitchNoChange))
+	}
+
+	return nil
+}
+
 func decodeCertificateData(certificateContent string) (string, error) {
 	certificateInfo := ""
 	type contentStruct struct {
@@ -230,6 +240,18 @@ func CertificateDelete(id string) error {
 	}
 
 	// @todo 需要同步远程数据中心
+
+	return nil
+}
+
+func CertificateSwitchEnable(id string, enable int) error {
+	certificatesModel := models.Certificates{}
+	updateErr := certificatesModel.CertificateSwitchEnable(id, enable)
+	if updateErr != nil {
+		return updateErr
+	}
+
+	// @todo 触发远程发布数据
 
 	return nil
 }

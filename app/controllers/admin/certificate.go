@@ -120,5 +120,39 @@ func CertificateDelete(c *gin.Context) {
 }
 
 func CertificateSwitchEnable(c *gin.Context) {
+	id := strings.TrimSpace(c.Param("id"))
 
+	var certificateSwitchEnableValidator = validators.CertificateSwitchEnable{}
+	if msg, err := packages.ParseRequestParams(c, &certificateSwitchEnableValidator); err != nil {
+		utils.Error(c, msg)
+		return
+	}
+
+	checkCertificateNullErr := services.CheckCertificateNull(id)
+	if checkCertificateNullErr != nil {
+		utils.Error(c, checkCertificateNullErr.Error())
+		return
+	}
+
+	checkCertificateEnableChangeErr := services.CheckCertificateEnableChange(id, certificateSwitchEnableValidator.IsEnable)
+	if checkCertificateEnableChangeErr != nil{
+		utils.Error(c, checkCertificateEnableChangeErr.Error())
+		return
+	}
+
+	if certificateSwitchEnableValidator.IsEnable == utils.EnableOff {
+		checkCertificateDomainExistErr := services.CheckCertificateDomainExistById(id)
+		if checkCertificateDomainExistErr != nil {
+			utils.Error(c, checkCertificateDomainExistErr.Error())
+			return
+		}
+	}
+
+	updateErr := services.CertificateSwitchEnable(id, certificateSwitchEnableValidator.IsEnable)
+	if updateErr != nil {
+		utils.Error(c, updateErr.Error())
+		return
+	}
+
+	utils.Ok(c)
 }

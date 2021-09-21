@@ -145,3 +145,16 @@ func (c *Certificates) CertificateDelete(id string) error {
 
 	return nil
 }
+
+func (c *Certificates) CertificateSwitchEnable(id string, enable int) error {
+	updateErr := packages.GetDb().
+		Table(c.TableName()).
+		Where("id = ?", id).
+		Update("is_enable", enable).Error
+
+	if updateErr != nil {
+		return updateErr
+	}
+
+	return nil
+}
