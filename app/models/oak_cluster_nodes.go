@@ -1,5 +1,11 @@
 package models
 
+import (
+	"apioak-admin/app/packages"
+	"apioak-admin/app/validators"
+	"strings"
+)
+
 type ClusterNodes struct {
 	ID         string `gorm:"column:id;primary_key"` //Cluster node id
 	NodeIP     string `gorm:"column:node_ip"`        //Node IP
@@ -12,4 +18,33 @@ type ClusterNodes struct {
 // TableName sets the insert table name for this struct type
 func (c *ClusterNodes) TableName() string {
 	return "oak_cluster_nodes"
+}
+
+func (c *ClusterNodes) ClusterNodeListPage(param *validators.ClusterNodeList) (list []ClusterNodes, total int, listError error) {
+	tx := packages.GetDb().
+		Table(c.TableName())
+
+	if param.IsEnable != 0 {
+		tx = tx.Where("is_enable = ?", param.IsEnable)
+	}
+	if param.NodeStatus != 0 {
+		tx = tx.Where("node_status = ?", param.NodeStatus)
+	}
+
+	param.Search = strings.TrimSpace(param.Search)
+	if len(param.Search) != 0 {
+		search := "%" + param.Search + "%"
+		tx = tx.Where("node_ip LIKE ?", search)
+	}
+
+	countError := ListCount(tx, &total)
+	if countError != nil {
+		listError = countError
+		return
+	}
+
+	tx = tx.Order("updated_at DESC")
+	listError = ListPaginate(tx, &list, &param.BaseListPage)
+	return
+
 }

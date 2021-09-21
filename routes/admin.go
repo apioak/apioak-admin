@@ -74,9 +74,11 @@ func RouteRegister(routeEngine *gin.Engine) {
 		}
 
 		// cluster node
-		node := adminRoute.Group("node")
+		clusterNode := adminRoute.Group("cluster-node")
 		{
-			node.GET("info")
+			clusterNode.GET("list", admin.ClusterNodeList)
+			clusterNode.DELETE("/delete/:id")
+			clusterNode.PUT("/switch/enable/:id")
 		}
 	}
 }
