@@ -78,7 +78,7 @@ func RouteRegister(routeEngine *gin.Engine) {
 		{
 			clusterNode.GET("list", admin.ClusterNodeList)
 			clusterNode.DELETE("/delete/:id")
-			clusterNode.PUT("/switch/enable/:id")
+			clusterNode.PUT("/switch/enable/:id", admin.ClusterNodeSwitchEnable)
 		}
 	}
 }

@@ -1,9 +1,43 @@
 package services
 
 import (
+	"apioak-admin/app/enums"
 	"apioak-admin/app/models"
 	"apioak-admin/app/validators"
+	"errors"
 )
+
+func CheckClusterNodeNull(id string) error {
+	clusterNodesModel := models.ClusterNodes{}
+	clusterNodeInfo := clusterNodesModel.ClusterNodeInfoById(id)
+	if clusterNodeInfo.ID != id {
+		return errors.New(enums.CodeMessages(enums.ClusterNodeNull))
+	}
+
+	return nil
+}
+
+func CheckClusterNodeEnableChange(id string, enable int) error {
+	clusterNodesModel := models.ClusterNodes{}
+	clusterNodeInfo := clusterNodesModel.ClusterNodeInfoById(id)
+	if clusterNodeInfo.IsEnable == enable {
+		return errors.New(enums.CodeMessages(enums.SwitchNoChange))
+	}
+
+	return nil
+}
+
+func ClusterNodeSwitchEnable(id string, enable int) error {
+	clusterNodesModel := models.ClusterNodes{}
+	updateErr := clusterNodesModel.ClusterNodeSwitchEnable(id, enable)
+	if updateErr != nil {
+		return updateErr
+	}
+
+	// @todo 触发远程发送数据 开启/停止 网关服务，会保持与远程服务的通信
+
+	return nil
+}
 
 type ClusterNodeListInfo struct {
 	ID         string `json:"id"`

@@ -39,6 +39,8 @@ const (
 	CertificateExist       = 10403 // 证书已存在
 	CertificateNull        = 10404 // 证书不存在
 	CertificateDomainExist = 10405 // 证书已被域名绑定
+
+	ClusterNodeNull = 10501 // 节点不存在
 )
 
 var ZhMapMessages = map[int]string{
@@ -70,6 +72,8 @@ var ZhMapMessages = map[int]string{
 	CertificateExist:       "证书已存在",
 	CertificateNull:        "证书不存在",
 	CertificateDomainExist: "证书已被域名绑定",
+
+	ClusterNodeNull: "节点不存在",
 }
 
 var EnMapMessages = map[int]string{
@@ -101,6 +105,8 @@ var EnMapMessages = map[int]string{
 	CertificateExist:       "Certificate already exists",
 	CertificateNull:        "Certificate does not exist",
 	CertificateDomainExist: "The certificate has been bound by the domain name",
+
+	ClusterNodeNull: "Node does not exist",
 }
 
 func CodeMessages(code int) string {

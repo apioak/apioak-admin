@@ -23,7 +23,7 @@ type CertificateAddUpdate struct {
 }
 
 type CertificateList struct {
-	IsEnable int    `json:"is_enable" zh:"证书开关" en:"Certificate enable" binding:"omitempty,oneof=1 2"`
+	IsEnable int    `form:"is_enable" json:"is_enable" zh:"证书开关" en:"Certificate enable" binding:"omitempty,oneof=1 2"`
 	Search   string `form:"search" json:"search" zh:"搜索内容" en:"Search content" binding:"omitempty"`
 	BaseListPage
 }

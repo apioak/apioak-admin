@@ -20,6 +20,29 @@ func (c *ClusterNodes) TableName() string {
 	return "oak_cluster_nodes"
 }
 
+func (c *ClusterNodes) ClusterNodeInfoById(id string) ClusterNodes {
+	clusterNodeInfo := ClusterNodes{}
+	packages.GetDb().
+		Table(c.TableName()).
+		Where("id = ?", id).
+		First(&clusterNodeInfo)
+
+	return clusterNodeInfo
+}
+
+func (c *ClusterNodes) ClusterNodeSwitchEnable(id string, enable int) error {
+	updateErr := packages.GetDb().
+		Table(c.TableName()).
+		Where("id = ?", id).
+		Update("is_enable", enable).Error
+
+	if updateErr != nil {
+		return updateErr
+	}
+
+	return nil
+}
+
 func (c *ClusterNodes) ClusterNodeListPage(param *validators.ClusterNodeList) (list []ClusterNodes, total int, listError error) {
 	tx := packages.GetDb().
 		Table(c.TableName())
