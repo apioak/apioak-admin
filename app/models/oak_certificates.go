@@ -132,3 +132,16 @@ func (c *Certificates) CertificateListPage(param *validators.CertificateList) (l
 	listError = ListPaginate(tx, &list, &param.BaseListPage)
 	return
 }
+
+func (c *Certificates) CertificateDelete(id string) error {
+	deleteErr := packages.GetDb().
+		Table(c.TableName()).
+		Where("id = ?", id).
+		Delete(c).Error
+
+	if deleteErr != nil {
+		return deleteErr
+	}
+
+	return nil
+}

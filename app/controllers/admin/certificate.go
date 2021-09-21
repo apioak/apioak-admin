@@ -1,6 +1,7 @@
 package admin
 
 import (
+	"apioak-admin/app/enums"
 	"apioak-admin/app/packages"
 	"apioak-admin/app/services"
 	"apioak-admin/app/utils"
@@ -86,5 +87,38 @@ func CertificateList(c *gin.Context) {
 	result.Data = certificateList
 
 	utils.Ok(c, result)
+}
+
+func CertificateDelete(c *gin.Context) {
+	id := strings.TrimSpace(c.Param("id"))
+
+	checkCertificateNull := services.CheckCertificateNull(id)
+	if checkCertificateNull != nil {
+		utils.Error(c, checkCertificateNull.Error())
+		return
+	}
+
+	checkCertificateEnableOnErr := services.CheckCertificateEnableOn(id)
+	if checkCertificateEnableOnErr != nil {
+		utils.Error(c, checkCertificateEnableOnErr.Error())
+		return
+	}
+
+	checkCertificateDomainExistErr := services.CheckCertificateDomainExistById(id)
+	if checkCertificateDomainExistErr != nil {
+		utils.Error(c, checkCertificateDomainExistErr.Error())
+		return
+	}
+
+	deleteErr := services.CertificateDelete(id)
+	if deleteErr != nil {
+		utils.Error(c, enums.CodeMessages(enums.Error))
+		return
+	}
+
+	utils.Ok(c)
+}
+
+func CertificateSwitchEnable(c *gin.Context) {
 
 }

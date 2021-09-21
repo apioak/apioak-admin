@@ -43,6 +43,31 @@ func CheckCertificateDomainExist(sni string) error {
 	return nil
 }
 
+func CheckCertificateDomainExistById(id string) error {
+	certificatesModel := models.Certificates{}
+	certificateInfo := certificatesModel.CertificateInfoById(id)
+	if certificateInfo.ID != id {
+		return errors.New(enums.CodeMessages(enums.CertificateNull))
+	}
+
+	checkCertificateDomainExistErr := CheckCertificateDomainExist(certificateInfo.Sni)
+	if checkCertificateDomainExistErr != nil {
+		return checkCertificateDomainExistErr
+	}
+
+	return nil
+}
+
+func CheckCertificateEnableOn(id string) error {
+	certificatesModel := models.Certificates{}
+	certificateInfo := certificatesModel.CertificateInfoById(id)
+	if certificateInfo.IsEnable == utils.EnableOn {
+		return errors.New(enums.CodeMessages(enums.SwitchONProhibitsOp))
+	}
+
+	return nil
+}
+
 func decodeCertificateData(certificateContent string) (string, error) {
 	certificateInfo := ""
 	type contentStruct struct {
@@ -195,4 +220,16 @@ func (c *CertificateInfo) CertificateListPage(param *validators.CertificateList)
 	}
 
 	return certificateList, total, certificateListInfosErr
+}
+
+func CertificateDelete(id string) error {
+	certificatesModel := models.Certificates{}
+	deleteErr := certificatesModel.CertificateDelete(id)
+	if deleteErr != nil {
+		return deleteErr
+	}
+
+	// @todo 需要同步远程数据中心
+
+	return nil
 }
