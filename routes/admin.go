@@ -77,7 +77,7 @@ func RouteRegister(routeEngine *gin.Engine) {
 		clusterNode := adminRoute.Group("cluster-node")
 		{
 			clusterNode.GET("list", admin.ClusterNodeList)
-			clusterNode.DELETE("/delete/:id")
+			clusterNode.DELETE("/delete/:id", admin.ClusterNodeDelete)
 			clusterNode.PUT("/switch/enable/:id", admin.ClusterNodeSwitchEnable)
 		}
 	}

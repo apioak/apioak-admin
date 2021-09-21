@@ -71,3 +71,16 @@ func (c *ClusterNodes) ClusterNodeListPage(param *validators.ClusterNodeList) (l
 	return
 
 }
+
+func (c *ClusterNodes) ClusterNodeDelete(id string) error {
+	deleteErr := packages.GetDb().
+		Table(c.TableName()).
+		Where("id = ?", id).
+		Delete(c).Error
+
+	if deleteErr != nil {
+		return deleteErr
+	}
+
+	return nil
+}
