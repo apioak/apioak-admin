@@ -1,23 +1,43 @@
 package admin
 
 import (
+	"apioak-admin/app/enums"
 	"apioak-admin/app/packages"
+	"apioak-admin/app/services"
 	"apioak-admin/app/utils"
 	"apioak-admin/app/validators"
 	"github.com/gin-gonic/gin"
 )
 
-// UserRegister @todo 用户注册
 func UserRegister(c *gin.Context) {
-
-	//获取参数结构体
-	var registerStruct = validators.UserRegister{}
-
-	// 参数校验
-	if msg, err := packages.ParseRequestParams(c, &registerStruct); err != nil {
+	var userRegisterValidator = validators.UserRegister{}
+	if msg, err := packages.ParseRequestParams(c, &userRegisterValidator); err != nil {
 		utils.Error(c, msg)
 		return
 	}
 
+	checkUserEmailExistErr := services.CheckUserEmailExist(userRegisterValidator.Email, []string{})
+	if checkUserEmailExistErr != nil {
+		utils.Error(c, checkUserEmailExistErr.Error())
+		return
+	}
+
+	addErr := services.UserCreate(&userRegisterValidator)
+	if addErr != nil {
+		utils.Error(c, enums.CodeMessages(enums.Error))
+		return
+	}
+
 	utils.Ok(c)
+}
+
+func UserLogin(c *gin.Context) {
+	var userLoginValidator = validators.UserLogin{}
+	if msg, err := packages.ParseRequestParams(c, &userLoginValidator); err != nil {
+		utils.Error(c, msg)
+		return
+	}
+
+
+
 }

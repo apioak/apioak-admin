@@ -3,8 +3,10 @@ package utils
 import (
 	"apioak-admin/app/enums"
 	"bytes"
+	"crypto/md5"
 	"crypto/rand"
 	"crypto/x509"
+	"encoding/hex"
 	"encoding/pem"
 	"errors"
 	"fmt"
@@ -131,4 +133,12 @@ func AllRequestMethod() []string {
 		RequestMethodDELETE,
 		RequestMethodOPTIONS,
 	}
+}
+
+func Md5(src string) string {
+	m := md5.New()
+	m.Write([]byte(src))
+	srcMd5 := hex.EncodeToString(m.Sum(nil))
+
+	return srcMd5
 }

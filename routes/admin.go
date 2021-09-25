@@ -14,6 +14,7 @@ func RouteRegister(routeEngine *gin.Engine) {
 		user := adminRoute.Group("user")
 		{
 			user.POST("/register", admin.UserRegister)
+			user.POST("/login", admin.UserLogin)
 		}
 
 		// service
