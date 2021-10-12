@@ -8,13 +8,21 @@ import (
 
 func RouteRegister(routeEngine *gin.Engine) {
 
+	noLoginRoute := routeEngine.Group("admin")
+	{
+		user := noLoginRoute.Group("user")
+		{
+			user.POST("/register", admin.UserRegister)
+			user.POST("/login", admin.UserLogin)
+		}
+	}
+
 	adminRoute := routeEngine.Group("admin", middlewares.CheckUserLogin)
 	{
 		// user
 		user := adminRoute.Group("user")
 		{
-			user.POST("/register", admin.UserRegister)
-			user.POST("/login", admin.UserLogin)
+			user.POST("/logout", admin.UserLogout)
 		}
 
 		// service

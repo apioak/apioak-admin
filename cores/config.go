@@ -25,6 +25,12 @@ type ConfigDatabase struct {
 	SqlMode            bool   `yaml:"sql_mode"`
 }
 
+type ConfigToken struct {
+	TokenIssuer string `yaml:"token_issuer"`
+	TokenSecret string `yaml:"token_secret"`
+	TokenExpire uint32 `yaml:"token_expire"`
+}
+
 type ConfigValidator struct {
 	Locale string `yaml:"locale"`
 }
@@ -38,6 +44,7 @@ type ConfigGlobal struct {
 	Server    ConfigServer    `yaml:"server"`
 	Database  ConfigDatabase  `yaml:"database"`
 	Validator ConfigValidator `yaml:"validator"`
+	Token     ConfigToken     `yaml:"token"`
 	Runtime   ConfigRuntime
 }
 

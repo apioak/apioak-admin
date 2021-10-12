@@ -1,15 +1,27 @@
 package middlewares
 
 import (
-	"fmt"
+	"apioak-admin/app/services"
+	"apioak-admin/app/utils"
 	"github.com/gin-gonic/gin"
 )
 
 func CheckUserLogin(c *gin.Context) {
-	// @todo 校验用户是否登录
-	token := c.GetHeader("token")
+	token := c.GetHeader("auth-token")
 
-	fmt.Println("~~~~~~~~~~~~~~~~~~~~~~~~~~ check-login-middleware:[" + token + "] ~~~~~~~~~~~~~~~~~~~~~~~~~~")
+	loginStatus, loginStatusErr := services.CheckUserLoginStatus(token)
+	if (loginStatusErr != nil) || (loginStatus == false) {
+		utils.Error(c, loginStatusErr.Error())
+		c.Abort()
+		return
+	}
+
+	refresh, refreshErr := services.UserLoginRefresh(token)
+	if (refreshErr != nil) || (refresh == false) {
+		utils.Error(c, refreshErr.Error())
+		c.Abort()
+		return
+	}
 
 	c.Next()
 }

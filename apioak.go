@@ -24,6 +24,11 @@ func main() {
 		panic(err)
 	}
 
+	// 初始化登录数据
+	if err := cores.InitToken(&conf); err != nil {
+		panic(err)
+	}
+
 	// 初始化参数验证器
 	if err := cores.InitValidator(&conf); err != nil {
 		panic(err)

@@ -2,11 +2,14 @@ package utils
 
 import (
 	"apioak-admin/app/enums"
+	"apioak-admin/app/packages"
 	"bytes"
 	"crypto/md5"
 	"crypto/rand"
 	"crypto/x509"
+	"encoding/base64"
 	"encoding/hex"
+	"encoding/json"
 	"encoding/pem"
 	"errors"
 	"fmt"
@@ -141,4 +144,76 @@ func Md5(src string) string {
 	srcMd5 := hex.EncodeToString(m.Sum(nil))
 
 	return srcMd5
+}
+
+type ExpireToken struct {
+	Expire int64
+	Token  string
+}
+
+var EmailExpire = make(map[string]ExpireToken, 0)
+
+func SetTokenExpire(token string, expire int64) {
+	email, _ := ParseToken(token)
+	expireToken := ExpireToken{
+		Expire: expire,
+		Token:  token,
+	}
+
+	EmailExpire[email] = expireToken
+}
+
+func GetTokenExpire() *map[string]ExpireToken {
+	return &EmailExpire
+}
+
+type TokenClaims struct {
+	Encryption string `json:"encryption"`
+	Secret     string `json:"secret"`
+	Timestamp  int64  `json:"timestamp"`
+	Issuer     string `json:"issuer"`
+}
+
+func GenToken(encryption string) (string, error) {
+	tokenClaims := TokenClaims{
+		Encryption: encryption,
+		Secret:     packages.Token.TokenSecret,
+		Timestamp:  time.Now().UnixNano(),
+		Issuer:     packages.Token.TokenIssuer,
+	}
+
+	var (
+		jsonValue []byte
+		err       error
+	)
+	if jsonValue, err = json.Marshal(tokenClaims); err != nil {
+		return "", err
+	}
+
+	token := strings.TrimRight(base64.URLEncoding.EncodeToString(jsonValue), "=")
+
+	return token, nil
+}
+
+func ParseToken(tokenString string) (string, error) {
+	if l := len(tokenString) % 4; l > 0 {
+		tokenString += strings.Repeat("=", 4-l)
+	}
+
+	tokenStructStr, tokenStructStrErr := base64.URLEncoding.DecodeString(tokenString)
+	if tokenStructStrErr != nil {
+		return "", tokenStructStrErr
+	}
+
+	tokenClaims := TokenClaims{}
+	unmarshalErr := json.Unmarshal(tokenStructStr, &tokenClaims)
+	if unmarshalErr != nil {
+		return "", unmarshalErr
+	}
+
+	if tokenClaims.Issuer != packages.Token.TokenIssuer || tokenClaims.Secret != packages.Token.TokenSecret {
+		return "", errors.New("token parsing failed")
+	}
+
+	return tokenClaims.Encryption, nil
 }

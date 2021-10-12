@@ -84,3 +84,13 @@ func (u *Users) UserAdd(userData *Users) error {
 
 	return err
 }
+
+func (u *Users) UserInfoByEmail(email string) Users {
+	userInfo := Users{}
+	packages.GetDb().
+		Table(u.TableName()).
+		Where("email = ?", email).
+		First(&userInfo)
+
+	return userInfo
+}

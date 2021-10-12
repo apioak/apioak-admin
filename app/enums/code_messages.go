@@ -42,7 +42,13 @@ const (
 
 	ClusterNodeNull = 10501 // 节点不存在
 
-	UserEmailExist = 10601 // 邮箱已注册
+	UserEmailExist      = 10601 // 邮箱已注册
+	UserNull            = 10602 // 用户不存在
+	UserPasswordError   = 10603 // 用户与密码不匹配
+	UserTokenError      = 10605 // 用户token验证信息失败
+	UserNoLoggingIn     = 10606 // 用户未登录
+	UserLoggingInError  = 10607 // 用户登录失败
+	UserLoggingInExpire = 10608 // 用户登录已过期
 )
 
 var ZhMapMessages = map[int]string{
@@ -77,7 +83,13 @@ var ZhMapMessages = map[int]string{
 
 	ClusterNodeNull: "节点不存在",
 
-	UserEmailExist: "邮箱已注册",
+	UserEmailExist:      "邮箱已注册",
+	UserNull:            "用户不存在",
+	UserPasswordError:   "用户与密码不匹配",
+	UserTokenError:      "用户token验证信息失败",
+	UserNoLoggingIn:     "用户未登录",
+	UserLoggingInError:  "用户登录失败",
+	UserLoggingInExpire: "用户登录已过期",
 }
 
 var EnMapMessages = map[int]string{
@@ -112,7 +124,13 @@ var EnMapMessages = map[int]string{
 
 	ClusterNodeNull: "Node does not exist",
 
-	UserEmailExist: "Email has been registered",
+	UserEmailExist:      "Email has been registered",
+	UserNull:            "User does not exist",
+	UserPasswordError:   "User and password do not match",
+	UserTokenError:      "User token verification information failed",
+	UserNoLoggingIn:     "User is not logged in",
+	UserLoggingInError:  "User login failed",
+	UserLoggingInExpire: "User login has expired",
 }
 
 func CodeMessages(code int) string {
