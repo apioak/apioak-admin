@@ -19,6 +19,11 @@ func main() {
 		panic(err)
 	}
 
+	// 初始化Logger
+	if err := cores.InitLogger(&conf); err != nil {
+		panic(err)
+	}
+
 	// 初始化数据库
 	if err := cores.InitDataBase(&conf); err != nil {
 		panic(err)

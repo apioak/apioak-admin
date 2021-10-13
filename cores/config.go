@@ -13,6 +13,13 @@ type ConfigServer struct {
 	Mode string `yaml:"mode"`
 }
 
+type Logger struct {
+	LogPath      string `yaml:"log_path"`
+	LogFileInfo  string `yaml:"log_file_info"`
+	LogFileError string `yaml:"log_file_error"`
+	LogReserve   int64  `yaml:"log_reserve"`
+}
+
 type ConfigDatabase struct {
 	Driver             string `yaml:"driver"`
 	Host               string `yaml:"host"`
@@ -46,6 +53,7 @@ type ConfigRuntime struct {
 
 type ConfigGlobal struct {
 	Server    ConfigServer    `yaml:"server"`
+	Logger    Logger          `yaml:"logger"`
 	Database  ConfigDatabase  `yaml:"database"`
 	Etcd      ConfigEtcd      `yaml:"etcd"`
 	Validator ConfigValidator `yaml:"validator"`
