@@ -24,7 +24,12 @@ func main() {
 		panic(err)
 	}
 
-	// 初始化登录数据
+	// 初始化ETCD
+	if err := cores.InitEtcd(&conf); err != nil {
+		panic(err)
+	}
+
+	// 初始化Token
 	if err := cores.InitToken(&conf); err != nil {
 		panic(err)
 	}
@@ -38,6 +43,8 @@ func main() {
 	if err := cores.InitRoute(&conf); err != nil {
 		panic(err)
 	}
+
+	cores.InitGoroutineFunc()
 
 	// 服务启动
 	if err := cores.RunFramework(&conf); err != nil {

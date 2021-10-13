@@ -25,6 +25,10 @@ type ConfigDatabase struct {
 	SqlMode            bool   `yaml:"sql_mode"`
 }
 
+type ConfigEtcd struct {
+	HostPort string `yaml:"host_port"`
+}
+
 type ConfigToken struct {
 	TokenIssuer string `yaml:"token_issuer"`
 	TokenSecret string `yaml:"token_secret"`
@@ -43,6 +47,7 @@ type ConfigRuntime struct {
 type ConfigGlobal struct {
 	Server    ConfigServer    `yaml:"server"`
 	Database  ConfigDatabase  `yaml:"database"`
+	Etcd      ConfigEtcd      `yaml:"etcd"`
 	Validator ConfigValidator `yaml:"validator"`
 	Token     ConfigToken     `yaml:"token"`
 	Runtime   ConfigRuntime

@@ -217,3 +217,31 @@ func ParseToken(tokenString string) (string, error) {
 
 	return tokenClaims.Encryption, nil
 }
+
+func IPTypeToName(ipType int) (string, error) {
+	iPTypeToNameMap := map[int]string{
+		IPTypeV4: IPV4,
+		IPTypeV6: IPV6,
+	}
+
+	typeName, typeNameExist := iPTypeToNameMap[ipType]
+	if typeNameExist == false {
+		return "", errors.New("IP type does not exist")
+	}
+
+	return typeName, nil
+}
+
+func IPNameToType(ipName string) (int, error) {
+	iPNameToTypeMap := map[string]int{
+		IPV4: IPTypeV4,
+		IPV6: IPTypeV6,
+	}
+
+	ipType, ipTypeExist := iPNameToTypeMap[ipName]
+	if ipTypeExist == false {
+		return -1, errors.New("IP type does not exist")
+	}
+
+	return ipType, nil
+}

@@ -16,6 +16,9 @@ const (
 	IPV4 = "ipv4"
 	IPV6 = "ipv6"
 
+	IPTypeV4 = 1
+	IPTypeV6 = 2
+
 	LocalEn = "en"
 	LocalZh = "zh"
 
@@ -57,4 +60,11 @@ const (
 
 	PluginTypeNameAuth  = "鉴权"
 	PluginTypeNameLimit = "限流"
+
+	// ===================================== cluster node =====================================
+
+	EtcdKeyClusterNodeWatch = "/apioak/etcd-key/cluster/node/watch"
+
+	ClusterNodeStatusHealth    = 1
+	ClusterNodeStatusUnhealthy = 2
 )

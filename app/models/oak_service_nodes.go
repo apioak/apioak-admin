@@ -16,8 +16,6 @@ type ServiceNodes struct {
 }
 
 var (
-	IPTypeV4 = 1
-	IPTypeV6 = 2
 	sNodeId  = ""
 )
 
@@ -30,8 +28,8 @@ func IPTypeMap() map[string]int {
 	var ipTypeMap map[string]int
 	ipTypeMap = make(map[string]int)
 
-	ipTypeMap[utils.IPV4] = IPTypeV4
-	ipTypeMap[utils.IPV6] = IPTypeV6
+	ipTypeMap[utils.IPV4] = utils.IPTypeV4
+	ipTypeMap[utils.IPV6] = utils.IPTypeV6
 
 	return ipTypeMap
 }

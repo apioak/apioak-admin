@@ -5,7 +5,9 @@ import (
 	"apioak-admin/app/models"
 	"apioak-admin/app/utils"
 	"apioak-admin/app/validators"
+	"encoding/json"
 	"errors"
+	"strings"
 )
 
 func CheckClusterNodeNull(id string) error {
@@ -87,4 +89,58 @@ func ClusterNodeDelete(id string) error {
 	// @todo 触发远程发送数据 开启/停止 网关服务，停止与远程服务的通信
 
 	return nil
+}
+
+func ClusterNodeWatchAdd(watchValue string) {
+	defer func() {
+		if r := recover(); r != nil {
+			// @todo 记录日志信息（详细报错信息）
+		}
+	}()
+
+	type clusterNodeInfo struct {
+		NodeIP   string `json:"node_ip"`
+		IsEnable int    `json:"is_enable"`
+	}
+
+	clusterNode := clusterNodeInfo{}
+	err := json.Unmarshal([]byte(watchValue), &clusterNode)
+	if err != nil {
+		// @todo 记录日志错误信息
+	}
+
+	ipTypeName, ipTypeNameErr := utils.DiscernIP(clusterNode.NodeIP)
+	if ipTypeNameErr != nil {
+		// @todo 记录日志错误信息
+	}
+
+	ipType, ipTypeErr := utils.IPNameToType(ipTypeName)
+	if ipTypeErr != nil {
+		// @todo 记录日志错误信息
+	}
+
+	clusterNodesModel := models.ClusterNodes{
+		NodeIP:     clusterNode.NodeIP,
+		IPType:     ipType,
+		NodeStatus: utils.ClusterNodeStatusHealth,
+		IsEnable:   clusterNode.IsEnable,
+	}
+
+	clusterNodesInfo := clusterNodesModel.ClusterNodeInfoByIp(clusterNode.NodeIP)
+
+	if strings.TrimSpace(clusterNodesInfo.NodeIP) == strings.TrimSpace(clusterNode.NodeIP) {
+
+		updateErr := clusterNodesModel.ClusterNodeUpdate(clusterNodesInfo.ID, &clusterNodesModel)
+		if updateErr != nil {
+			// @todo 记录日志错误信息
+		}
+
+	} else {
+		addErr := clusterNodesModel.ClusterNodeAdd(&clusterNodesModel)
+		if addErr != nil {
+			// @todo 记录日志错误信息
+		}
+	}
+
+	return
 }

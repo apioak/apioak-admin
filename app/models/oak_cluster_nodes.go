@@ -2,6 +2,7 @@ package models
 
 import (
 	"apioak-admin/app/packages"
+	"apioak-admin/app/utils"
 	"apioak-admin/app/validators"
 	"strings"
 )
@@ -18,6 +19,42 @@ type ClusterNodes struct {
 // TableName sets the insert table name for this struct type
 func (c *ClusterNodes) TableName() string {
 	return "oak_cluster_nodes"
+}
+
+var clusterNodeId = ""
+
+func (c *ClusterNodes) ClusterNodeIdUnique(cIds map[string]string) (string, error) {
+	if c.ID == "" {
+		tmpID, err := utils.IdGenerate(utils.IdTypeClusterNode)
+		if err != nil {
+			return "", err
+		}
+		c.ID = tmpID
+	}
+
+	result := packages.GetDb().
+		Table(c.TableName()).
+		Select("id").
+		First(&c)
+
+	mapId := cIds[c.ID]
+	if (result.RowsAffected == 0) && (c.ID != mapId) {
+		clusterNodeId = c.ID
+		cIds[c.ID] = c.ID
+		return clusterNodeId, nil
+	} else {
+		nodeId, nodeIdErr := utils.IdGenerate(utils.IdTypeClusterNode)
+		if nodeIdErr != nil {
+			return "", nodeIdErr
+		}
+		c.ID = nodeId
+		_, err := c.ClusterNodeIdUnique(cIds)
+		if err != nil {
+			return "", err
+		}
+	}
+
+	return clusterNodeId, nil
 }
 
 func (c *ClusterNodes) ClusterNodeInfoById(id string) ClusterNodes {
@@ -83,4 +120,39 @@ func (c *ClusterNodes) ClusterNodeDelete(id string) error {
 	}
 
 	return nil
+}
+
+func (c *ClusterNodes) ClusterNodeInfoByIp(ip string) ClusterNodes {
+	clusterNodeInfo := ClusterNodes{}
+	db := packages.GetDb().
+		Table(c.TableName()).
+		Where("node_ip = ?", ip)
+
+	db.First(&clusterNodeInfo)
+
+	return clusterNodeInfo
+}
+
+func (c *ClusterNodes) ClusterNodeAdd(clusterNodesData *ClusterNodes) error {
+	tpmIds := map[string]string{}
+	clusterNodeIdUnique, clusterNodeIdUniqueErr := c.ClusterNodeIdUnique(tpmIds)
+	if clusterNodeIdUniqueErr != nil {
+		return clusterNodeIdUniqueErr
+	}
+	clusterNodesData.ID = clusterNodeIdUnique
+
+	err := packages.GetDb().
+		Table(c.TableName()).
+		Create(clusterNodesData).Error
+
+	return err
+}
+
+func (c *ClusterNodes) ClusterNodeUpdate(id string, clusterNodesData *ClusterNodes) error {
+	updateError := packages.GetDb().
+		Table(c.TableName()).
+		Where("id = ?", id).
+		Updates(clusterNodesData).Error
+
+	return updateError
 }

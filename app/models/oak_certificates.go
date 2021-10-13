@@ -25,7 +25,7 @@ func (c *Certificates) TableName() string {
 
 var certificatesId = ""
 
-func (c *Certificates) PluginIdUnique(cIds map[string]string) (string, error) {
+func (c *Certificates) CertificatesIdUnique(cIds map[string]string) (string, error) {
 	if c.ID == "" {
 		tmpID, err := utils.IdGenerate(utils.IdTypeCertificate)
 		if err != nil {
@@ -50,7 +50,7 @@ func (c *Certificates) PluginIdUnique(cIds map[string]string) (string, error) {
 			return "", certIdErr
 		}
 		c.ID = certId
-		_, err := c.PluginIdUnique(cIds)
+		_, err := c.CertificatesIdUnique(cIds)
 		if err != nil {
 			return "", err
 		}
@@ -61,7 +61,7 @@ func (c *Certificates) PluginIdUnique(cIds map[string]string) (string, error) {
 
 func (c *Certificates) CertificatesAdd(certificatesData *Certificates) error {
 	tpmIds := map[string]string{}
-	certificatesId, certificatesIdUniqueErr := c.PluginIdUnique(tpmIds)
+	certificatesId, certificatesIdUniqueErr := c.CertificatesIdUnique(tpmIds)
 	if certificatesIdUniqueErr != nil {
 		return certificatesIdUniqueErr
 	}
