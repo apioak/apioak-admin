@@ -23,9 +23,15 @@ func ServiceAdd(c *gin.Context) {
 		return
 	}
 
-	err := services.CheckExistDomain(serviceAddUpdateValidator.ServiceDomains, []string{})
-	if err != nil {
-		utils.Error(c, err.Error())
+	checkExistDomainErr := services.CheckExistDomain(serviceAddUpdateValidator.ServiceDomains, []string{})
+	if checkExistDomainErr != nil {
+		utils.Error(c, checkExistDomainErr.Error())
+		return
+	}
+
+	CheckDomainCertificateErr := services.CheckDomainCertificate(serviceAddUpdateValidator.Protocol, serviceAddUpdateValidator.ServiceDomains)
+	if CheckDomainCertificateErr != nil {
+		utils.Error(c, CheckDomainCertificateErr.Error())
 		return
 	}
 

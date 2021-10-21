@@ -14,11 +14,11 @@ func InitLogger(conf *ConfigGlobal) error {
 	confLogger := conf.Logger
 
 	infoLevel := zap.LevelEnablerFunc(func(lvl zapcore.Level) bool {
-		return lvl < zapcore.ErrorLevel
+		return lvl < zapcore.WarnLevel
 	})
 
 	errorLevel := zap.LevelEnablerFunc(func(lvl zapcore.Level) bool {
-		return lvl >= zapcore.ErrorLevel
+		return lvl >= zapcore.WarnLevel
 	})
 
 	infoWriter := GetWriter(conf, confLogger.LogFileInfo)

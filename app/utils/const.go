@@ -30,6 +30,8 @@ const (
 	EnableOn  = 1
 	EnableOff = 2
 
+	EtcdTimeOut = 3
+
 	// ===================================== service =====================================
 
 	LoadBalanceRoundRobin = 1 // 轮询
@@ -63,7 +65,7 @@ const (
 
 	// ===================================== cluster node =====================================
 
-	EtcdKeyClusterNodeWatch = "/apioak/etcd-key/cluster/node/watch"
+	EtcdKeyWatchClusterNode = "/apioak/etcd-key/watch/cluster/node/add"
 
 	ClusterNodeStatusHealth    = 1
 	ClusterNodeStatusUnhealthy = 2

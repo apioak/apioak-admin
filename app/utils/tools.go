@@ -245,3 +245,30 @@ func IPNameToType(ipName string) (int, error) {
 
 	return ipType, nil
 }
+
+func InterceptSni(domains []string) ([]string, error) {
+	domainSniInfos := make([]string, 0)
+	if len(domains) == 0 {
+		return domainSniInfos, nil
+	}
+
+	tmpDomainSniMap := make(map[string]byte, 0)
+	for _, domain := range domains {
+		disassembleDomains := strings.Split(domain, ".")
+		if len(disassembleDomains) < 2 {
+			return domainSniInfos, errors.New(enums.CodeMessages(enums.ServiceDomainFormatError))
+		}
+
+		domainSniInfo := "." + disassembleDomains[len(disassembleDomains)-2] + "." + disassembleDomains[len(disassembleDomains)-1]
+
+		_, exit := tmpDomainSniMap[domainSniInfo]
+		if exit {
+			continue
+		}
+
+		tmpDomainSniMap[domainSniInfo] = 0
+		domainSniInfos = append(domainSniInfos, domainSniInfo)
+	}
+
+	return domainSniInfos, nil
+}

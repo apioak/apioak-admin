@@ -52,6 +52,46 @@ func CheckExistDomain(domains string, filterServiceIds []string) error {
 	return nil
 }
 
+func CheckDomainCertificate(protocol int, domains string) error {
+	if (protocol != utils.ProtocolHTTPS) && (protocol != utils.ProtocolHTTPAndHTTPS) {
+		return nil
+	}
+
+	domainInfos := strings.Split(strings.TrimSpace(domains), ",")
+	domainSniInfos, domainSniInfosErr := utils.InterceptSni(domainInfos)
+	if domainSniInfosErr != nil {
+		return domainSniInfosErr
+	}
+
+	certificatesModel := models.Certificates{}
+	domainCertificateInfos := certificatesModel.CertificateInfoByDomainSniInfos(domainSniInfos)
+	if len(domainCertificateInfos) == len(domainSniInfos) {
+		return nil
+	}
+
+	nullCertificateDomains := make([]string, 0)
+	for _, domainInfo := range domainInfos {
+		if len(domainCertificateInfos) == 0 {
+
+			nullCertificateDomains = append(nullCertificateDomains, domainInfo)
+		} else {
+			for _, domainCertificateInfo := range domainCertificateInfos {
+
+				domainSni := strings.ReplaceAll(domainCertificateInfo.Sni, "*", "")
+				if domainInfo[len(domainInfo)-len(domainSni):] != domainSni {
+					nullCertificateDomains = append(nullCertificateDomains, domainInfo)
+				}
+			}
+		}
+	}
+
+	if len(nullCertificateDomains) != 0 {
+		return fmt.Errorf(fmt.Sprintf(enums.CodeMessages(enums.ServiceDomainSslNull), strings.Join(nullCertificateDomains, ",")))
+	}
+
+	return nil
+}
+
 func ServiceCreate(
 	serviceData *validators.ServiceAddUpdate,
 	serviceDomains *[]validators.ServiceDomainAddUpdate,
@@ -91,8 +131,6 @@ func ServiceCreate(
 		}
 		serviceNodeInfos = append(serviceNodeInfos, nodeIPInfo)
 	}
-
-	// @todo 选择 请求协议： HTTP 和 HTTP&HTTPS 时校验证书是否存在
 
 	createErr := serviceModel.ServiceAdd(&createServiceData, &serviceDomainInfos, &serviceNodeInfos)
 

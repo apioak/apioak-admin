@@ -28,7 +28,7 @@ func InitEtcd(conf *ConfigGlobal) error {
 
 	client, clientErr := clientv3.New(clientv3.Config{
 		Endpoints:   hostPorts,
-		DialTimeout: 2 * time.Second,
+		DialTimeout: time.Second * 2,
 	})
 	if clientErr != nil {
 		return fmt.Errorf("etcd client initialization error: `%s`", clientErr.Error())

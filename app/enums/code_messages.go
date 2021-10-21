@@ -21,7 +21,9 @@ const (
 	ServiceNull       = 10001 // 服务不存在
 	ServiceParamsNull = 10002 // 服务参数缺失
 
-	ServiceDomainExist = 10101 // 服务域名已存在
+	ServiceDomainExist       = 10101 // [%s]服务域名已存在
+	ServiceDomainFormatError = 10102 // 服务域名格式错误
+	ServiceDomainSslNull     = 10104 // [%s]服务域名证书缺失
 
 	RouteDefaultPathNoPermission = 10201 // [/*]默认路径暂无权限操作
 	RoutePathExist               = 10202 // 路由路径已存在
@@ -62,7 +64,9 @@ var ZhMapMessages = map[int]string{
 	ServiceNull:       "服务不存在",
 	ServiceParamsNull: "服务参数缺失",
 
-	ServiceDomainExist: "[%s]域名已存在",
+	ServiceDomainExist:       "[%s]域名已存在",
+	ServiceDomainFormatError: "服务域名格式错误",
+	ServiceDomainSslNull:     "[%s]服务域名证书缺失",
 
 	RouteDefaultPathNoPermission: "[/*]默认路径暂无权限操作",
 	RoutePathExist:               "[%s]路由路径已存在",
@@ -103,7 +107,9 @@ var EnMapMessages = map[int]string{
 	ServiceNull:       "Service does not exist",
 	ServiceParamsNull: "Missing service parameters",
 
-	ServiceDomainExist: "[%s]Domain name already exists",
+	ServiceDomainExist:       "[%s]Domain name already exists",
+	ServiceDomainFormatError: "Service domain name format error",
+	ServiceDomainSslNull:     "[%s]Service domain name certificate is missing",
 
 	RouteDefaultPathNoPermission: "[/*]The default path does not have permission to operate temporarily",
 	RoutePathExist:               "[%s]Routing path already exists",

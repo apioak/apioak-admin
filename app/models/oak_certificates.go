@@ -158,3 +158,24 @@ func (c *Certificates) CertificateSwitchEnable(id string, enable int) error {
 
 	return nil
 }
+
+func (c *Certificates) CertificateInfoByDomainSniInfos(domains []string) []Certificates {
+	certificateInfos := make([]Certificates, 0)
+	if len(domains) == 0 {
+		return certificateInfos
+	}
+
+	for _, domain := range domains {
+		certificateInfo := Certificates{}
+		packages.GetDb().
+			Table(c.TableName()).
+			Where("sni LIKE ?", "%"+domain).
+			First(&certificateInfo)
+
+		if len(certificateInfo.ID) != 0 {
+			certificateInfos = append(certificateInfos, certificateInfo)
+		}
+	}
+
+	return certificateInfos
+}
