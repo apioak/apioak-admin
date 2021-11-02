@@ -2,6 +2,7 @@ package utils
 
 const (
 	IdTypeUser          = "u"
+	IdTypeUserToken     = "ut"
 	IdTypeService       = "svc"
 	IdTypeServiceDomain = "sdm"
 	IdTypeServiceNode   = "snd"

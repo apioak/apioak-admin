@@ -39,6 +39,8 @@ func IdGenerate(idType string) (string, error) {
 	switch strings.ToLower(idType) {
 	case IdTypeUser:
 		id = IdTypeUser + "-" + randomId
+	case IdTypeUserToken:
+		id = IdTypeUserToken + "-" + randomId
 	case IdTypeService:
 		id = IdTypeService + "-" + randomId
 	case IdTypeServiceDomain:
@@ -151,22 +153,6 @@ type ExpireToken struct {
 	Token  string
 }
 
-var EmailExpire = make(map[string]ExpireToken, 0)
-
-func SetTokenExpire(token string, expire int64) {
-	email, _ := ParseToken(token)
-	expireToken := ExpireToken{
-		Expire: expire,
-		Token:  token,
-	}
-
-	EmailExpire[email] = expireToken
-}
-
-func GetTokenExpire() *map[string]ExpireToken {
-	return &EmailExpire
-}
-
 type TokenClaims struct {
 	Encryption string `json:"encryption"`
 	Secret     string `json:"secret"`
@@ -216,20 +202,6 @@ func ParseToken(tokenString string) (string, error) {
 	}
 
 	return tokenClaims.Encryption, nil
-}
-
-func IPTypeToName(ipType int) (string, error) {
-	iPTypeToNameMap := map[int]string{
-		IPTypeV4: IPV4,
-		IPTypeV6: IPV6,
-	}
-
-	typeName, typeNameExist := iPTypeToNameMap[ipType]
-	if typeNameExist == false {
-		return "", errors.New("IP type does not exist")
-	}
-
-	return typeName, nil
 }
 
 func IPNameToType(ipName string) (int, error) {

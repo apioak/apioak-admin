@@ -54,7 +54,12 @@ func UserLogin(email string) (string, error) {
 	}
 
 	emailExpires, _ := time.ParseDuration(fmt.Sprintf("+%dm", packages.Token.TokenExpire))
-	utils.SetTokenExpire(token, time.Now().Add(emailExpires).Unix())
+
+	userTokensModel := models.UserTokens{}
+	setErr := userTokensModel.SetTokenExpire(email, token, time.Now().Add(emailExpires))
+	if setErr != nil {
+		return "", setErr
+	}
 
 	return token, nil
 }
@@ -65,20 +70,34 @@ func UserLogout(token string) (bool, error) {
 		return false, errors.New(enums.CodeMessages(enums.UserTokenError))
 	}
 
-	allEmailExpireTimes := *utils.GetTokenExpire()
-	delete(allEmailExpireTimes, email)
+	userTokensModel := models.UserTokens{}
+	userTokenExpire := userTokensModel.GetTokenExpireByEmail(email)
+
+	if len(userTokenExpire.UserEmail) == 0 || userTokenExpire.UserEmail != email {
+		return false, errors.New(enums.CodeMessages(enums.UserNoLoggingIn))
+	}
+
+	delTokenExpireByEmailErr := userTokensModel.DelTokenExpireByEmail(email)
+	if delTokenExpireByEmailErr != nil {
+		return false, delTokenExpireByEmailErr
+	}
 
 	return true, nil
 }
 
 func UserLoginRefresh(token string) (bool, error) {
-	_, err := utils.ParseToken(token)
+	email, err := utils.ParseToken(token)
 	if err != nil {
 		return false, errors.New(enums.CodeMessages(enums.UserTokenError))
 	}
 
 	emailExpires, _ := time.ParseDuration(fmt.Sprintf("+%dm", packages.Token.TokenExpire))
-	utils.SetTokenExpire(token, time.Now().Add(emailExpires).Unix())
+
+	userTokensModel := models.UserTokens{}
+	setErr := userTokensModel.SetTokenExpire(email, token, time.Now().Add(emailExpires))
+	if setErr != nil {
+		return false, setErr
+	}
 
 	return true, nil
 }
@@ -89,19 +108,19 @@ func CheckUserLoginStatus(token string) (bool, error) {
 		return false, errors.New(enums.CodeMessages(enums.UserTokenError))
 	}
 
-	allEmailExpireTimes := *utils.GetTokenExpire()
-	emailExpireTime, emailExpireTimeExist := allEmailExpireTimes[email]
+	userTokensModel := models.UserTokens{}
+	userTokenExpire := userTokensModel.GetTokenExpireByEmail(email)
 
-	if emailExpireTimeExist == false {
+	if len(userTokenExpire.UserEmail) == 0 || userTokenExpire.UserEmail != email {
 
 		return false, errors.New(enums.CodeMessages(enums.UserNoLoggingIn))
 
 	} else {
-		if emailExpireTime.Token != token {
+		if userTokenExpire.Token != token {
 			return false, errors.New(enums.CodeMessages(enums.UserTokenError))
 		}
 
-		if emailExpireTime.Expire < time.Now().Unix() {
+		if userTokenExpire.ExpiredAt.Unix() < time.Now().Unix() {
 			return false, errors.New(enums.CodeMessages(enums.UserLoggingInExpire))
 		}
 	}

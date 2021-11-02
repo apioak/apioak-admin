@@ -35,6 +35,13 @@ func Error(c *gin.Context, message string) {
 	Response(c, resultMsg)
 }
 
+func CustomError(c *gin.Context, code int, message string) {
+	resultMsg := &result{}
+	resultMsg.Code = code
+	resultMsg.Msg = message
+	Response(c, resultMsg)
+}
+
 func Response(c *gin.Context, result interface{}) {
 	c.JSON(http.StatusOK, result)
 }

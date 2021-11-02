@@ -7,6 +7,7 @@ import (
 	"apioak-admin/app/utils"
 	"apioak-admin/app/validators"
 	"github.com/gin-gonic/gin"
+	"net/http"
 )
 
 func UserRegister(c *gin.Context) {
@@ -65,7 +66,7 @@ func UserLogout(c *gin.Context) {
 
 	loginStatus, loginStatusErr := services.CheckUserLoginStatus(token)
 	if (loginStatusErr != nil) || (loginStatus == false) {
-		utils.Error(c, loginStatusErr.Error())
+		utils.CustomError(c, http.StatusUnauthorized, loginStatusErr.Error())
 		return
 	}
 
