@@ -377,7 +377,7 @@ func (s *Services) ServiceAllInfosListPage(
 
 	tx = tx.
 		Preload("Domains").
-		Order("updated_at desc")
+		Order("created_at desc")
 
 	listError = ListPaginate(tx, &list, &param.BaseListPage)
 	return

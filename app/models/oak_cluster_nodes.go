@@ -103,7 +103,7 @@ func (c *ClusterNodes) ClusterNodeListPage(param *validators.ClusterNodeList) (l
 		return
 	}
 
-	tx = tx.Order("updated_at DESC")
+	tx = tx.Order("created_at DESC")
 	listError = ListPaginate(tx, &list, &param.BaseListPage)
 	return
 

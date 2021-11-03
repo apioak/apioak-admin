@@ -66,7 +66,7 @@ func (r *RoutePlugins) RoutePluginInfosByPluginIds(pluginIds []string) ([]RouteP
 	err := packages.GetDb().
 		Table(r.TableName()).
 		Where("plugin_id IN ?", pluginIds).
-		Order("updated_at DESC").
+		Order("created_at DESC").
 		Find(&routePluginInfos).Error
 
 	return routePluginInfos, err
@@ -77,7 +77,7 @@ func (r *RoutePlugins) RoutePluginAllListByRouteIds(routeIds []string) []RoutePl
 	packages.GetDb().
 		Table(r.TableName()).
 		Where("route_id IN ?", routeIds).
-		Order("updated_at DESC").
+		Order("created_at DESC").
 		Find(&routePluginAllList)
 
 	return routePluginAllList
@@ -88,7 +88,7 @@ func (r *RoutePlugins) RoutePluginInfoConfigListByRouteIds(routeIds []string) []
 	packages.GetDb().
 		Table(r.TableName()).
 		Where("route_id IN ?", routeIds).
-		Order("updated_at DESC").
+		Order("created_at DESC").
 		Preload("Plugin").
 		Find(&routePluginInfoConfigList)
 

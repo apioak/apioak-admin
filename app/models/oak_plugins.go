@@ -150,7 +150,7 @@ func (p *Plugins) PluginListPage(param *validators.PluginList) (list []Plugins, 
 		return
 	}
 
-	tx = tx.Order("updated_at desc")
+	tx = tx.Order("created_at desc")
 	listError = ListPaginate(tx, &list, &param.BaseListPage)
 	return
 }

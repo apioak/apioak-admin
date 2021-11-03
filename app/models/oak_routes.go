@@ -218,7 +218,7 @@ func (r *Routes) RouteListPage(
 
 	tx = tx.
 		Preload("Plugins").
-		Order("updated_at desc")
+		Order("created_at desc")
 
 	listError = ListPaginate(tx, &list, &param.BaseListPage)
 

@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"errors"
 	"strings"
-	"time"
 )
 
 func CheckCertificateNull(id string) error {
@@ -206,10 +205,10 @@ func (c *CertificateContent) CertificateContentInfo(id string) CertificateConten
 }
 
 type CertificateInfo struct {
-	ID        string    `json:"id"`
-	Sni       string    `json:"sni"`
-	ExpiredAt time.Time `json:"expired_at"`
-	IsEnable  int       `json:"is_enable"`
+	ID        string `json:"id"`
+	Sni       string `json:"sni"`
+	ExpiredAt int64  `json:"expired_at"`
+	IsEnable  int    `json:"is_enable"`
 }
 
 func (c *CertificateInfo) CertificateListPage(param *validators.CertificateList) ([]CertificateInfo, int, error) {
@@ -222,7 +221,7 @@ func (c *CertificateInfo) CertificateListPage(param *validators.CertificateList)
 			certificateInfo := CertificateInfo{}
 			certificateInfo.ID = certificateListInfo.ID
 			certificateInfo.Sni = certificateListInfo.Sni
-			certificateInfo.ExpiredAt = certificateListInfo.ExpiredAt
+			certificateInfo.ExpiredAt = certificateListInfo.ExpiredAt.Unix()
 			certificateInfo.IsEnable = certificateListInfo.IsEnable
 
 			certificateList = append(certificateList, certificateInfo)
