@@ -11,6 +11,12 @@ import (
 	"strings"
 )
 
+func PluginTypeList(c *gin.Context) {
+	pluginAllTypes := utils.PluginAllTypes()
+	
+	utils.Ok(c, pluginAllTypes)
+}
+
 func PluginAdd(c *gin.Context) {
 	var validatorPluginAdd = validators.ValidatorPluginAdd{}
 	if msg, err := packages.ParseRequestParams(c, &validatorPluginAdd); err != nil {

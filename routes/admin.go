@@ -65,6 +65,7 @@ func RouteRegister(routeEngine *gin.Engine) {
 		// plugin
 		plugin := adminRoute.Group("plugin")
 		{
+			plugin.GET("/type-list", admin.PluginTypeList)
 			plugin.POST("/add", admin.PluginAdd)
 			plugin.GET("/list", admin.PluginList)
 			plugin.PUT("/update/:id", admin.PluginUpdate)

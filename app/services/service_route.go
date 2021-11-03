@@ -256,6 +256,7 @@ func (r *RouteAddPluginInfo) RouteAddPluginList(filterRouteId string) ([]RouteAd
 
 type RoutePluginInfo struct {
 	ID          string `json:"id"`
+	PluginId    string `json:"plugin_id"`
 	Name        string `json:"name"`
 	Tag         string `json:"tag"`
 	Type        int    `json:"type"`
@@ -273,7 +274,8 @@ func (r *RoutePluginInfo) RoutePluginList(routeId string) []RoutePluginInfo {
 
 	for _, routePluginConfigInfo := range routePluginConfigInfos {
 		routePluginInfo := RoutePluginInfo{}
-		routePluginInfo.ID = routePluginConfigInfo.Plugin.ID
+		routePluginInfo.ID = routePluginConfigInfo.ID
+		routePluginInfo.PluginId = routePluginConfigInfo.Plugin.ID
 		routePluginInfo.Name = routePluginConfigInfo.Plugin.Name
 		routePluginInfo.Tag = routePluginConfigInfo.Plugin.Tag
 		routePluginInfo.Type = routePluginConfigInfo.Plugin.Type
