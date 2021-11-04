@@ -13,7 +13,7 @@ import (
 
 func PluginTypeList(c *gin.Context) {
 	pluginAllTypes := utils.PluginAllTypes()
-	
+
 	utils.Ok(c, pluginAllTypes)
 }
 

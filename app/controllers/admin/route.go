@@ -372,7 +372,7 @@ func RoutePluginUpdate(c *gin.Context) {
 		return
 	}
 
-	checkRoutePluginExist := services.CheckRoutePluginNull(routePluginId, routeId, pluginId)
+	checkRoutePluginExist := services.CheckRoutePluginExist(routePluginId, routeId, pluginId)
 	if checkRoutePluginExist != nil {
 		utils.Error(c, checkRoutePluginExist.Error())
 		return
@@ -410,7 +410,7 @@ func RoutePluginDelete(c *gin.Context) {
 		return
 	}
 
-	checkRoutePluginExist := services.CheckRoutePluginNull(routePluginId, routeId, pluginId)
+	checkRoutePluginExist := services.CheckRoutePluginExist(routePluginId, routeId, pluginId)
 	if checkRoutePluginExist != nil {
 		utils.Error(c, checkRoutePluginExist.Error())
 		return
@@ -454,7 +454,7 @@ func RoutePluginSwitchEnable(c *gin.Context) {
 		return
 	}
 
-	checkRoutePluginExist := services.CheckRoutePluginNull(routePluginId, routeId, pluginId)
+	checkRoutePluginExist := services.CheckRoutePluginExist(routePluginId, routeId, pluginId)
 	if checkRoutePluginExist != nil {
 		utils.Error(c, checkRoutePluginExist.Error())
 		return
@@ -473,4 +473,36 @@ func RoutePluginSwitchEnable(c *gin.Context) {
 	}
 
 	utils.Ok(c)
+}
+
+func RoutePluginInfo(c *gin.Context) {
+	routeId := strings.TrimSpace(c.Param("route_id"))
+	pluginId := strings.TrimSpace(c.Param("plugin_id"))
+	routePluginId := strings.TrimSpace(c.Param("id"))
+
+	checkExistRouteErr := services.CheckRouteExist(routeId, "")
+	if checkExistRouteErr != nil {
+		utils.Error(c, checkExistRouteErr.Error())
+		return
+	}
+
+	checkPluginExistErr := services.CheckPluginExist(pluginId)
+	if checkPluginExistErr != nil {
+		utils.Error(c, checkPluginExistErr.Error())
+		return
+	}
+
+	checkRoutePluginExist := services.CheckRoutePluginExist(routePluginId, routeId, pluginId)
+	if checkRoutePluginExist != nil {
+		utils.Error(c, checkRoutePluginExist.Error())
+		return
+	}
+
+	routePluginConfigInfo, routePluginConfigInfoErr := services.RoutePluginConfigInfo(routePluginId)
+	if routePluginConfigInfoErr != nil {
+		utils.Error(c, routePluginConfigInfoErr.Error())
+		return
+	}
+
+	utils.Ok(c, routePluginConfigInfo)
 }

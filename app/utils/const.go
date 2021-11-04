@@ -64,6 +64,9 @@ const (
 	PluginTypeNameAuth  = "鉴权"
 	PluginTypeNameLimit = "限流"
 
+	PluginTagNameJwtAuth    = "jwt-auth"
+	PluginTagNameLimitCount = "limit-count"
+
 	// ===================================== cluster node =====================================
 
 	EtcdKeyWatchClusterNode = "/apioak/etcd-key/watch/cluster/node/add"

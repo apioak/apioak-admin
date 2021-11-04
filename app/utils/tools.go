@@ -129,6 +129,14 @@ func PluginAllTypes() []enumInfo {
 	return pluginTypeList
 }
 
+func PluginAllTags() []string {
+	pluginTagList := []string{
+		PluginTagNameJwtAuth, PluginTagNameLimitCount,
+	}
+
+	return pluginTagList
+}
+
 func AllRequestMethod() []string {
 	return []string{
 		RequestMethodALL,

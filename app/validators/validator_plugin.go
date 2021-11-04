@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	pluginTypeOneOfErrorMessages = map[string]string{
+	pluginTypeTagOneOfErrorMessages = map[string]string{
 		utils.LocalEn: "%s must be one of [%s]",
 		utils.LocalZh: "%s必须是[%s]中的一个",
 	}
@@ -18,7 +18,7 @@ var (
 
 type ValidatorPluginAdd struct {
 	Name        string `json:"name" zh:"插件名称" en:"Plugin name" binding:"required,min=1,max=30"`
-	Tag         string `json:"tag" zh:"插件标识" en:"Plugin tag" binding:"required,min=1,max=30"`
+	Tag         string `json:"tag" zh:"插件标识" en:"Plugin tag" binding:"required,min=1,max=30,CheckPluginTagOneOf"`
 	Icon        string `json:"icon" zh:"插件ICON" en:"Plugin icon" binding:"required,min=1,max=30"`
 	Type        int    `json:"type" zh:"插件类型" en:"Plugin type" binding:"required,CheckPluginTypeOneOf"`
 	Description string `json:"description" zh:"插件描述" en:"Plugin description" binding:"omitempty,max=150"`
@@ -38,7 +38,6 @@ type PluginList struct {
 
 func CheckPluginTypeOneOf(fl validator.FieldLevel) bool {
 	pluginTypeId := fl.Field().Int()
-
 	pluginAllTypes := utils.PluginAllTypes()
 
 	pluginTypeIdsMap := make(map[int]byte, 0)
@@ -57,8 +56,34 @@ func CheckPluginTypeOneOf(fl validator.FieldLevel) bool {
 	_, exist := pluginTypeIdsMap[int(pluginTypeId)]
 	if !exist {
 		var errMsg string
-		errMsg = fmt.Sprintf(pluginTypeOneOfErrorMessages[strings.ToLower(packages.GetValidatorLocale())], fl.FieldName(), strings.Join(pluginTypeIds, " "))
+		errMsg = fmt.Sprintf(pluginTypeTagOneOfErrorMessages[strings.ToLower(packages.GetValidatorLocale())], fl.FieldName(), strings.Join(pluginTypeIds, " "))
 		packages.SetAllCustomizeValidatorErrMsgs("CheckPluginTypeOneOf", errMsg)
+		return false
+	}
+
+	return true
+}
+
+func CheckPluginTagOneOf(fl validator.FieldLevel) bool {
+	pluginTag := fl.Field().String()
+	pluginAllTags := utils.PluginAllTags()
+
+	pluginTagsMap := make(map[string]byte, 0)
+	if len(pluginAllTags) != 0 {
+		for _, pluginAllTag := range pluginAllTags {
+			if len(pluginAllTag) == 0 {
+				continue
+			}
+
+			pluginTagsMap[pluginAllTag] = 0
+		}
+	}
+
+	_, exist := pluginTagsMap[pluginTag]
+	if !exist {
+		var errMsg string
+		errMsg = fmt.Sprintf(pluginTypeTagOneOfErrorMessages[strings.ToLower(packages.GetValidatorLocale())], fl.FieldName(), strings.Join(pluginAllTags, " "))
+		packages.SetAllCustomizeValidatorErrMsgs("CheckPluginTagOneOf", errMsg)
 		return false
 	}
 

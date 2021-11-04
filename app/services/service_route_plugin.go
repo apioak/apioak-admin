@@ -3,12 +3,13 @@ package services
 import (
 	"apioak-admin/app/enums"
 	"apioak-admin/app/models"
+	"apioak-admin/app/services/plugins"
 	"apioak-admin/app/utils"
 	"apioak-admin/app/validators"
 	"errors"
 )
 
-func CheckRoutePluginNull(id string, routeId string, pluginId string) error {
+func CheckRoutePluginExist(id string, routeId string, pluginId string) error {
 	routePluginModel := models.RoutePlugins{}
 	routePluginInfo := routePluginModel.RoutePluginInfoById(id, routeId, pluginId)
 	if routePluginInfo.ID != id {
@@ -98,4 +99,21 @@ func RoutePluginDelete(id string) error {
 	// @todo 需要同步远程数据中心
 
 	return nil
+}
+
+func RoutePluginConfigInfo(id string) (interface{}, error) {
+	routePluginModel := models.RoutePlugins{}
+	routePluginInfo := routePluginModel.RoutePluginInfoById(id, "", "")
+
+	pluginModel := &models.Plugins{}
+	pluginInfo := pluginModel.PluginInfoByIdRouteServiceId(routePluginInfo.PluginID)
+
+	newPluginContext, newPluginContextErr := plugins.NewPluginContext(pluginInfo.Tag, routePluginInfo.Config)
+	if newPluginContextErr != nil {
+		return nil, newPluginContextErr
+	}
+
+	parsePluginInfo := newPluginContext.StrategyPluginParse()
+
+	return parsePluginInfo, nil
 }

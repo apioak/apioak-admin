@@ -60,6 +60,7 @@ func RouteRegister(routeEngine *gin.Engine) {
 			route.PUT("/plugin/update/:route_id/:plugin_id/:id", admin.RoutePluginUpdate)
 			route.DELETE("/plugin/delete/:route_id/:plugin_id/:id", admin.RoutePluginDelete)
 			route.PUT("/plugin/switch/enable/:route_id/:plugin_id/:id", admin.RoutePluginSwitchEnable)
+			route.GET("/plugin/info/:route_id/:plugin_id/:id", admin.RoutePluginInfo)
 		}
 
 		// plugin
