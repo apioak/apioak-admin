@@ -36,7 +36,7 @@ const (
 	PluginTagExist   = 10301 // 插件标识已存在
 	PluginNull       = 10302 // 插件不存在
 	PluginRouteExist = 10303 // 插件已被路由绑定，暂不允许该操作
-	PluginTagNull    = 10304 // 插件标识不存在，请检查插件标识信息
+	PluginTagNull    = 10304 // 插件标识不存在，请检查[插件信息 - 插件标识]
 
 	CertificateFormatError = 10401 // 证书格式错误
 	CertificateParseError  = 10402 // 证书解析失败
@@ -81,7 +81,7 @@ var ZhMapMessages = map[int]string{
 	PluginTagExist:   "插件标识已存在",
 	PluginNull:       "插件不存在",
 	PluginRouteExist: "插件已被路由绑定，暂不允许该操作",
-	PluginTagNull:    "插件标识不存在，请检查插件标识信息",
+	PluginTagNull:    "插件标识不存在，请检查[插件信息 - 插件标识]",
 
 	CertificateFormatError: "证书格式错误",
 	CertificateParseError:  "证书解析失败",
@@ -126,7 +126,7 @@ var EnMapMessages = map[int]string{
 	PluginTagExist:   "Plugin tag already exists",
 	PluginNull:       "Plugin does not exist",
 	PluginRouteExist: "Plugin routing binding, operation is not allowed",
-	PluginTagNull:    "The plugin tag does not exist, please check the plugin tag information",
+	PluginTagNull:    "The plugin tag does not exist, please check [plugin information - plugin tag]",
 
 	CertificateFormatError: "Incorrect certificate format",
 	CertificateParseError:  "Certificate parsing failed",

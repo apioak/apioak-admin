@@ -3,6 +3,7 @@ package services
 import (
 	"apioak-admin/app/enums"
 	"apioak-admin/app/models"
+	"apioak-admin/app/services/plugins"
 	"apioak-admin/app/validators"
 	"errors"
 	"strings"
@@ -18,9 +19,21 @@ func CheckPluginExist(pluginId string) error {
 	return nil
 }
 
-func CheckPluginConfig(pluginId string, config string) error {
+func CheckPluginConfig(pluginId string, pluginConfig *validators.RoutePluginAddUpdate) error {
+	pluginModel := &models.Plugins{}
+	pluginInfo := pluginModel.PluginInfoByIdRouteServiceId(pluginId)
 
-	// @todo 根据插件ID校验插件的配置数据是否正确（每个插件有自定义的插件结构体，然后根据传递的数据进行解析）
+	newPluginContext, newPluginContextErr := plugins.NewPluginContext(pluginInfo.Tag, pluginConfig.Config)
+	if newPluginContextErr != nil {
+		return newPluginContextErr
+	}
+
+	pluginCheckErr := newPluginContext.StrategyPluginCheck()
+	if pluginCheckErr != nil {
+		return pluginCheckErr
+	}
+
+	pluginConfig.Config = newPluginContext.StrategyPluginJson()
 
 	return nil
 }

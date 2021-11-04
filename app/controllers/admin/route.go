@@ -334,7 +334,7 @@ func RoutePluginAdd(c *gin.Context) {
 		return
 	}
 
-	checkPluginConfigErr := services.CheckPluginConfig(pluginId, routePluginAddValidator.Config)
+	checkPluginConfigErr := services.CheckPluginConfig(pluginId, &routePluginAddValidator)
 	if checkPluginConfigErr != nil {
 		utils.Error(c, checkPluginConfigErr.Error())
 		return
@@ -378,7 +378,7 @@ func RoutePluginUpdate(c *gin.Context) {
 		return
 	}
 
-	checkPluginConfigErr := services.CheckPluginConfig(pluginId, routePluginUpdateValidator.Config)
+	checkPluginConfigErr := services.CheckPluginConfig(pluginId, &routePluginUpdateValidator)
 	if checkPluginConfigErr != nil {
 		utils.Error(c, checkPluginConfigErr.Error())
 		return

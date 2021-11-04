@@ -8,8 +8,9 @@ import (
 )
 
 type PluginStrategy interface {
-	PluginParse() interface{}
-	PluginCheck() error
+	PluginConfigParse() interface{}
+	PluginConfigParseToJson() string
+	PluginConfigCheck() error
 }
 
 type PluginContext struct {
@@ -32,9 +33,13 @@ func NewPluginContext(pluginTag string, config string) (PluginContext, error) {
 }
 
 func (p PluginContext) StrategyPluginParse() interface{} {
-	return p.Strategy.PluginParse()
+	return p.Strategy.PluginConfigParse()
+}
+
+func (p PluginContext) StrategyPluginJson() string {
+	return p.Strategy.PluginConfigParseToJson()
 }
 
 func (p PluginContext) StrategyPluginCheck() error {
-	return p.Strategy.PluginCheck()
+	return p.Strategy.PluginConfigCheck()
 }

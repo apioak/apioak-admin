@@ -22,17 +22,26 @@ func NewJwtAuth(config string) PluginJwtAuthConfig {
 	return newJwtAuth
 }
 
-func (jwtAuthConfig PluginJwtAuthConfig) PluginParse() interface{} {
+func (jwtAuthConfig PluginJwtAuthConfig) PluginConfigParse() interface{} {
 	pluginJwtAuth := PluginJwtAuth{}
 	_ = json.Unmarshal([]byte(jwtAuthConfig.ConfigInfo), &pluginJwtAuth)
 
 	return pluginJwtAuth
 }
 
-func (jwtAuthConfig PluginJwtAuthConfig) PluginCheck() error {
-	jwtAuth := jwtAuthConfig.PluginParse()
+func (jwtAuthConfig PluginJwtAuthConfig) PluginConfigParseToJson() string {
+	jwtAuth := jwtAuthConfig.PluginConfigParse()
+	pluginConfigJson, _ := json.Marshal(jwtAuth)
 
+	return  string(pluginConfigJson)
+}
+
+func (jwtAuthConfig PluginJwtAuthConfig) PluginConfigCheck() error {
+	jwtAuth := jwtAuthConfig.PluginConfigParse()
 	pluginJwtAuth := jwtAuth.(PluginJwtAuth)
+
+	// @todo 增加针对当前插件配置的参数校验
+
 	if len(pluginJwtAuth.Secret) == 0 {
 		return errors.New(enums.CodeMessages(enums.RoutePluginFormatError))
 	}

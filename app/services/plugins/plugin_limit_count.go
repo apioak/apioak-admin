@@ -23,17 +23,26 @@ func NewLimitCount(config string) PluginLimitCountConfig {
 	return newLimitCount
 }
 
-func (limitCountConfig PluginLimitCountConfig) PluginParse() interface{} {
+func (limitCountConfig PluginLimitCountConfig) PluginConfigParse() interface{} {
 	pluginLimitCount := PluginLimitCount{}
 	_ = json.Unmarshal([]byte(limitCountConfig.ConfigInfo), &pluginLimitCount)
 
 	return pluginLimitCount
 }
 
-func (limitCountConfig PluginLimitCountConfig) PluginCheck() error {
-	limitCount := limitCountConfig.PluginParse()
+func (limitCountConfig PluginLimitCountConfig) PluginConfigParseToJson() string {
+	limitCount := limitCountConfig.PluginConfigParse()
+	pluginConfigJson, _ := json.Marshal(limitCount)
 
+	return string(pluginConfigJson)
+}
+
+func (limitCountConfig PluginLimitCountConfig) PluginConfigCheck() error {
+	limitCount := limitCountConfig.PluginConfigParse()
 	pluginLimitCount := limitCount.(PluginLimitCount)
+
+	// @todo 增加针对当前插件配置的参数校验
+
 	if (pluginLimitCount.TimeWindow == 0) || (pluginLimitCount.Count == 0) {
 		return errors.New(enums.CodeMessages(enums.RoutePluginFormatError))
 	}
