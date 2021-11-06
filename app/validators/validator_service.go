@@ -3,7 +3,6 @@ package validators
 import (
 	"apioak-admin/app/packages"
 	"apioak-admin/app/utils"
-	"encoding/json"
 	"fmt"
 	"github.com/go-playground/validator/v10"
 	"strconv"
@@ -24,14 +23,14 @@ var (
 )
 
 type ServiceAddUpdate struct {
-	Timeouts       string `json:"timeouts" zh:"超时时间" en:"Time out" binding:"omitempty,json"`
-	LoadBalance    int    `json:"load_balance" zh:"负载均衡算法" en:"Load balancing algorithm" binding:"omitempty,CheckLoadBalanceOneOf"`
-	IsEnable       int    `json:"is_enable" zh:"服务开关" en:"Service enable" binding:"omitempty,oneof=1 2"`
-	WebSocket      int    `json:"web_socket" zh:"WebSocket" en:"WebSocket" binding:"omitempty,oneof=1 2"`
-	HealthCheck    int    `json:"health_check" zh:"健康检查" en:"Health" binding:"omitempty,oneof=1 2"`
-	Protocol       int    `json:"protocol" zh:"请求协议" en:"Protocol" binding:"omitempty,oneof=1 2 3"`
-	ServiceNodes   string `json:"service_nodes" zh:"上游节点" en:"Service nodes" binding:"required,json,CheckServiceNode"`
-	ServiceDomains string `json:"service_domains" zh:"域名" en:"Service domains" binding:"required,CheckServiceDomain"`
+	Timeouts       map[string]uint32      `json:"timeouts" zh:"超时时间" en:"Time out" binding:"omitempty"`
+	LoadBalance    int                    `json:"load_balance" zh:"负载均衡算法" en:"Load balancing algorithm" binding:"omitempty,CheckLoadBalanceOneOf"`
+	IsEnable       int                    `json:"is_enable" zh:"服务开关" en:"Service enable" binding:"omitempty,oneof=1 2"`
+	WebSocket      int                    `json:"web_socket" zh:"WebSocket" en:"WebSocket" binding:"omitempty,oneof=1 2"`
+	HealthCheck    int                    `json:"health_check" zh:"健康检查" en:"Health" binding:"omitempty,oneof=1 2"`
+	Protocol       int                    `json:"protocol" zh:"请求协议" en:"Protocol" binding:"omitempty,oneof=1 2 3"`
+	ServiceNodes   []ServiceNodeAddUpdate `json:"service_nodes" zh:"上游节点" en:"Service nodes" binding:"required,min=1,CheckServiceNode"`
+	ServiceDomains []string               `json:"service_domains" zh:"域名" en:"Service domains" binding:"required,min=1,CheckServiceDomain"`
 }
 
 type ServiceList struct {
@@ -96,73 +95,34 @@ func defaultServiceTimeOut() map[string]uint32 {
 	return timeInterface
 }
 
-func GetServiceAddTimeOut(times string) string {
-
+func CorrectServiceTimeOut(serviceTimeOuts *map[string]uint32) {
 	defaultTimeOut := defaultServiceTimeOut()
-	if len(times) <= 0 {
+	tmpServiceTimeOut := *serviceTimeOuts
 
-		timeStr, err := json.Marshal(defaultTimeOut)
-		if err != nil {
-			return ""
-		}
-		return string(timeStr)
-	}
-
-	timeInterface := make(map[string]interface{})
-	jsonErr := json.Unmarshal([]byte(times), &timeInterface)
-	if jsonErr != nil {
-		timeStr, err := json.Marshal(defaultTimeOut)
-		if err != nil {
-			return ""
-		}
-		return string(timeStr)
-	}
-
-	for timeKey, millisecond := range timeInterface {
-		switch timeKey {
-		case connectionTimeoutKey:
-
-			millisecondInt, err := strconv.Atoi(millisecond.(string))
-			if err != nil {
-				break
-			}
-			defaultTimeOut[connectionTimeoutKey] = uint32(millisecondInt)
-		case sendTimeoutKey:
-			millisecondInt, err := strconv.Atoi(millisecond.(string))
-			if err != nil {
-				break
-			}
-			defaultTimeOut[sendTimeoutKey] = uint32(millisecondInt)
-		case readTimeoutKey:
-			millisecondInt, err := strconv.Atoi(millisecond.(string))
-			if err != nil {
-				break
-			}
-			defaultTimeOut[readTimeoutKey] = uint32(millisecondInt)
+	for timeOutKey, _ := range defaultTimeOut {
+		timeOut, timeOutExist := tmpServiceTimeOut[timeOutKey]
+		if timeOutExist {
+			defaultTimeOut[timeOutKey] = timeOut
 		}
 	}
 
-	timeStr, err := json.Marshal(defaultTimeOut)
-	if err != nil {
-		return ""
-	}
-	return string(timeStr)
+	serviceTimeOuts = &defaultTimeOut
 }
 
-func GetServiceAttributesDefault(serviceInfo *ServiceAddUpdate) {
-	if serviceInfo.Protocol == 0 {
-		serviceInfo.Protocol = utils.ProtocolHTTP
+func CorrectServiceAttributesDefault(serviceAddUpdate *ServiceAddUpdate) {
+	if serviceAddUpdate.Protocol == 0 {
+		serviceAddUpdate.Protocol = utils.ProtocolHTTP
 	}
-	if serviceInfo.HealthCheck == 0 {
-		serviceInfo.HealthCheck = utils.EnableOff
+	if serviceAddUpdate.HealthCheck == 0 {
+		serviceAddUpdate.HealthCheck = utils.EnableOff
 	}
-	if serviceInfo.WebSocket == 0 {
-		serviceInfo.WebSocket = utils.EnableOff
+	if serviceAddUpdate.WebSocket == 0 {
+		serviceAddUpdate.WebSocket = utils.EnableOff
 	}
-	if serviceInfo.IsEnable == 0 {
-		serviceInfo.IsEnable = utils.EnableOff
+	if serviceAddUpdate.IsEnable == 0 {
+		serviceAddUpdate.IsEnable = utils.EnableOff
 	}
-	if serviceInfo.LoadBalance == 0 {
-		serviceInfo.LoadBalance = utils.LoadBalanceRoundRobin
+	if serviceAddUpdate.LoadBalance == 0 {
+		serviceAddUpdate.LoadBalance = utils.LoadBalanceRoundRobin
 	}
 }

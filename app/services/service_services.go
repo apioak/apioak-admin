@@ -21,10 +21,9 @@ func CheckServiceExist(serviceId string) error {
 	return nil
 }
 
-func CheckExistDomain(domains string, filterServiceIds []string) error {
+func CheckExistDomain(domains []string, filterServiceIds []string) error {
 	serviceDomainInfo := models.ServiceDomains{}
-	domainInfos := strings.Split(strings.TrimSpace(domains), ",")
-	serviceDomains, err := serviceDomainInfo.DomainInfosByDomain(domainInfos, filterServiceIds)
+	serviceDomains, err := serviceDomainInfo.DomainInfosByDomain(domains, filterServiceIds)
 	if err != nil {
 		return nil
 	}
@@ -52,13 +51,12 @@ func CheckExistDomain(domains string, filterServiceIds []string) error {
 	return nil
 }
 
-func CheckDomainCertificate(protocol int, domains string) error {
+func CheckDomainCertificate(protocol int, domains []string) error {
 	if (protocol != utils.ProtocolHTTPS) && (protocol != utils.ProtocolHTTPAndHTTPS) {
 		return nil
 	}
 
-	domainInfos := strings.Split(strings.TrimSpace(domains), ",")
-	domainSniInfos, domainSniInfosErr := utils.InterceptSni(domainInfos)
+	domainSniInfos, domainSniInfosErr := utils.InterceptSni(domains)
 	if domainSniInfosErr != nil {
 		return domainSniInfosErr
 	}
@@ -70,7 +68,7 @@ func CheckDomainCertificate(protocol int, domains string) error {
 	}
 
 	nullCertificateDomains := make([]string, 0)
-	for _, domainInfo := range domainInfos {
+	for _, domainInfo := range domains {
 		if len(domainCertificateInfos) == 0 {
 
 			nullCertificateDomains = append(nullCertificateDomains, domainInfo)
@@ -93,31 +91,30 @@ func CheckDomainCertificate(protocol int, domains string) error {
 }
 
 func ServiceCreate(
-	serviceData *validators.ServiceAddUpdate,
-	serviceDomains *[]validators.ServiceDomainAddUpdate,
-	serviceNodes *[]validators.ServiceNodeAddUpdate) error {
+	serviceData *validators.ServiceAddUpdate) error {
 
 	serviceModel := &models.Services{}
 	serviceDomainInfos := make([]models.ServiceDomains, 0)
 	serviceNodeInfos := make([]models.ServiceNodes, 0)
 
+	timeOutByte, _ := json.Marshal(serviceData.Timeouts)
 	createServiceData := models.Services{
 		Protocol:    serviceData.Protocol,
 		HealthCheck: serviceData.HealthCheck,
 		WebSocket:   serviceData.WebSocket,
 		IsEnable:    serviceData.IsEnable,
 		LoadBalance: serviceData.LoadBalance,
-		Timeouts:    serviceData.Timeouts,
+		Timeouts:    string(timeOutByte),
 	}
 
-	for _, domainInfo := range *serviceDomains {
+	for _, domainInfo := range serviceData.ServiceDomains {
 		domain := models.ServiceDomains{
-			Domain: domainInfo.Domain,
+			Domain: domainInfo,
 		}
 		serviceDomainInfos = append(serviceDomainInfos, domain)
 	}
 
-	for _, nodeInfo := range *serviceNodes {
+	for _, nodeInfo := range serviceData.ServiceNodes {
 		ipType, err := utils.DiscernIP(nodeInfo.NodeIp)
 		if err != nil {
 			return err
@@ -141,25 +138,29 @@ func ServiceCreate(
 	return createErr
 }
 
-func ServiceUpdate(
-	serviceId string,
-	serviceData *validators.ServiceAddUpdate,
-	serviceDomains *[]validators.ServiceDomainAddUpdate,
-	serviceNodes *[]validators.ServiceNodeAddUpdate) error {
+func ServiceUpdate(serviceId string, serviceData *validators.ServiceAddUpdate) error {
 
+	timeOutByte, _ := json.Marshal(serviceData.Timeouts)
 	updateServiceData := models.Services{
 		Protocol:    serviceData.Protocol,
 		HealthCheck: serviceData.HealthCheck,
 		WebSocket:   serviceData.WebSocket,
 		IsEnable:    serviceData.IsEnable,
 		LoadBalance: serviceData.LoadBalance,
-		Timeouts:    serviceData.Timeouts,
+		Timeouts:    string(timeOutByte),
 	}
 
-	addDomains, deleteDomainIds := GetToOperateDomains(serviceId, serviceDomains)
-	addNodes, updateNodes, deleteNodeIds := GetToOperateNodes(serviceId, serviceNodes)
+	serviceDomains := make([]validators.ServiceDomainAddUpdate, 0)
+	for _, domain := range serviceData.ServiceDomains {
+		serviceDomain := validators.ServiceDomainAddUpdate{
+			Domain: domain,
+		}
 
-	// @todo 选择 请求协议： HTTP 和 HTTP&HTTPS 时校验证书是否存在
+		serviceDomains = append(serviceDomains, serviceDomain)
+	}
+
+	addDomains, deleteDomainIds := GetToOperateDomains(serviceId, &serviceDomains)
+	addNodes, updateNodes, deleteNodeIds := GetToOperateNodes(serviceId, &serviceData.ServiceNodes)
 
 	serviceModel := &models.Services{}
 	updateErr := serviceModel.ServiceUpdate(serviceId, &updateServiceData, &addDomains, &addNodes, &updateNodes, deleteDomainIds, deleteNodeIds)
@@ -176,15 +177,15 @@ type structTimeouts struct {
 }
 
 type StructServiceList struct {
-	ID          string         `json:"id"`           //Service id
-	Name        string         `json:"name"`         //Service name
-	Protocol    int            `json:"protocol"`     //Protocol  1:HTTP  2:HTTPS  3:HTTP&HTTPS
-	HealthCheck int            `json:"health_check"` //Health check switch  1:on  2:off
-	WebSocket   int            `json:"web_socket"`   //WebSocket  1:on  2:off
-	IsEnable    int            `json:"is_enable"`    //Service enable  1:on  2:off
-	LoadBalance int            `json:"load_balance"` //Load balancing algorithm
-	Timeouts    structTimeouts `json:"timeouts"`     //Time out
-	DomainList  []string       `json:"domain_list"`  //Domain name
+	ID             string         `json:"id"`              //Service id
+	Name           string         `json:"name"`            //Service name
+	Protocol       int            `json:"protocol"`        //Protocol  1:HTTP  2:HTTPS  3:HTTP&HTTPS
+	HealthCheck    int            `json:"health_check"`    //Health check switch  1:on  2:off
+	WebSocket      int            `json:"web_socket"`      //WebSocket  1:on  2:off
+	IsEnable       int            `json:"is_enable"`       //Service enable  1:on  2:off
+	LoadBalance    int            `json:"load_balance"`    //Load balancing algorithm
+	Timeouts       structTimeouts `json:"timeouts"`        //Time out
+	ServiceDomains []string       `json:"service_domains"` //Domain name
 }
 
 func (structServiceList *StructServiceList) ServiceListPage(param *validators.ServiceList) ([]StructServiceList, int, error) {
@@ -256,10 +257,10 @@ func (structServiceList *StructServiceList) ServiceListPage(param *validators.Se
 				}
 			}
 
-			tmpServiceInfo.DomainList = make([]string, 0)
+			tmpServiceInfo.ServiceDomains = make([]string, 0)
 			if len(serviceInfo.Domains) != 0 {
 				for _, domainInfo := range serviceInfo.Domains {
-					tmpServiceInfo.DomainList = append(tmpServiceInfo.DomainList, domainInfo.Domain)
+					tmpServiceInfo.ServiceDomains = append(tmpServiceInfo.ServiceDomains, domainInfo.Domain)
 				}
 			}
 
@@ -277,16 +278,16 @@ type structServiceNode struct {
 }
 
 type StructServiceInfo struct {
-	ID          string              `json:"id"`           //Service id
-	Name        string              `json:"name"`         //Service name
-	Protocol    int                 `json:"protocol"`     //Protocol  1:HTTP  2:HTTPS  3:HTTP&HTTPS
-	HealthCheck int                 `json:"health_check"` //Health check switch  1:on  2:off
-	WebSocket   int                 `json:"web_socket"`   //WebSocket  1:on  2:off
-	IsEnable    int                 `json:"is_enable"`    //Service enable  1:on  2:off
-	LoadBalance int                 `json:"load_balance"` //Load balancing algorithm
-	Timeouts    structTimeouts      `json:"timeouts"`     //Time out
-	DomainList  []string            `json:"domain_list"`  //Domain name
-	NodeList    []structServiceNode `json:"node_list"`    //Domain name
+	ID             string              `json:"id"`              //Service id
+	Name           string              `json:"name"`            //Service name
+	Protocol       int                 `json:"protocol"`        //Protocol  1:HTTP  2:HTTPS  3:HTTP&HTTPS
+	HealthCheck    int                 `json:"health_check"`    //Health check switch  1:on  2:off
+	WebSocket      int                 `json:"web_socket"`      //WebSocket  1:on  2:off
+	IsEnable       int                 `json:"is_enable"`       //Service enable  1:on  2:off
+	LoadBalance    int                 `json:"load_balance"`    //Load balancing algorithm
+	Timeouts       structTimeouts      `json:"timeouts"`        //Time out
+	ServiceDomains []string            `json:"service_domains"` //Service Domains
+	ServiceNodes   []structServiceNode `json:"service_nodes"`   //Service Nodes
 }
 
 func (s *StructServiceInfo) ServiceInfoById(serviceId string) (StructServiceInfo, error) {
@@ -321,14 +322,14 @@ func (s *StructServiceInfo) ServiceInfoById(serviceId string) (StructServiceInfo
 		}
 	}
 
-	serviceInfo.DomainList = make([]string, 0)
+	serviceInfo.ServiceDomains = make([]string, 0)
 	if len(serviceListInfo.Domains) != 0 {
 		for _, domainInfo := range serviceListInfo.Domains {
-			serviceInfo.DomainList = append(serviceInfo.DomainList, domainInfo.Domain)
+			serviceInfo.ServiceDomains = append(serviceInfo.ServiceDomains, domainInfo.Domain)
 		}
 	}
 
-	serviceInfo.NodeList = make([]structServiceNode, 0)
+	serviceInfo.ServiceNodes = make([]structServiceNode, 0)
 	if len(serviceListInfo.Nodes) != 0 {
 		for _, nodeInfo := range serviceListInfo.Nodes {
 			tmpNodeInfo := structServiceNode{}
@@ -336,7 +337,7 @@ func (s *StructServiceInfo) ServiceInfoById(serviceId string) (StructServiceInfo
 			tmpNodeInfo.NodePort = nodeInfo.NodePort
 			tmpNodeInfo.NodeWeight = nodeInfo.NodeWeight
 
-			serviceInfo.NodeList = append(serviceInfo.NodeList, tmpNodeInfo)
+			serviceInfo.ServiceNodes = append(serviceInfo.ServiceNodes, tmpNodeInfo)
 		}
 	}
 

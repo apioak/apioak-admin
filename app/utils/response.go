@@ -24,7 +24,9 @@ func Ok(c *gin.Context, data ...interface{}) {
 	resultMsg := &result{}
 	resultMsg.Code = enums.Success
 	resultMsg.Msg = enums.CodeMessages(enums.Success)
-	resultMsg.Data = data
+	if len(data) > 0 {
+		resultMsg.Data = data[0]
+	}
 	Response(c, resultMsg)
 }
 

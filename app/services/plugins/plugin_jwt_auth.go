@@ -33,7 +33,7 @@ func (jwtAuthConfig PluginJwtAuthConfig) PluginConfigParseToJson() string {
 	jwtAuth := jwtAuthConfig.PluginConfigParse()
 	pluginConfigJson, _ := json.Marshal(jwtAuth)
 
-	return  string(pluginConfigJson)
+	return string(pluginConfigJson)
 }
 
 func (jwtAuthConfig PluginJwtAuthConfig) PluginConfigCheck() error {

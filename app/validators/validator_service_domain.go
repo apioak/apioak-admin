@@ -30,12 +30,11 @@ type ServiceDomainAddUpdate struct {
 }
 
 func CheckServiceDomain(fl validator.FieldLevel) bool {
-
-	serviceDomainStr := fl.Field().String()
-	domains := strings.Split(serviceDomainStr, ",")
+	serviceDomainInterface := fl.Field().Interface()
+	serviceDomains := serviceDomainInterface.([]string)
 
 	serviceDomainValidator := packages.GetCustomizeValidator()
-	for _, domain := range domains {
+	for _, domain := range serviceDomains {
 		domainTrim := strings.TrimSpace(domain)
 
 		serviceDomain := ServiceDomainAddUpdate{
@@ -83,21 +82,24 @@ func domainValidator(tag string, field string) string {
 	return errMsg
 }
 
-func GetServiceAddDomains(serviceNames string) []ServiceDomainAddUpdate {
-	serviceDomains := make([]ServiceDomainAddUpdate, 0)
+func CorrectServiceDomains(serviceDomains *[]string) {
+	tmpDomainsMap := make(map[string]byte, 0)
+	tmpServiceDomains := make([]string, 0)
 
-	domains := strings.Split(serviceNames, ",")
-	for _, domain := range domains {
+	for _, domain := range *serviceDomains {
 		domainTrim := strings.TrimSpace(domain)
 		if len(domainTrim) <= 0 {
 			continue
 		}
 
-		serviceDomain := ServiceDomainAddUpdate{
-			Domain: domainTrim,
+		_, exist := tmpDomainsMap[domainTrim]
+		if exist {
+			continue
 		}
-		serviceDomains = append(serviceDomains, serviceDomain)
+
+		tmpDomainsMap[domainTrim] = 0
+		tmpServiceDomains = append(tmpServiceDomains, domainTrim)
 	}
 
-	return serviceDomains
+	serviceDomains = &tmpServiceDomains
 }

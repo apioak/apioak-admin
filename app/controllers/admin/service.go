@@ -23,26 +23,67 @@ func ServiceAdd(c *gin.Context) {
 		return
 	}
 
+	validators.CorrectServiceAttributesDefault(&serviceAddUpdateValidator)
+	validators.CorrectServiceTimeOut(&serviceAddUpdateValidator.Timeouts)
+	validators.CorrectServiceDomains(&serviceAddUpdateValidator.ServiceDomains)
+	validators.CorrectServiceAddNodes(&serviceAddUpdateValidator.ServiceNodes)
+
 	checkExistDomainErr := services.CheckExistDomain(serviceAddUpdateValidator.ServiceDomains, []string{})
 	if checkExistDomainErr != nil {
 		utils.Error(c, checkExistDomainErr.Error())
 		return
 	}
 
-	CheckDomainCertificateErr := services.CheckDomainCertificate(serviceAddUpdateValidator.Protocol, serviceAddUpdateValidator.ServiceDomains)
-	if CheckDomainCertificateErr != nil {
-		utils.Error(c, CheckDomainCertificateErr.Error())
+	checkDomainCertificateErr := services.CheckDomainCertificate(serviceAddUpdateValidator.Protocol, serviceAddUpdateValidator.ServiceDomains)
+	if checkDomainCertificateErr != nil {
+		utils.Error(c, checkDomainCertificateErr.Error())
 		return
 	}
 
-	validators.GetServiceAttributesDefault(&serviceAddUpdateValidator)
-	serviceAddUpdateValidator.Timeouts = validators.GetServiceAddTimeOut(serviceAddUpdateValidator.Timeouts)
-	serviceDomains := validators.GetServiceAddDomains(serviceAddUpdateValidator.ServiceDomains)
-	serviceNodes := validators.GetServiceAddNodes(serviceAddUpdateValidator.ServiceNodes)
-
-	createErr := services.ServiceCreate(&serviceAddUpdateValidator, &serviceDomains, &serviceNodes)
+	createErr := services.ServiceCreate(&serviceAddUpdateValidator)
 	if createErr != nil {
 		utils.Error(c, createErr.Error())
+		return
+	}
+
+	utils.Ok(c)
+}
+
+func ServiceUpdate(c *gin.Context) {
+	serviceId := c.Param("id")
+
+	var serviceAddUpdateValidator = validators.ServiceAddUpdate{}
+	if msg, err := packages.ParseRequestParams(c, &serviceAddUpdateValidator); err != nil {
+		utils.Error(c, msg)
+		return
+	}
+
+	validators.CorrectServiceTimeOut(&serviceAddUpdateValidator.Timeouts)
+	validators.CorrectServiceDomains(&serviceAddUpdateValidator.ServiceDomains)
+	validators.CorrectServiceAddNodes(&serviceAddUpdateValidator.ServiceNodes)
+
+	serviceModel := &models.Services{}
+	serviceInfo := serviceModel.ServiceInfoById(serviceId)
+	if len(serviceInfo.ID) == 0 {
+		utils.Error(c, enums.CodeMessages(enums.ServiceNull))
+		return
+	}
+
+	err := services.CheckExistDomain(serviceAddUpdateValidator.ServiceDomains, []string{serviceId})
+	if err != nil {
+		utils.Error(c, err.Error())
+		return
+	}
+
+	checkDomainCertificateErr := services.CheckDomainCertificate(serviceAddUpdateValidator.Protocol, serviceAddUpdateValidator.ServiceDomains)
+	if checkDomainCertificateErr != nil {
+		utils.Error(c, checkDomainCertificateErr.Error())
+		return
+	}
+
+	updateErr := services.ServiceUpdate(serviceId, &serviceAddUpdateValidator)
+	if updateErr != nil {
+		utils.Error(c, updateErr.Error())
 		return
 	}
 
@@ -91,41 +132,6 @@ func ServiceList(c *gin.Context) {
 	result.Data = serviceList
 
 	utils.Ok(c, result)
-}
-
-func ServiceUpdate(c *gin.Context) {
-	serviceId := c.Param("id")
-
-	var serviceAddUpdateValidator = validators.ServiceAddUpdate{}
-	if msg, err := packages.ParseRequestParams(c, &serviceAddUpdateValidator); err != nil {
-		utils.Error(c, msg)
-		return
-	}
-
-	serviceModel := &models.Services{}
-	serviceInfo := serviceModel.ServiceInfoById(serviceId)
-	if len(serviceInfo.ID) == 0 {
-		utils.Error(c, enums.CodeMessages(enums.ServiceNull))
-		return
-	}
-
-	err := services.CheckExistDomain(serviceAddUpdateValidator.ServiceDomains, []string{serviceId})
-	if err != nil {
-		utils.Error(c, err.Error())
-		return
-	}
-
-	serviceAddUpdateValidator.Timeouts = validators.GetServiceAddTimeOut(serviceAddUpdateValidator.Timeouts)
-	serviceDomains := validators.GetServiceAddDomains(serviceAddUpdateValidator.ServiceDomains)
-	serviceNodes := validators.GetServiceAddNodes(serviceAddUpdateValidator.ServiceNodes)
-
-	updateErr := services.ServiceUpdate(serviceId, &serviceAddUpdateValidator, &serviceDomains, &serviceNodes)
-	if updateErr != nil {
-		utils.Error(c, updateErr.Error())
-		return
-	}
-
-	utils.Ok(c)
 }
 
 func ServiceDelete(c *gin.Context) {

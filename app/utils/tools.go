@@ -15,6 +15,7 @@ import (
 	"fmt"
 	"math/big"
 	"net"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -163,16 +164,16 @@ type ExpireToken struct {
 
 type TokenClaims struct {
 	Encryption string `json:"encryption"`
+	Timestamp  string `json:"timestamp"`
 	Secret     string `json:"secret"`
-	Timestamp  int64  `json:"timestamp"`
 	Issuer     string `json:"issuer"`
 }
 
 func GenToken(encryption string) (string, error) {
 	tokenClaims := TokenClaims{
 		Encryption: encryption,
+		Timestamp:  Md5(strconv.FormatInt(time.Now().UnixNano(), 10)),
 		Secret:     packages.Token.TokenSecret,
-		Timestamp:  time.Now().UnixNano(),
 		Issuer:     packages.Token.TokenIssuer,
 	}
 
