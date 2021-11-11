@@ -135,6 +135,7 @@ type StructRouteList struct {
 	RequestMethods []string      `json:"request_methods"`
 	RoutePath      string        `json:"route_path"`
 	IsEnable       int           `json:"is_enable"`
+	IsRelease      int           `json:"is_release"`
 	PluginList     []routePlugin `json:"plugin_list"`
 }
 
@@ -152,6 +153,7 @@ func (s *StructRouteList) RouteListPage(serviceId string, param *validators.Vali
 			structRouteList.RequestMethods = strings.Split(routeInfo.RequestMethods, ",")
 			structRouteList.RoutePath = routeInfo.RoutePath
 			structRouteList.IsEnable = routeInfo.IsEnable
+			structRouteList.IsRelease = routeInfo.IsRelease
 
 			routePluginInfos := make([]routePlugin, 0)
 			if len(routeInfo.Plugins) != 0 {
@@ -264,6 +266,7 @@ type RoutePluginInfo struct {
 	Order       int    `json:"order"`
 	Config      string `json:"config"`
 	IsEnable    int    `json:"is_enable"`
+	IsRelease   int    `json:"is_release"`
 }
 
 func (r *RoutePluginInfo) RoutePluginList(routeId string) []RoutePluginInfo {
@@ -283,6 +286,7 @@ func (r *RoutePluginInfo) RoutePluginList(routeId string) []RoutePluginInfo {
 		routePluginInfo.Order = routePluginConfigInfo.Order
 		routePluginInfo.Config = routePluginConfigInfo.Config
 		routePluginInfo.IsEnable = routePluginConfigInfo.IsEnable
+		routePluginInfo.IsRelease = routePluginConfigInfo.IsRelease
 
 		routePluginList = append(routePluginList, routePluginInfo)
 	}

@@ -16,6 +16,7 @@ type Services struct {
 	HealthCheck int    `gorm:"column:health_check"`   //Health check switch  1:on  2:off
 	WebSocket   int    `gorm:"column:web_socket"`     //WebSocket  1:on  2:off
 	IsEnable    int    `gorm:"column:is_enable"`      //Service enable  1:on  2:off
+	IsRelease   int    `gorm:"column:is_release"`     //Service release  1:on  2:off
 	LoadBalance int    `gorm:"column:load_balance"`   //Load balancing algorithm
 	Timeouts    string `gorm:"column:timeouts"`       //Time out
 	ModelTime
@@ -138,11 +139,11 @@ func (s *Services) ServiceAdd(
 		return routeIdErr
 	}
 
-	serviceRoute.ServiceID = serviceId
 	serviceRoute.ID = routeId
+	serviceRoute.ServiceID = serviceId
 	serviceRoute.RouteName = routeId
 	serviceRoute.RoutePath = utils.DefaultRoutePath
-	serviceRoute.IsEnable = utils.EnableOff
+	serviceRoute.IsEnable = utils.EnableOn
 	serviceRoute.RequestMethods = utils.RequestMethodALL
 
 	routeCreateErr := tx.
@@ -469,7 +470,7 @@ func (s *Services) ServiceSwitchHealthCheck(id string, healthCheck int) error {
 		Table(s.TableName()).
 		Where("id = ?", id).
 		Update("health_check", healthCheck).Error
-	
+
 	if updateErr != nil {
 		return updateErr
 	}

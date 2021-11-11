@@ -23,17 +23,17 @@ func CheckPluginConfig(pluginId string, pluginConfig *validators.RoutePluginAddU
 	pluginModel := &models.Plugins{}
 	pluginInfo := pluginModel.PluginInfoByIdRouteServiceId(pluginId)
 
-	newPluginContext, newPluginContextErr := plugins.NewPluginContext(pluginInfo.Tag, pluginConfig.Config)
+	newPluginContext, newPluginContextErr := plugins.NewPluginContext(pluginInfo.Tag)
 	if newPluginContextErr != nil {
 		return newPluginContextErr
 	}
 
-	pluginCheckErr := newPluginContext.StrategyPluginCheck()
+	pluginCheckErr := newPluginContext.StrategyPluginCheck(pluginConfig.Config)
 	if pluginCheckErr != nil {
 		return pluginCheckErr
 	}
 
-	pluginConfig.Config = newPluginContext.StrategyPluginJson()
+	pluginConfig.Config = newPluginContext.StrategyPluginJson(pluginConfig.Config)
 
 	return nil
 }
@@ -101,4 +101,41 @@ func (s *StructPluginInfo) PluginListPage(param *validators.PluginList) ([]Struc
 	}
 
 	return pluginInfoList, total, pluginInfosErr
+}
+
+type PluginInfoService struct {
+	ID          string      `json:"id"`
+	Name        string      `json:"name"`
+	Tag         string      `json:"tag"`
+	Icon        string      `json:"icon"`
+	Type        int         `json:"type"`
+	Description string      `json:"description"`
+	Config      interface{} `json:"config"`
+}
+
+func (p *PluginInfoService) PluginInfoById(id string) (PluginInfoService, error) {
+	pluginInfo := PluginInfoService{}
+
+	pluginModel := models.Plugins{}
+	plugin := pluginModel.PluginInfoById(id)
+	if len(plugin.ID) == 0 {
+		return pluginInfo, errors.New(enums.CodeMessages(enums.PluginNull))
+	}
+
+	newPluginContext, newPluginContextErr := plugins.NewPluginContext(plugin.Tag)
+	if newPluginContextErr != nil {
+		return pluginInfo, newPluginContextErr
+	}
+
+	pluginConfig := newPluginContext.StrategyPluginFormatDefault()
+
+	pluginInfo.ID = plugin.ID
+	pluginInfo.Name = plugin.Name
+	pluginInfo.Tag = plugin.Tag
+	pluginInfo.Icon = plugin.Icon
+	pluginInfo.Type = plugin.Type
+	pluginInfo.Description = plugin.Description
+	pluginInfo.Config = pluginConfig
+
+	return pluginInfo, nil
 }

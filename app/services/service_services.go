@@ -90,9 +90,7 @@ func CheckDomainCertificate(protocol int, domains []string) error {
 	return nil
 }
 
-func ServiceCreate(
-	serviceData *validators.ServiceAddUpdate) error {
-
+func ServiceCreate(serviceData *validators.ServiceAddUpdate) error {
 	serviceModel := &models.Services{}
 	serviceDomainInfos := make([]models.ServiceDomains, 0)
 	serviceNodeInfos := make([]models.ServiceNodes, 0)
@@ -183,6 +181,7 @@ type StructServiceList struct {
 	HealthCheck    int            `json:"health_check"`    //Health check switch  1:on  2:off
 	WebSocket      int            `json:"web_socket"`      //WebSocket  1:on  2:off
 	IsEnable       int            `json:"is_enable"`       //Service enable  1:on  2:off
+	IsRelease      int            `json:"is_release"`      //Service release  1:on  2:off
 	LoadBalance    int            `json:"load_balance"`    //Load balancing algorithm
 	Timeouts       structTimeouts `json:"timeouts"`        //Time out
 	ServiceDomains []string       `json:"service_domains"` //Domain name
@@ -246,6 +245,7 @@ func (structServiceList *StructServiceList) ServiceListPage(param *validators.Se
 			tmpServiceInfo.HealthCheck = serviceInfo.HealthCheck
 			tmpServiceInfo.WebSocket = serviceInfo.WebSocket
 			tmpServiceInfo.IsEnable = serviceInfo.IsEnable
+			tmpServiceInfo.IsRelease = serviceInfo.IsRelease
 			tmpServiceInfo.LoadBalance = serviceInfo.LoadBalance
 
 			tmpTimeOuts := structTimeouts{}

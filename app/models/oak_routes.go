@@ -16,6 +16,7 @@ type Routes struct {
 	RequestMethods string `gorm:"column:request_methods"` //Request method
 	RoutePath      string `gorm:"column:route_path"`      //Routing path
 	IsEnable       int    `gorm:"column:is_enable"`       //Routing enable  1:on  2:off
+	IsRelease      int    `gorm:"column:is_release"`      //Routing release  1:on  2:off
 	ModelTime
 	Plugins []Plugins `gorm:"many2many:oak_route_plugins;foreignKey:ID;joinForeignKey:RouteID;References:ID;JoinReferences:PluginID"`
 }
@@ -254,7 +255,7 @@ func (r *Routes) RouteSwitchEnable(id string, enable int) error {
 		Table(r.TableName()).
 		Where("id = ?", id).
 		Update("is_enable", enable).Error
-	
+
 	if updateErr != nil {
 		return updateErr
 	}

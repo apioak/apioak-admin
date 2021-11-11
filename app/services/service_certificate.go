@@ -209,6 +209,7 @@ type CertificateInfo struct {
 	Sni       string `json:"sni"`
 	ExpiredAt int64  `json:"expired_at"`
 	IsEnable  int    `json:"is_enable"`
+	IsRelease int    `json:"is_release"`
 }
 
 func (c *CertificateInfo) CertificateListPage(param *validators.CertificateList) ([]CertificateInfo, int, error) {
@@ -223,6 +224,7 @@ func (c *CertificateInfo) CertificateListPage(param *validators.CertificateList)
 			certificateInfo.Sni = certificateListInfo.Sni
 			certificateInfo.ExpiredAt = certificateListInfo.ExpiredAt.Unix()
 			certificateInfo.IsEnable = certificateListInfo.IsEnable
+			certificateInfo.IsRelease = certificateListInfo.IsRelease
 
 			certificateList = append(certificateList, certificateInfo)
 		}

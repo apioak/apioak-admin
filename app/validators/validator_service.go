@@ -48,6 +48,10 @@ type ServiceSwitchEnable struct {
 	IsEnable int `json:"is_enable" zh:"服务开关" en:"Service enable" binding:"required,oneof=1 2"`
 }
 
+type ServiceSwitchRelease struct {
+	IsRelease int `json:"is_release" zh:"服务发布" en:"Service release" binding:"required,oneof=1 2"`
+}
+
 type ServiceSwitchWebsocket struct {
 	WebSocket int `json:"web_socket" zh:"WebSocket" en:"WebSocket" binding:"required,oneof=1 2"`
 }

@@ -134,3 +134,22 @@ func PluginList(c *gin.Context) {
 
 	utils.Ok(c, result)
 }
+
+func PluginInfo(c *gin.Context) {
+	pluginId := strings.TrimSpace(c.Param("id"))
+
+	checkPluginExistErr := services.CheckPluginExist(pluginId)
+	if checkPluginExistErr != nil {
+		utils.Error(c, checkPluginExistErr.Error())
+		return
+	}
+
+	pluginInfoService := services.PluginInfoService{}
+	pluginInfo, pluginInfoErr := pluginInfoService.PluginInfoById(pluginId)
+	if pluginInfoErr != nil {
+		utils.Error(c, pluginInfoErr.Error())
+		return
+	}
+
+	utils.Ok(c, pluginInfo)
+}

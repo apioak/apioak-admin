@@ -14,6 +14,7 @@ type Certificates struct {
 	Certificate string    `gorm:"column:certificate"`    //Certificate content
 	PrivateKey  string    `gorm:"column:private_key"`    //Private key content
 	IsEnable    int       `gorm:"column:is_enable"`      //Certificate enable  1:on  2:off
+	IsRelease   int       `gorm:"column:is_release"`     //Certificate release  1:on  2:off
 	ExpiredAt   time.Time `gorm:"column:expired_at"`     //Expiration time
 	ModelTime
 }

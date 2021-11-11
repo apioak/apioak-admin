@@ -88,6 +88,16 @@ func (p *Plugins) PluginAdd(pluginData *Plugins) error {
 	return err
 }
 
+func (p *Plugins) PluginInfoById(id string) (Plugins) {
+	pluginInfo := Plugins{}
+	packages.GetDb().
+		Table(p.TableName()).
+		Where("id = ?", id).
+		Find(&pluginInfo)
+
+	return pluginInfo
+}
+
 func (p *Plugins) PluginInfosByIds(ids []string) ([]Plugins, error) {
 	pluginInfos := make([]Plugins, 0)
 	err := packages.GetDb().

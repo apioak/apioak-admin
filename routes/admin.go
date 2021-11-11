@@ -37,6 +37,7 @@ func RouteRegister(routeEngine *gin.Engine) {
 			service.DELETE("/delete/:id", admin.ServiceDelete)
 			service.PUT("/update/name/:id", admin.ServiceUpdateName)
 			service.PUT("/switch/enable/:id", admin.ServiceSwitchEnable)
+			service.PUT("/switch/release/:id", admin.ServiceSwitchRelease)
 			service.PUT("/switch/websocket/:id", admin.ServiceSwitchWebsocket)
 			service.PUT("/switch/health-check/:id", admin.ServiceSwitchHealthCheck)
 		}
@@ -69,6 +70,7 @@ func RouteRegister(routeEngine *gin.Engine) {
 			plugin.GET("/type-list", admin.PluginTypeList)
 			plugin.POST("/add", admin.PluginAdd)
 			plugin.GET("/list", admin.PluginList)
+			plugin.GET("/info/:id", admin.PluginInfo)
 			plugin.PUT("/update/:id", admin.PluginUpdate)
 			plugin.DELETE("/delete/:id", admin.PluginDelete)
 		}

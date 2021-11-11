@@ -2,42 +2,49 @@ package plugins
 
 import (
 	"apioak-admin/app/enums"
+	"apioak-admin/app/utils"
 	"encoding/json"
 	"errors"
+	"strconv"
+	"time"
 )
 
-type PluginJwtAuthConfig struct {
-	ConfigInfo string `json:"config_info"`
-}
+type PluginJwtAuthConfig struct{}
 
 type PluginJwtAuth struct {
 	Secret string `json:"secret"`
 }
 
-func NewJwtAuth(config string) PluginJwtAuthConfig {
-	newJwtAuth := PluginJwtAuthConfig{
-		ConfigInfo: config,
-	}
+func NewJwtAuth() PluginJwtAuthConfig {
+	newJwtAuth := PluginJwtAuthConfig{}
 
 	return newJwtAuth
 }
 
-func (jwtAuthConfig PluginJwtAuthConfig) PluginConfigParse() interface{} {
-	pluginJwtAuth := PluginJwtAuth{}
-	_ = json.Unmarshal([]byte(jwtAuthConfig.ConfigInfo), &pluginJwtAuth)
+func (jwtAuthConfig PluginJwtAuthConfig) PluginConfigDefault() interface{} {
+	pluginJwtAuth := PluginJwtAuth{
+		Secret: utils.Md5(strconv.Itoa(int(time.Now().UnixNano()))),
+	}
 
 	return pluginJwtAuth
 }
 
-func (jwtAuthConfig PluginJwtAuthConfig) PluginConfigParseToJson() string {
-	jwtAuth := jwtAuthConfig.PluginConfigParse()
+func (jwtAuthConfig PluginJwtAuthConfig) PluginConfigParse(configInfo string) interface{} {
+	pluginJwtAuth := PluginJwtAuth{}
+	_ = json.Unmarshal([]byte(configInfo), &pluginJwtAuth)
+
+	return pluginJwtAuth
+}
+
+func (jwtAuthConfig PluginJwtAuthConfig) PluginConfigParseToJson(configInfo string) string {
+	jwtAuth := jwtAuthConfig.PluginConfigParse(configInfo)
 	pluginConfigJson, _ := json.Marshal(jwtAuth)
 
 	return string(pluginConfigJson)
 }
 
-func (jwtAuthConfig PluginJwtAuthConfig) PluginConfigCheck() error {
-	jwtAuth := jwtAuthConfig.PluginConfigParse()
+func (jwtAuthConfig PluginJwtAuthConfig) PluginConfigCheck(configInfo string) error {
+	jwtAuth := jwtAuthConfig.PluginConfigParse(configInfo)
 	pluginJwtAuth := jwtAuth.(PluginJwtAuth)
 
 	// @todo 增加针对当前插件配置的参数校验

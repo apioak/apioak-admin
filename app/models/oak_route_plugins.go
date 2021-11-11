@@ -6,12 +6,13 @@ import (
 )
 
 type RoutePlugins struct {
-	ID       string `gorm:"column:id;primary_key"`      //Plugin id
-	RouteID  string `gorm:"column:route_id;primaryKey"` //Route id
-	PluginID string `gorm:"column:plugin_id"`           //Plugin id
-	Order    int    `gorm:"column:order"`               //Order sort
-	Config   string `gorm:"column:config"`              //Routing configuration
-	IsEnable int    `gorm:"column:is_enable"`           //Plugin enable  1:on  2:off
+	ID        string `gorm:"column:id;primary_key"`      //Plugin id
+	RouteID   string `gorm:"column:route_id;primaryKey"` //Route id
+	PluginID  string `gorm:"column:plugin_id"`           //Plugin id
+	Order     int    `gorm:"column:order"`               //Order sort
+	Config    string `gorm:"column:config"`              //Routing configuration
+	IsEnable  int    `gorm:"column:is_enable"`           //Plugin enable  1:on  2:off
+	IsRelease int    `gorm:"column:is_release"`          //Route plugin release  1:on  2:off
 	ModelTime
 	Plugin Plugins `gorm:"foreignKey:PluginID;"`
 }

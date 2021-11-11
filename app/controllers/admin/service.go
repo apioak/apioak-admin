@@ -62,10 +62,9 @@ func ServiceUpdate(c *gin.Context) {
 	validators.CorrectServiceDomains(&serviceAddUpdateValidator.ServiceDomains)
 	validators.CorrectServiceAddNodes(&serviceAddUpdateValidator.ServiceNodes)
 
-	serviceModel := &models.Services{}
-	serviceInfo := serviceModel.ServiceInfoById(serviceId)
-	if len(serviceInfo.ID) == 0 {
-		utils.Error(c, enums.CodeMessages(enums.ServiceNull))
+	checkServiceExistErr := services.CheckServiceExist(serviceId)
+	if checkServiceExistErr != nil {
+		utils.Error(c, checkServiceExistErr.Error())
 		return
 	}
 
@@ -93,10 +92,9 @@ func ServiceUpdate(c *gin.Context) {
 func ServiceInfo(c *gin.Context) {
 	serviceId := c.Param("id")
 
-	serviceModel := &models.Services{}
-	serviceInfo := serviceModel.ServiceInfoById(serviceId)
-	if len(serviceInfo.ID) == 0 {
-		utils.Error(c, enums.CodeMessages(enums.ServiceNull))
+	checkServiceExistErr := services.CheckServiceExist(serviceId)
+	if checkServiceExistErr != nil {
+		utils.Error(c, checkServiceExistErr.Error())
 		return
 	}
 
@@ -211,6 +209,10 @@ func ServiceSwitchEnable(c *gin.Context) {
 	}
 
 	utils.Ok(c)
+}
+
+func ServiceSwitchRelease(c *gin.Context) {
+	
 }
 
 func ServiceSwitchWebsocket(c *gin.Context) {
