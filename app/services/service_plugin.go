@@ -33,7 +33,7 @@ func CheckPluginConfig(pluginId string, pluginConfig *validators.RoutePluginAddU
 		return pluginCheckErr
 	}
 
-	pluginConfig.Config = newPluginContext.StrategyPluginJson(pluginConfig.Config)
+	pluginConfig.Config = newPluginContext.StrategyPluginParse(pluginConfig.Config)
 
 	return nil
 }

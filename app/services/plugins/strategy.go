@@ -9,9 +9,8 @@ import (
 
 type PluginStrategy interface {
 	PluginConfigDefault() interface{}
-	PluginConfigParse(config string) interface{}
-	PluginConfigParseToJson(config string) string
-	PluginConfigCheck(config string) error
+	PluginConfigParse(config interface{}) interface{}
+	PluginConfigCheck(config interface{}) error
 }
 
 type PluginContext struct {
@@ -37,14 +36,10 @@ func (p PluginContext) StrategyPluginFormatDefault() interface{} {
 	return p.Strategy.PluginConfigDefault()
 }
 
-func (p PluginContext) StrategyPluginParse(config string) interface{} {
+func (p PluginContext) StrategyPluginParse(config interface{}) interface{} {
 	return p.Strategy.PluginConfigParse(config)
 }
 
-func (p PluginContext) StrategyPluginJson(config string) string {
-	return p.Strategy.PluginConfigParseToJson(config)
-}
-
-func (p PluginContext) StrategyPluginCheck(config string) error {
+func (p PluginContext) StrategyPluginCheck(config interface{}) error {
 	return p.Strategy.PluginConfigCheck(config)
 }

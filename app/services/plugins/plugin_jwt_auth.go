@@ -1,13 +1,26 @@
 package plugins
 
 import (
-	"apioak-admin/app/enums"
+	"apioak-admin/app/packages"
 	"apioak-admin/app/utils"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strconv"
+	"strings"
 	"time"
 )
+
+var jwtAuthValidatorErrorMessages = map[string]map[string]string{
+	utils.LocalEn: {
+		"required": "[%s] is a required field,expected type: %s",
+		"max":      "[%s] must be %d or less",
+	},
+	utils.LocalZh: {
+		"required": "[%s]为必填字段，期望类型:%s",
+		"max":      "[%s]长度必须小于或等于%d",
+	},
+}
 
 type PluginJwtAuthConfig struct{}
 
@@ -29,28 +42,36 @@ func (jwtAuthConfig PluginJwtAuthConfig) PluginConfigDefault() interface{} {
 	return pluginJwtAuth
 }
 
-func (jwtAuthConfig PluginJwtAuthConfig) PluginConfigParse(configInfo string) interface{} {
-	pluginJwtAuth := PluginJwtAuth{}
-	_ = json.Unmarshal([]byte(configInfo), &pluginJwtAuth)
+func (jwtAuthConfig PluginJwtAuthConfig) PluginConfigParse(configInfo interface{}) interface{} {
+	pluginJwtAuth := PluginJwtAuth{
+		Secret: "",
+	}
+
+	configInfoJson, _ := json.Marshal(configInfo)
+	_ = json.Unmarshal(configInfoJson, &pluginJwtAuth)
 
 	return pluginJwtAuth
 }
 
-func (jwtAuthConfig PluginJwtAuthConfig) PluginConfigParseToJson(configInfo string) string {
-	jwtAuth := jwtAuthConfig.PluginConfigParse(configInfo)
-	pluginConfigJson, _ := json.Marshal(jwtAuth)
-
-	return string(pluginConfigJson)
-}
-
-func (jwtAuthConfig PluginJwtAuthConfig) PluginConfigCheck(configInfo string) error {
+func (jwtAuthConfig PluginJwtAuthConfig) PluginConfigCheck(configInfo interface{}) error {
 	jwtAuth := jwtAuthConfig.PluginConfigParse(configInfo)
 	pluginJwtAuth := jwtAuth.(PluginJwtAuth)
 
-	// @todo 增加针对当前插件配置的参数校验
+	return jwtAuthConfig.configValidator(pluginJwtAuth)
+}
 
-	if len(pluginJwtAuth.Secret) == 0 {
-		return errors.New(enums.CodeMessages(enums.RoutePluginFormatError))
+func (jwtAuthConfig PluginJwtAuthConfig) configValidator(config PluginJwtAuth) error {
+
+	if len(config.Secret) == 0 {
+		return errors.New(fmt.Sprintf(
+			jwtAuthValidatorErrorMessages[strings.ToLower(packages.GetValidatorLocale())]["required"],
+			"config.secret", "string"))
+	}
+
+	if len(config.Secret) > 128 {
+		return errors.New(fmt.Sprintf(
+			jwtAuthValidatorErrorMessages[strings.ToLower(packages.GetValidatorLocale())]["max"],
+			"config.secret", 128))
 	}
 
 	return nil

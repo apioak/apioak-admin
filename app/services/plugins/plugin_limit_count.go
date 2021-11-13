@@ -1,10 +1,28 @@
 package plugins
 
 import (
-	"apioak-admin/app/enums"
+	"apioak-admin/app/packages"
+	"apioak-admin/app/utils"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"strings"
 )
+
+var limitCountValidatorErrorMessages = map[string]map[string]string{
+	utils.LocalEn: {
+		"required": "[%s] is a required field,expected type: %s",
+		"max":      "[%s] must be %d or less",
+		"min":      "[%s] must be %d or greater",
+		"type":     "[%s] Type error, expected type: %s",
+	},
+	utils.LocalZh: {
+		"required": "[%s]为必填字段，期望类型:%s",
+		"max":      "[%s]必须小于或等于%d",
+		"min":      "[%s]最小只能为%d",
+		"type":     "[%s]类型错误，期望类型:%s",
+	},
+}
 
 type PluginLimitCountConfig struct{}
 
@@ -28,28 +46,47 @@ func (limitCountConfig PluginLimitCountConfig) PluginConfigDefault() interface{}
 	return pluginLimitCount
 }
 
-func (limitCountConfig PluginLimitCountConfig) PluginConfigParse(configInfo string) interface{} {
-	pluginLimitCount := PluginLimitCount{}
-	_ = json.Unmarshal([]byte(configInfo), &pluginLimitCount)
+func (limitCountConfig PluginLimitCountConfig) PluginConfigParse(configInfo interface{}) interface{} {
+	pluginLimitCount := PluginLimitCount{
+		TimeWindow: -9999999,
+		Count:      -9999999,
+	}
+
+	configInfoJson, _ := json.Marshal(configInfo)
+	_ = json.Unmarshal(configInfoJson, &pluginLimitCount)
 
 	return pluginLimitCount
 }
 
-func (limitCountConfig PluginLimitCountConfig) PluginConfigParseToJson(configInfo string) string {
-	limitCount := limitCountConfig.PluginConfigParse(configInfo)
-	pluginConfigJson, _ := json.Marshal(limitCount)
-
-	return string(pluginConfigJson)
-}
-
-func (limitCountConfig PluginLimitCountConfig) PluginConfigCheck(configInfo string) error {
+func (limitCountConfig PluginLimitCountConfig) PluginConfigCheck(configInfo interface{}) error {
 	limitCount := limitCountConfig.PluginConfigParse(configInfo)
 	pluginLimitCount := limitCount.(PluginLimitCount)
 
-	// @todo 增加针对当前插件配置的参数校验
+	return limitCountConfig.configValidator(pluginLimitCount)
+}
 
-	if (pluginLimitCount.TimeWindow == 0) || (pluginLimitCount.Count == 0) {
-		return errors.New(enums.CodeMessages(enums.RoutePluginFormatError))
+func (limitCountConfig PluginLimitCountConfig) configValidator(config PluginLimitCount) error {
+
+	if config.TimeWindow == -9999999 {
+		return errors.New(fmt.Sprintf(
+			limitCountValidatorErrorMessages[strings.ToLower(packages.GetValidatorLocale())]["required"],
+			"config.time_window", "int"))
+	}
+	if config.TimeWindow < 0 {
+		return errors.New(fmt.Sprintf(
+			limitCountValidatorErrorMessages[strings.ToLower(packages.GetValidatorLocale())]["min"],
+			"config.time_window", 0))
+	}
+
+	if config.Count == -9999999 {
+		return errors.New(fmt.Sprintf(
+			limitCountValidatorErrorMessages[strings.ToLower(packages.GetValidatorLocale())]["required"],
+			"config.count", "int"))
+	}
+	if config.Count < 0 {
+		return errors.New(fmt.Sprintf(
+			limitCountValidatorErrorMessages[strings.ToLower(packages.GetValidatorLocale())]["min"],
+			"config.count", 0))
 	}
 
 	return nil

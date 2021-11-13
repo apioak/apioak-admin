@@ -6,6 +6,7 @@ import (
 	"apioak-admin/app/services/plugins"
 	"apioak-admin/app/utils"
 	"apioak-admin/app/validators"
+	"encoding/json"
 	"errors"
 )
 
@@ -50,11 +51,12 @@ func CheckRoutePluginEnableChange(id string, enable int) error {
 }
 
 func RoutePluginCreate(routePluginData *validators.RoutePluginAddUpdate) error {
+	config, _ := json.Marshal(routePluginData.Config)
 	createRoutePlugin := models.RoutePlugins{
 		PluginID: routePluginData.PluginID,
 		RouteID:  routePluginData.RouteID,
 		Order:    routePluginData.Order,
-		Config:   routePluginData.Config,
+		Config:   string(config),
 		IsEnable: routePluginData.IsEnable,
 	}
 
@@ -65,9 +67,10 @@ func RoutePluginCreate(routePluginData *validators.RoutePluginAddUpdate) error {
 }
 
 func RoutePluginUpdate(id string, routePluginData *validators.RoutePluginAddUpdate) error {
+	config, _ := json.Marshal(routePluginData.Config)
 	createRoutePlugin := models.RoutePlugins{
 		Order:    routePluginData.Order,
-		Config:   routePluginData.Config,
+		Config:   string(config),
 		IsEnable: routePluginData.IsEnable,
 	}
 
