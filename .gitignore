@@ -16,3 +16,6 @@
 .idea
 etc
 bin
+logs/*
+config/*
+apioak-admin
