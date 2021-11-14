@@ -49,7 +49,7 @@ type ServiceSwitchEnable struct {
 }
 
 type ServiceSwitchRelease struct {
-	IsRelease int `json:"is_release" zh:"服务发布" en:"Service release" binding:"required,oneof=1 2"`
+	IsRelease int `json:"is_release" zh:"服务发布" en:"Service release" binding:"required,oneof=1"`
 }
 
 type ServiceSwitchWebsocket struct {

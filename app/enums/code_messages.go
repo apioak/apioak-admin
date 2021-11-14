@@ -17,9 +17,11 @@ const (
 	SwitchNoChange      = 101 // 开关无变化
 	SwitchONProhibitsOp = 102 // 开关打开状态禁止该操作
 	ParamsError         = 103 // 参数异常
+	EnablePublishedONOp = 104 // 开关关闭状态并且已发布才允许该操作
 
 	ServiceNull       = 10001 // 服务不存在
 	ServiceParamsNull = 10002 // 服务参数缺失
+	ServicePublished  = 10003 // 服务已是发布状态
 
 	ServiceDomainExist       = 10101 // [%s]服务域名已存在
 	ServiceDomainFormatError = 10102 // 服务域名格式错误
@@ -62,9 +64,11 @@ var ZhMapMessages = map[int]string{
 	SwitchNoChange:      "开关无变化",
 	SwitchONProhibitsOp: "开关打开状态禁止该操作",
 	ParamsError:         "参数异常",
+	EnablePublishedONOp: "开关关闭状态并且已发布才允许该操作",
 
 	ServiceNull:       "服务不存在",
 	ServiceParamsNull: "服务参数缺失",
+	ServicePublished:  "服务已是发布状态",
 
 	ServiceDomainExist:       "[%s]域名已存在",
 	ServiceDomainFormatError: "服务域名格式错误",
@@ -107,9 +111,11 @@ var EnMapMessages = map[int]string{
 	SwitchNoChange:      "No change in switch",
 	SwitchONProhibitsOp: "This operation is prohibited when the switch is open",
 	ParamsError:         "Parameter abnormal",
+	EnablePublishedONOp: "The operation is only allowed when the switch is off and has been released",
 
 	ServiceNull:       "Service does not exist",
 	ServiceParamsNull: "Missing service parameters",
+	ServicePublished:  "Service is already published",
 
 	ServiceDomainExist:       "[%s]Domain name already exists",
 	ServiceDomainFormatError: "Service domain name format error",

@@ -349,7 +349,35 @@ func (s *Services) ServiceDelete(id string) error {
 		return deleteNodeError
 	}
 
-	// @todo 删除路由，同时删除路由下的插件
+	serviceRouteIds := make([]string, 0)
+	routeModel := Routes{}
+	tx.
+		Table(routeModel.TableName()).
+		Where("service_id = ?", id).
+		Pluck("id", &serviceRouteIds)
+
+	if len(serviceRouteIds) > 0 {
+		deleteRouteError := tx.
+			Table(routeModel.TableName()).
+			Where("id IN ?", serviceRouteIds).
+			Delete(routeModel).Error
+
+		if deleteRouteError != nil {
+			tx.Rollback()
+			return deleteRouteError
+		}
+
+		routePluginModel := RoutePlugins{}
+		deleteRoutePluginError := tx.
+			Table(routePluginModel.TableName()).
+			Where("route_id IN ?", serviceRouteIds).
+			Delete(routePluginModel).Error
+
+		if deleteRoutePluginError != nil {
+			tx.Rollback()
+			return deleteRoutePluginError
+		}
+	}
 
 	return tx.Commit().Error
 }
@@ -433,7 +461,7 @@ func (s *Services) ServiceSwitchEnable(id string, enable int) error {
 	updateErr := packages.GetDb().
 		Table(s.TableName()).
 		Where("id = ?", id).
-		Update("is_enable", enable).Error
+		Updates(Services{IsEnable: enable, IsRelease: utils.IsReleaseN}).Error
 
 	if updateErr != nil {
 		return updateErr
@@ -451,7 +479,7 @@ func (s *Services) ServiceSwitchWebsocket(id string, webSocket int) error {
 	updateErr := packages.GetDb().
 		Table(s.TableName()).
 		Where("id = ?", id).
-		Update("web_socket", webSocket).Error
+		Updates(Services{WebSocket: webSocket, IsRelease: utils.IsReleaseN}).Error
 
 	if updateErr != nil {
 		return updateErr
@@ -469,7 +497,24 @@ func (s *Services) ServiceSwitchHealthCheck(id string, healthCheck int) error {
 	updateErr := packages.GetDb().
 		Table(s.TableName()).
 		Where("id = ?", id).
-		Update("health_check", healthCheck).Error
+		Updates(Services{HealthCheck: healthCheck, IsRelease: utils.IsReleaseN}).Error
+
+	if updateErr != nil {
+		return updateErr
+	}
+
+	return nil
+}
+
+func (s *Services) ServiceSwitchRelease(id string, release int) error {
+	if len(id) == 0 {
+		return errors.New(enums.CodeMessages(enums.ServiceParamsNull))
+	}
+
+	updateErr := packages.GetDb().
+		Table(s.TableName()).
+		Where("id = ?", id).
+		Update("is_release", release).Error
 
 	if updateErr != nil {
 		return updateErr

@@ -33,6 +33,12 @@ const (
 
 	EtcdTimeOut = 3
 
+	IsReleaseY = 1 // 是否发布——是
+	IsReleaseN = 2 // 是否发布——否
+
+	ReleaseTypePush = "push" // 发布类型——发布（新增/修改）
+	ReleaseTypeDelete = "push" // 发布类型——删除
+
 	// ===================================== service =====================================
 
 	LoadBalanceRoundRobin = 1 // 轮询

@@ -21,6 +21,74 @@ func CheckServiceExist(serviceId string) error {
 	return nil
 }
 
+func CheckServiceEnableChange(serviceId string, enable int) error {
+	serviceModel := &models.Services{}
+	serviceInfo := serviceModel.ServiceInfoById(serviceId)
+	if serviceInfo.ID != serviceId {
+		return errors.New(enums.CodeMessages(enums.ServiceNull))
+	}
+
+	if serviceInfo.IsEnable == enable {
+		return errors.New(enums.CodeMessages(enums.SwitchNoChange))
+	}
+
+	return nil
+}
+
+func CheckServiceWebsocketChange(serviceId string, webSocket int) error {
+	serviceModel := &models.Services{}
+	serviceInfo := serviceModel.ServiceInfoById(serviceId)
+	if serviceInfo.ID != serviceId {
+		return errors.New(enums.CodeMessages(enums.ServiceNull))
+	}
+
+	if serviceInfo.WebSocket == webSocket {
+		return errors.New(enums.CodeMessages(enums.SwitchNoChange))
+	}
+
+	return nil
+}
+
+func CheckServiceHealthCheckChange(serviceId string, healthCheck int) error {
+	serviceModel := &models.Services{}
+	serviceInfo := serviceModel.ServiceInfoById(serviceId)
+	if serviceInfo.ID != serviceId {
+		return errors.New(enums.CodeMessages(enums.ServiceNull))
+	}
+
+	if serviceInfo.HealthCheck == healthCheck {
+		return errors.New(enums.CodeMessages(enums.SwitchNoChange))
+	}
+
+	return nil
+}
+
+func CheckServiceRelease(serviceId string) error {
+	serviceModel := &models.Services{}
+	serviceInfo := serviceModel.ServiceInfoById(serviceId)
+
+	if serviceInfo.IsRelease == utils.IsReleaseY {
+		return errors.New(enums.CodeMessages(enums.ServicePublished))
+	}
+
+	return nil
+}
+
+func CheckServiceDelete(serviceId string) error {
+	serviceModel := &models.Services{}
+	serviceInfo := serviceModel.ServiceInfoById(serviceId)
+
+	if serviceInfo.IsEnable == utils.EnableOn {
+		return errors.New(enums.CodeMessages(enums.SwitchONProhibitsOp))
+	}
+
+	if serviceInfo.IsRelease != utils.IsReleaseY {
+		return errors.New(enums.CodeMessages(enums.EnablePublishedONOp))
+	}
+
+	return nil
+}
+
 func CheckExistDomain(domains []string, filterServiceIds []string) error {
 	serviceDomainInfo := models.ServiceDomains{}
 	serviceDomains, err := serviceDomainInfo.DomainInfosByDomain(domains, filterServiceIds)
@@ -101,6 +169,7 @@ func ServiceCreate(serviceData *validators.ServiceAddUpdate) error {
 		HealthCheck: serviceData.HealthCheck,
 		WebSocket:   serviceData.WebSocket,
 		IsEnable:    serviceData.IsEnable,
+		IsRelease:   utils.IsReleaseN,
 		LoadBalance: serviceData.LoadBalance,
 		Timeouts:    string(timeOutByte),
 	}
@@ -129,21 +198,18 @@ func ServiceCreate(serviceData *validators.ServiceAddUpdate) error {
 
 	createErr := serviceModel.ServiceAdd(&createServiceData, &serviceDomainInfos, &serviceNodeInfos)
 
-	// @todo 如果状态是"开启"，则需要同步远程数据中心
-
-	// @todo 记录错误信息的日志，并返回定义的业务提示错误信息
-
 	return createErr
 }
 
 func ServiceUpdate(serviceId string, serviceData *validators.ServiceAddUpdate) error {
-
 	timeOutByte, _ := json.Marshal(serviceData.Timeouts)
+
 	updateServiceData := models.Services{
 		Protocol:    serviceData.Protocol,
 		HealthCheck: serviceData.HealthCheck,
 		WebSocket:   serviceData.WebSocket,
 		IsEnable:    serviceData.IsEnable,
+		IsRelease:   utils.IsReleaseN,
 		LoadBalance: serviceData.LoadBalance,
 		Timeouts:    string(timeOutByte),
 	}
@@ -163,9 +229,23 @@ func ServiceUpdate(serviceId string, serviceData *validators.ServiceAddUpdate) e
 	serviceModel := &models.Services{}
 	updateErr := serviceModel.ServiceUpdate(serviceId, &updateServiceData, &addDomains, &addNodes, &updateNodes, deleteDomainIds, deleteNodeIds)
 
-	// @todo 记录错误信息的日志，并返回定义的业务提示错误信息
-
 	return updateErr
+}
+
+func ServiceDelete(serviceId string) error {
+	configReleaseErr := ServiceConfigRelease(utils.ReleaseTypeDelete, serviceId)
+	if configReleaseErr != nil {
+		return configReleaseErr
+	}
+
+	serviceModel := &models.Services{}
+	deleteErr := serviceModel.ServiceDelete(serviceId)
+	if deleteErr != nil {
+		ServiceConfigRelease(utils.ReleaseTypePush, serviceId)
+		return errors.New(deleteErr.Error())
+	}
+
+	return nil
 }
 
 type structTimeouts struct {
@@ -342,4 +422,41 @@ func (s *StructServiceInfo) ServiceInfoById(serviceId string) (StructServiceInfo
 	}
 
 	return serviceInfo, nil
+}
+
+func ServiceRelease(serviceId string) error {
+	serviceModel := &models.Services{}
+	serviceReleaseErr := serviceModel.ServiceSwitchRelease(serviceId, utils.IsReleaseY)
+	if serviceReleaseErr != nil {
+		return serviceReleaseErr
+	}
+
+	configReleaseErr := ServiceConfigRelease(utils.ReleaseTypePush, serviceId)
+	if configReleaseErr != nil {
+		serviceModel.ServiceSwitchRelease(serviceId, utils.IsReleaseN)
+		return configReleaseErr
+	}
+
+	return nil
+}
+
+func ServiceConfigRelease(releaseType string, serviceId string) error {
+
+	// @todo 获取指定服务的配置数据
+	//serviceConfig := generateServicesConfig(serviceId)
+
+	// @todo 获取数据注册中心对应 服务配置 的key
+
+	fmt.Println("=========service release:", releaseType, serviceId)
+
+	// @todo 发布配置到 数据注册中心
+
+	return nil
+}
+
+func generateServicesConfig(serviceId string) string {
+
+	// @todo 根据服务ID 拼接服务的配置数据（主要是用于同步到数据面使用）
+
+	return ""
 }
