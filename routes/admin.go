@@ -84,6 +84,7 @@ func RouteRegister(routeEngine *gin.Engine) {
 			certificate.PUT("/update/:id", admin.CertificateUpdate)
 			certificate.DELETE("/delete/:id", admin.CertificateDelete)
 			certificate.PUT("/switch/enable/:id", admin.CertificateSwitchEnable)
+			certificate.PUT("/switch/release/:id", admin.CertificateSwitchRelease)
 		}
 
 		// cluster node

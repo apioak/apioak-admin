@@ -151,7 +151,20 @@ func (c *Certificates) CertificateSwitchEnable(id string, enable int) error {
 	updateErr := packages.GetDb().
 		Table(c.TableName()).
 		Where("id = ?", id).
-		Update("is_enable", enable).Error
+		Updates(Certificates{IsEnable: enable, IsRelease: utils.IsReleaseN}).Error
+
+	if updateErr != nil {
+		return updateErr
+	}
+
+	return nil
+}
+
+func (c *Certificates) CertificateSwitchRelease(id string, release int) error {
+	updateErr := packages.GetDb().
+		Table(c.TableName()).
+		Where("id = ?", id).
+		Update("is_release", release).Error
 
 	if updateErr != nil {
 		return updateErr

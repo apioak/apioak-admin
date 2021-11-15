@@ -68,7 +68,7 @@ func CheckServiceRelease(serviceId string) error {
 	serviceInfo := serviceModel.ServiceInfoById(serviceId)
 
 	if serviceInfo.IsRelease == utils.IsReleaseY {
-		return errors.New(enums.CodeMessages(enums.ServicePublished))
+		return errors.New(enums.CodeMessages(enums.SwitchPublished))
 	}
 
 	return nil
