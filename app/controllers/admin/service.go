@@ -215,12 +215,6 @@ func ServiceSwitchEnable(c *gin.Context) {
 func ServiceSwitchRelease(c *gin.Context) {
 	serviceId := strings.TrimSpace(c.Param("id"))
 
-	var bindParams = validators.ServiceSwitchRelease{}
-	if msg, err := packages.ParseRequestParams(c, &bindParams); err != nil {
-		utils.Error(c, msg)
-		return
-	}
-
 	checkServiceExistErr := services.CheckServiceExist(serviceId)
 	if checkServiceExistErr != nil {
 		utils.Error(c, checkServiceExistErr.Error())

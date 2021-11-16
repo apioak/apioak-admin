@@ -37,7 +37,7 @@ const (
 	IsReleaseN = 2 // 是否发布——否
 
 	ReleaseTypePush = "push" // 发布类型——发布（新增/修改）
-	ReleaseTypeDelete = "push" // 发布类型——删除
+	ReleaseTypeDelete = "delete" // 发布类型——删除
 
 	// ===================================== service =====================================
 

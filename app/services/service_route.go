@@ -30,11 +30,26 @@ func CheckRouteEnableChange(routeId string, enable int) error {
 	return nil
 }
 
-func CheckRouteEnableOnProhibitedOp(routeId string) error {
+func CheckRouteDelete(routeId string) error {
 	routeModel := &models.Routes{}
 	routeInfo := routeModel.RouteInfoByIdServiceId(routeId, "")
+
 	if routeInfo.IsEnable == utils.EnableOn {
 		return errors.New(enums.CodeMessages(enums.SwitchONProhibitsOp))
+	}
+
+	if routeInfo.IsRelease != utils.IsReleaseY {
+		return errors.New(enums.CodeMessages(enums.EnablePublishedONOp))
+	}
+
+	return nil
+}
+
+func CheckRouteRelease(routeId string) error {
+	routeModel := &models.Routes{}
+	routeInfo := routeModel.RouteInfoByIdServiceId(routeId, "")
+	if routeInfo.IsRelease == utils.IsReleaseY {
+		return errors.New(enums.CodeMessages(enums.SwitchPublished))
 	}
 
 	return nil
@@ -77,6 +92,7 @@ func RouteCreate(routeData *validators.ValidatorRouteAddUpdate) error {
 		RequestMethods: routeData.RequestMethods,
 		RoutePath:      routeData.RoutePath,
 		IsEnable:       routeData.IsEnable,
+		IsRelease:      utils.IsReleaseN,
 	}
 
 	routeModel := models.Routes{}
@@ -85,40 +101,41 @@ func RouteCreate(routeData *validators.ValidatorRouteAddUpdate) error {
 		return err
 	}
 
-	// @todo 如果状态是"开启"，则需要同步远程数据中心
-
 	return nil
 }
 
-func RouteUpdate(id string, routeData *validators.ValidatorRouteAddUpdate) error {
+func RouteUpdate(routeId string, routeData *validators.ValidatorRouteAddUpdate) error {
 	updateRouteData := models.Routes{
 		RequestMethods: routeData.RequestMethods,
 		RoutePath:      routeData.RoutePath,
 		IsEnable:       routeData.IsEnable,
+		IsRelease:      utils.IsReleaseN,
 	}
 	if len(routeData.RouteName) != 0 {
 		updateRouteData.RouteName = routeData.RouteName
 	}
 
 	routeModel := models.Routes{}
-	err := routeModel.RouteUpdate(id, updateRouteData)
+	err := routeModel.RouteUpdate(routeId, updateRouteData)
 	if err != nil {
 		return err
 	}
-
-	// @todo 如果状态是"开启"，则需要同步远程数据中心
 
 	return nil
 }
 
-func RouteDelete(id string) error {
-	routeModel := models.Routes{}
-	err := routeModel.RouteDelete(id)
-	if err != nil {
-		return err
+func RouteDelete(routeId string) error {
+	configReleaseErr := ServiceRouteConfigRelease(utils.ReleaseTypeDelete, routeId)
+	if configReleaseErr != nil {
+		return configReleaseErr
 	}
 
-	// @todo 如果状态是"开启"，则需要同步远程数据中心
+	routeModel := models.Routes{}
+	err := routeModel.RouteDelete(routeId)
+	if err != nil {
+		ServiceRouteConfigRelease(utils.ReleaseTypePush, routeId)
+		return err
+	}
 
 	return nil
 }
@@ -208,9 +225,44 @@ func ServiceRouteSwitchEnable(id string, enable int) error {
 		return err
 	}
 
-	// @todo 触发远程发布数据
+	return nil
+}
+
+func ServiceRouteRelease(id string) error {
+	routeModel := models.Routes{}
+	err := routeModel.RouteSwitchRelease(id, utils.IsReleaseY)
+	if err != nil {
+		return err
+	}
+
+	configReleaseErr := ServiceRouteConfigRelease(utils.ReleaseTypePush, id)
+	if configReleaseErr != nil {
+		routeModel.RouteSwitchRelease(id, utils.IsReleaseN)
+		return configReleaseErr
+	}
 
 	return nil
+}
+
+func ServiceRouteConfigRelease(releaseType string, id string) error {
+
+	// @todo 获取指定服务路由的配置数据
+	//serviceRouteConfig := generateServicesRouteConfig(serviceId)
+
+	// @todo 获取数据注册中心对应 服务配置 的key
+
+	fmt.Println("=========service route release:", releaseType, id)
+
+	// @todo 发布配置到 数据注册中心
+
+	return nil
+}
+
+func generateServicesRouteConfig(id string) string {
+
+	// @todo 根据服务ID 拼接服务的配置数据（主要是用于同步到数据面使用）
+
+	return ""
 }
 
 type RouteAddPluginInfo struct {

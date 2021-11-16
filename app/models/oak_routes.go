@@ -254,7 +254,25 @@ func (r *Routes) RouteSwitchEnable(id string, enable int) error {
 	updateErr := packages.GetDb().
 		Table(r.TableName()).
 		Where("id = ?", id).
-		Update("is_enable", enable).Error
+		Updates(Routes{IsEnable: enable, IsRelease: utils.IsReleaseN}).Error
+
+	if updateErr != nil {
+		return updateErr
+	}
+
+	return nil
+}
+
+func (r *Routes) RouteSwitchRelease(id string, release int) error {
+	id = strings.TrimSpace(id)
+	if len(id) == 0 {
+		return errors.New(enums.CodeMessages(enums.ServiceParamsNull))
+	}
+
+	updateErr := packages.GetDb().
+		Table(r.TableName()).
+		Where("id = ?", id).
+		Update("is_release", release).Error
 
 	if updateErr != nil {
 		return updateErr

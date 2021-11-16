@@ -153,7 +153,20 @@ func (r *RoutePlugins) RoutePluginSwitchEnable(id string, enable int) error {
 	updateErr := packages.GetDb().
 		Table(r.TableName()).
 		Where("id = ?", id).
-		Update("is_enable", enable).Error
+		Updates(RoutePlugins{IsEnable: enable, IsRelease: utils.IsReleaseN}).Error
+
+	if updateErr != nil {
+		return updateErr
+	}
+
+	return nil
+}
+
+func (r *RoutePlugins) RoutePluginSwitchRelease(id string, release int) error {
+	updateErr := packages.GetDb().
+		Table(r.TableName()).
+		Where("id = ?", id).
+		Update("is_release", release).Error
 
 	if updateErr != nil {
 		return updateErr

@@ -160,12 +160,6 @@ func CertificateSwitchEnable(c *gin.Context) {
 func CertificateSwitchRelease(c *gin.Context) {
 	id := strings.TrimSpace(c.Param("id"))
 
-	var bindParams = validators.CertificateSwitchRelease{}
-	if msg, err := packages.ParseRequestParams(c, &bindParams); err != nil {
-		utils.Error(c, msg)
-		return
-	}
-
 	checkCertificateNullErr := services.CheckCertificateNull(id)
 	if checkCertificateNullErr != nil {
 		utils.Error(c, checkCertificateNullErr.Error())
