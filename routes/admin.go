@@ -51,6 +51,7 @@ func RouteRegister(routeEngine *gin.Engine) {
 			route.GET("/info/:service_id/:route_id", admin.RouteInfo)
 			route.PUT("/update/:service_id/:route_id", admin.RouteUpdate)
 			route.DELETE("/delete/:service_id/:route_id", admin.RouteDelete)
+			route.POST("/copy/:service_id/:source_route_id", admin.RouteCopy)
 			route.PUT("/update/name/:service_id/:route_id", admin.RouteUpdateName)
 			route.PUT("/switch/enable/:service_id/:route_id", admin.RouteSwitchEnable)
 			route.PUT("/switch/release/:service_id/:route_id", admin.RouteSwitchRelease)

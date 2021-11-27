@@ -19,6 +19,7 @@ const (
 	ParamsError         = 103 // 参数异常
 	EnablePublishedONOp = 104 // 开关关闭状态并且已发布才允许该操作
 	SwitchPublished     = 105 // 已是发布状态
+	IdConflict          = 106 // ID冲突
 
 	ServiceNull       = 10001 // 服务不存在
 	ServiceParamsNull = 10002 // 服务参数缺失
@@ -66,6 +67,7 @@ var ZhMapMessages = map[int]string{
 	ParamsError:         "参数异常",
 	EnablePublishedONOp: "开关关闭状态并且已发布才允许该操作",
 	SwitchPublished:     "已是发布状态",
+	IdConflict:          "ID冲突",
 
 	ServiceNull:       "服务不存在",
 	ServiceParamsNull: "服务参数缺失",
@@ -113,6 +115,7 @@ var EnMapMessages = map[int]string{
 	ParamsError:         "Parameter abnormal",
 	EnablePublishedONOp: "The operation is only allowed when the switch is off and has been released",
 	SwitchPublished:     "Already published",
+	IdConflict:          "ID conflict",
 
 	ServiceNull:       "Service does not exist",
 	ServiceParamsNull: "Missing service parameters",

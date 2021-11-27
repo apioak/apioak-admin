@@ -1,9 +1,11 @@
 package models
 
 import (
+	"apioak-admin/app/enums"
 	"apioak-admin/app/packages"
 	"apioak-admin/app/utils"
 	"apioak-admin/app/validators"
+	"errors"
 	"strings"
 	"time"
 )
@@ -24,45 +26,42 @@ func (c *Certificates) TableName() string {
 	return "oak_certificates"
 }
 
-var certificatesId = ""
+var recursionTimesCertificates = 1
 
-func (c *Certificates) CertificatesIdUnique(cIds map[string]string) (string, error) {
-	if c.ID == "" {
-		tmpID, err := utils.IdGenerate(utils.IdTypeCertificate)
-		if err != nil {
-			return "", err
-		}
-		c.ID = tmpID
+func (m *Certificates) ModelUniqueId() (string, error) {
+	generateId, generateIdErr := utils.IdGenerate(utils.IdTypeCertificate)
+	if generateIdErr != nil {
+		return "", generateIdErr
 	}
 
 	result := packages.GetDb().
-		Table(c.TableName()).
+		Table(m.TableName()).
+		Where("id = ?", generateId).
 		Select("id").
-		First(&c)
+		First(m)
 
-	mapId := cIds[c.ID]
-	if (result.RowsAffected == 0) && (c.ID != mapId) {
-		certificatesId = c.ID
-		cIds[c.ID] = c.ID
-		return certificatesId, nil
+	if result.RowsAffected == 0 {
+		recursionTimesCertificates = 1
+		return generateId, nil
 	} else {
-		certId, certIdErr := utils.IdGenerate(utils.IdTypeCertificate)
-		if certIdErr != nil {
-			return "", certIdErr
+		if recursionTimesCertificates == utils.IdGenerateMaxTimes {
+			recursionTimesCertificates = 1
+			return "", errors.New(enums.CodeMessages(enums.IdConflict))
 		}
-		c.ID = certId
-		_, err := c.CertificatesIdUnique(cIds)
+
+		recursionTimesCertificates++
+		id, err := m.ModelUniqueId()
+
 		if err != nil {
 			return "", err
 		}
-	}
 
-	return certificatesId, nil
+		return id, nil
+	}
 }
 
 func (c *Certificates) CertificatesAdd(certificatesData *Certificates) error {
-	tpmIds := map[string]string{}
-	certificatesId, certificatesIdUniqueErr := c.CertificatesIdUnique(tpmIds)
+	certificatesId, certificatesIdUniqueErr := c.ModelUniqueId()
 	if certificatesIdUniqueErr != nil {
 		return certificatesIdUniqueErr
 	}

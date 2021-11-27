@@ -7,6 +7,7 @@ import (
 	"apioak-admin/app/validators"
 	"errors"
 	"strings"
+	"time"
 )
 
 type Routes struct {
@@ -26,40 +27,38 @@ func (r *Routes) TableName() string {
 	return "oak_routes"
 }
 
-var routeId = ""
+var recursionTimesRoute = 1
 
-func (r *Routes) RouteIdUnique(routeIds map[string]string) (string, error) {
-	if r.ID == "" {
-		tmpID, err := utils.IdGenerate(utils.IdTypeRoute)
-		if err != nil {
-			return "", err
-		}
-		r.ID = tmpID
+func (m *Routes) ModelUniqueId() (string, error) {
+	generateId, generateIdErr := utils.IdGenerate(utils.IdTypeRoute)
+	if generateIdErr != nil {
+		return "", generateIdErr
 	}
 
 	result := packages.GetDb().
-		Table(r.TableName()).
+		Table(m.TableName()).
+		Where("id = ?", generateId).
 		Select("id").
-		First(&r)
+		First(m)
 
-	mapId := routeIds[r.ID]
-	if (result.RowsAffected == 0) && (r.ID != mapId) {
-		routeId = r.ID
-		routeIds[r.ID] = r.ID
-		return routeId, nil
+	if result.RowsAffected == 0 {
+		recursionTimesRoute = 1
+		return generateId, nil
 	} else {
-		svcId, svcErr := utils.IdGenerate(utils.IdTypeService)
-		if svcErr != nil {
-			return "", svcErr
+		if recursionTimesRoute == utils.IdGenerateMaxTimes {
+			recursionTimesRoute = 1
+			return "", errors.New(enums.CodeMessages(enums.IdConflict))
 		}
-		r.ID = svcId
-		_, err := r.RouteIdUnique(routeIds)
+
+		recursionTimesRoute++
+		id, err := m.ModelUniqueId()
+
 		if err != nil {
 			return "", err
 		}
-	}
 
-	return routeId, nil
+		return id, nil
+	}
 }
 
 func (r *Routes) RouteInfosByServiceRoutePath(
@@ -118,8 +117,7 @@ func (r *Routes) RouteInfosByServiceRouteId(serviceId string, routeId string) (R
 }
 
 func (r *Routes) RouteAdd(routeData Routes) error {
-	tpmIds := map[string]string{}
-	routeId, routeIdUniqueErr := r.RouteIdUnique(tpmIds)
+	routeId, routeIdUniqueErr := r.ModelUniqueId()
 	if routeIdUniqueErr != nil {
 		return routeIdUniqueErr
 	}
@@ -149,6 +147,64 @@ func (r *Routes) RouteUpdate(id string, routeData Routes) error {
 	}
 
 	return nil
+}
+
+func (r *Routes) RouteCopy(routeData Routes, routePlugins []RoutePlugins) error {
+	tx := packages.GetDb().Begin()
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+		}
+	}()
+
+	if err := tx.Error; err != nil {
+		return err
+	}
+
+	routeId, routeIdUniqueErr := r.ModelUniqueId()
+	if routeIdUniqueErr != nil {
+		return routeIdUniqueErr
+	}
+
+	routeData.ID = routeId
+	routeData.RouteName = routeId
+
+	addErr := tx.
+		Table(r.TableName()).
+		Create(&routeData).Error
+
+	if addErr != nil {
+		tx.Rollback()
+		return addErr
+	}
+
+	if len(routePlugins) != 0 {
+		routePluginModel := RoutePlugins{}
+		for k, _ := range routePlugins {
+			routePluginId, routePluginIdErr := routePluginModel.ModelUniqueId()
+			if routePluginIdErr != nil {
+				tx.Rollback()
+				return routePluginIdErr
+			}
+
+			routePlugins[k].ID = routePluginId
+			routePlugins[k].RouteID = routeId
+			routePlugins[k].IsRelease = utils.IsReleaseN
+			routePlugins[k].CreatedAt = time.Now()
+			routePlugins[k].UpdatedAt = time.Now()
+		}
+
+		addRoutePluginErr := tx.
+			Table(routePluginModel.TableName()).
+			Create(&routePlugins).Error
+
+		if addRoutePluginErr != nil {
+			tx.Rollback()
+			return addRoutePluginErr
+		}
+	}
+
+	return tx.Commit().Error
 }
 
 func (r *Routes) RouteDelete(id string) error {

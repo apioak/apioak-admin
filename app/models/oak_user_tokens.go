@@ -1,8 +1,10 @@
 package models
 
 import (
+	"apioak-admin/app/enums"
 	"apioak-admin/app/packages"
 	"apioak-admin/app/utils"
+	"errors"
 	"time"
 )
 
@@ -20,40 +22,38 @@ func (u *UserTokens) TableName() string {
 	return "oak_user_tokens"
 }
 
-var userTokenId = ""
+var recursionTimesUserTokens = 1
 
-func (u *UserTokens) UserTokenIdUnique(utIds map[string]string) (string, error) {
-	if u.ID == "" {
-		tmpID, err := utils.IdGenerate(utils.IdTypeUserToken)
-		if err != nil {
-			return "", err
-		}
-		u.ID = tmpID
+func (m *UserTokens) ModelUniqueId() (string, error) {
+	generateId, generateIdErr := utils.IdGenerate(utils.IdTypeUserToken)
+	if generateIdErr != nil {
+		return "", generateIdErr
 	}
 
 	result := packages.GetDb().
-		Table(u.TableName()).
+		Table(m.TableName()).
+		Where("id = ?", generateId).
 		Select("id").
-		First(&u)
+		First(m)
 
-	mapId := utIds[u.ID]
-	if (result.RowsAffected == 0) && (u.ID != mapId) {
-		userTokenId = u.ID
-		utIds[u.ID] = u.ID
-		return userTokenId, nil
+	if result.RowsAffected == 0 {
+		recursionTimesUserTokens = 1
+		return generateId, nil
 	} else {
-		ustId, certIdErr := utils.IdGenerate(utils.IdTypeUserToken)
-		if certIdErr != nil {
-			return "", certIdErr
+		if recursionTimesUserTokens == utils.IdGenerateMaxTimes {
+			recursionTimesUserTokens = 1
+			return "", errors.New(enums.CodeMessages(enums.IdConflict))
 		}
-		u.ID = ustId
-		_, err := u.UserTokenIdUnique(utIds)
+
+		recursionTimesUserTokens++
+		id, err := m.ModelUniqueId()
+
 		if err != nil {
 			return "", err
 		}
-	}
 
-	return userTokenId, nil
+		return id, nil
+	}
 }
 
 func (u *UserTokens) SetTokenExpire(email string, token string, expiredTime time.Time) error {
@@ -73,8 +73,7 @@ func (u *UserTokens) SetTokenExpire(email string, token string, expiredTime time
 			Updates(updateData)
 
 	} else {
-		tpmIds := map[string]string{}
-		userTokenId, userIdUniqueErr := u.UserTokenIdUnique(tpmIds)
+		userTokenId, userIdUniqueErr := u.ModelUniqueId()
 		if userIdUniqueErr != nil {
 			return userIdUniqueErr
 		}

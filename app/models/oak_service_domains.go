@@ -1,8 +1,10 @@
 package models
 
 import (
+	"apioak-admin/app/enums"
 	"apioak-admin/app/packages"
 	"apioak-admin/app/utils"
+	"errors"
 	"strings"
 )
 
@@ -18,40 +20,38 @@ func (s *ServiceDomains) TableName() string {
 	return "oak_service_domains"
 }
 
-var sDomainId = ""
+var recursionTimesServiceDomains = 1
 
-func (s *ServiceDomains) ServiceDomainIdUnique(sDomainIds map[string]string) (string, error) {
-	if s.ID == "" {
-		tmpID, err := utils.IdGenerate(utils.IdTypeServiceDomain)
-		if err != nil {
-			return "", err
-		}
-		s.ID = tmpID
+func (m *ServiceDomains) ModelUniqueId() (string, error) {
+	generateId, generateIdErr := utils.IdGenerate(utils.IdTypeServiceDomain)
+	if generateIdErr != nil {
+		return "", generateIdErr
 	}
 
 	result := packages.GetDb().
-		Table(s.TableName()).
+		Table(m.TableName()).
+		Where("id = ?", generateId).
 		Select("id").
-		First(&s)
+		First(m)
 
-	mapId := sDomainIds[s.ID]
-	if (result.RowsAffected == 0) && (s.ID != mapId) {
-		sDomainId = s.ID
-		sDomainIds[s.ID] = s.ID
-		return sDomainId, nil
+	if result.RowsAffected == 0 {
+		recursionTimesServiceDomains = 1
+		return generateId, nil
 	} else {
-		svcDomainId, svcErr := utils.IdGenerate(utils.IdTypeServiceDomain)
-		if svcErr != nil {
-			return "", svcErr
+		if recursionTimesServiceDomains == utils.IdGenerateMaxTimes {
+			recursionTimesServiceDomains = 1
+			return "", errors.New(enums.CodeMessages(enums.IdConflict))
 		}
-		s.ID = svcDomainId
-		_, err := s.ServiceDomainIdUnique(sDomainIds)
+
+		recursionTimesServiceDomains++
+		id, err := m.ModelUniqueId()
+
 		if err != nil {
 			return "", err
 		}
-	}
 
-	return sDomainId, nil
+		return id, nil
+	}
 }
 
 func (s *ServiceDomains) DomainInfosByDomain(domains []string, filterServiceIds []string) ([]ServiceDomains, error) {
@@ -98,7 +98,7 @@ func (s *ServiceDomains) ServiceDomainInfosLikeDomain(domain string) ([]ServiceD
 		Table(s.TableName()).
 		Where("domain LIKE ?", domain).
 		Find(&domainInfos).Error
-	
+
 	if err != nil {
 		return nil, err
 	}
@@ -110,7 +110,7 @@ func (s *ServiceDomains) DomainListByLikeSni(sni string) []ServiceDomains {
 	domainList := make([]ServiceDomains, 0)
 	packages.GetDb().
 		Table(s.TableName()).
-		Where("domain LIKE ?", "%" + sni).
+		Where("domain LIKE ?", "%"+sni).
 		Find(&domainList)
 
 	return domainList

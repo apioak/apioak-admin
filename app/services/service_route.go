@@ -86,6 +86,25 @@ func CheckExistServiceRoutePath(serviceId string, path string, filterRouteIds []
 }
 
 func RouteCreate(routeData *validators.ValidatorRouteAddUpdate) error {
+	createRouteData := models.Routes{
+		ServiceID:      routeData.ServiceID,
+		RequestMethods: routeData.RequestMethods,
+		RoutePath:      routeData.RoutePath,
+		IsEnable:       routeData.IsEnable,
+		IsRelease:      utils.IsReleaseN,
+	}
+
+	err := createRouteData.RouteAdd(createRouteData)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func RouteCopy(routeData *validators.ValidatorRouteAddUpdate, sourceRouteId string) error {
+	routePluginModel := models.RoutePlugins{}
+	routePluginInfos := routePluginModel.RoutePluginInfosByRouteId(sourceRouteId)
 
 	createRouteData := models.Routes{
 		ServiceID:      routeData.ServiceID,
@@ -95,8 +114,7 @@ func RouteCreate(routeData *validators.ValidatorRouteAddUpdate) error {
 		IsRelease:      utils.IsReleaseN,
 	}
 
-	routeModel := models.Routes{}
-	err := routeModel.RouteAdd(createRouteData)
+	err := createRouteData.RouteCopy(createRouteData, routePluginInfos)
 	if err != nil {
 		return err
 	}

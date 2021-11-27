@@ -29,40 +29,38 @@ func (s *Services) TableName() string {
 	return "oak_services"
 }
 
-var serviceId = ""
+var recursionTimesServices = 1
 
-func (s *Services) ServiceIdUnique(sIds map[string]string) (string, error) {
-	if s.ID == "" {
-		tmpID, err := utils.IdGenerate(utils.IdTypeService)
-		if err != nil {
-			return "", err
-		}
-		s.ID = tmpID
+func (m *Services) ModelUniqueId() (string, error) {
+	generateId, generateIdErr := utils.IdGenerate(utils.IdTypeService)
+	if generateIdErr != nil {
+		return "", generateIdErr
 	}
 
 	result := packages.GetDb().
-		Table(s.TableName()).
+		Table(m.TableName()).
+		Where("id = ?", generateId).
 		Select("id").
-		First(&s)
+		First(m)
 
-	mapId := sIds[s.ID]
-	if (result.RowsAffected == 0) && (s.ID != mapId) {
-		serviceId = s.ID
-		sIds[s.ID] = s.ID
-		return serviceId, nil
+	if result.RowsAffected == 0 {
+		recursionTimesServices = 1
+		return generateId, nil
 	} else {
-		svcId, svcErr := utils.IdGenerate(utils.IdTypeService)
-		if svcErr != nil {
-			return "", svcErr
+		if recursionTimesServices == utils.IdGenerateMaxTimes {
+			recursionTimesServices = 1
+			return "", errors.New(enums.CodeMessages(enums.IdConflict))
 		}
-		s.ID = svcId
-		_, err := s.ServiceIdUnique(sIds)
+
+		recursionTimesServices++
+		id, err := m.ModelUniqueId()
+
 		if err != nil {
 			return "", err
 		}
-	}
 
-	return serviceId, nil
+		return id, nil
+	}
 }
 
 func (s *Services) ServiceAdd(
@@ -71,7 +69,7 @@ func (s *Services) ServiceAdd(
 	serviceNodes *[]ServiceNodes) error {
 
 	tpmIds := map[string]string{}
-	serviceId, serviceIdUniqueErr := s.ServiceIdUnique(tpmIds)
+	serviceId, serviceIdUniqueErr := s.ModelUniqueId()
 	if serviceIdUniqueErr != nil {
 		return serviceIdUniqueErr
 	}
@@ -99,7 +97,7 @@ func (s *Services) ServiceAdd(
 	}
 
 	for _, serviceDomain := range *serviceDomains {
-		domainId, domainIdErr := serviceDomain.ServiceDomainIdUnique(tpmIds)
+		domainId, domainIdErr := serviceDomain.ModelUniqueId()
 		if domainIdErr != nil {
 			return domainIdErr
 		}
@@ -133,7 +131,7 @@ func (s *Services) ServiceAdd(
 	}
 
 	serviceRoute := Routes{}
-	routeId, routeIdErr := serviceRoute.RouteIdUnique(tpmIds)
+	routeId, routeIdErr := serviceRoute.ModelUniqueId()
 	if routeIdErr != nil {
 		tx.Rollback()
 		return routeIdErr
@@ -224,9 +222,8 @@ func (s *Services) ServiceUpdate(
 	}
 
 	if len(*serviceDomains) > 0 {
-		tpmIds := map[string]string{}
 		for _, serviceDomain := range *serviceDomains {
-			domainId, domainIdErr := serviceDomain.ServiceDomainIdUnique(tpmIds)
+			domainId, domainIdErr := serviceDomain.ModelUniqueId()
 			if domainIdErr != nil {
 				return domainIdErr
 			}

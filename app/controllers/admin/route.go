@@ -180,6 +180,49 @@ func RouteDelete(c *gin.Context) {
 	utils.Ok(c)
 }
 
+func RouteCopy(c *gin.Context) {
+	var bindParams = validators.ValidatorRouteAddUpdate{}
+	if msg, err := packages.ParseRequestParams(c, &bindParams); err != nil {
+		utils.Error(c, msg)
+		return
+	}
+	validators.GetRouteAttributesDefault(&bindParams)
+
+	if bindParams.RoutePath == utils.DefaultRoutePath {
+		utils.Error(c, enums.CodeMessages(enums.RouteDefaultPathNoPermission))
+		return
+	}
+
+	serviceId := strings.TrimSpace(c.Param("service_id"))
+	sourceRouteId := strings.TrimSpace(c.Param("source_route_id"))
+
+	checkServiceExistErr := services.CheckServiceExist(serviceId)
+	if checkServiceExistErr != nil {
+		utils.Error(c, checkServiceExistErr.Error())
+		return
+	}
+
+	checkExistRouteErr := services.CheckRouteExist(sourceRouteId, serviceId)
+	if checkExistRouteErr != nil {
+		utils.Error(c, checkExistRouteErr.Error())
+		return
+	}
+
+	err := services.CheckExistServiceRoutePath(bindParams.ServiceID, bindParams.RoutePath, []string{})
+	if err != nil {
+		utils.Error(c, err.Error())
+		return
+	}
+
+	createErr := services.RouteCopy(&bindParams, sourceRouteId)
+	if createErr != nil {
+		utils.Error(c, createErr.Error())
+		return
+	}
+
+	utils.Ok(c)
+}
+
 func RouteUpdateName(c *gin.Context) {
 	serviceId := strings.TrimSpace(c.Param("service_id"))
 	routeId := strings.TrimSpace(c.Param("route_id"))

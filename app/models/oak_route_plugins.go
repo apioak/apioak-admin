@@ -1,8 +1,10 @@
 package models
 
 import (
+	"apioak-admin/app/enums"
 	"apioak-admin/app/packages"
 	"apioak-admin/app/utils"
+	"errors"
 )
 
 type RoutePlugins struct {
@@ -22,40 +24,38 @@ func (r *RoutePlugins) TableName() string {
 	return "oak_route_plugins"
 }
 
-var routePluginId = ""
+var recursionTimesRoutePlugins = 1
 
-func (r *RoutePlugins) PluginIdUnique(rIds map[string]string) (string, error) {
-	if r.ID == "" {
-		tmpID, err := utils.IdGenerate(utils.IdTypeRoutePlugin)
-		if err != nil {
-			return "", err
-		}
-		r.ID = tmpID
+func (m *RoutePlugins) ModelUniqueId() (string, error) {
+	generateId, generateIdErr := utils.IdGenerate(utils.IdTypeRoutePlugin)
+	if generateIdErr != nil {
+		return "", generateIdErr
 	}
 
 	result := packages.GetDb().
-		Table(r.TableName()).
+		Table(m.TableName()).
+		Where("id = ?", generateId).
 		Select("id").
-		First(&r)
+		First(m)
 
-	mapId := rIds[r.ID]
-	if (result.RowsAffected == 0) && (r.ID != mapId) {
-		routePluginId = r.ID
-		rIds[r.ID] = r.ID
-		return routePluginId, nil
+	if result.RowsAffected == 0 {
+		recursionTimesRoutePlugins = 1
+		return generateId, nil
 	} else {
-		rpId, rpIdErr := utils.IdGenerate(utils.IdTypeRoutePlugin)
-		if rpIdErr != nil {
-			return "", rpIdErr
+		if recursionTimesRoutePlugins == utils.IdGenerateMaxTimes {
+			recursionTimesRoutePlugins = 1
+			return "", errors.New(enums.CodeMessages(enums.IdConflict))
 		}
-		r.ID = rpId
-		_, err := r.PluginIdUnique(rIds)
+
+		recursionTimesRoutePlugins++
+		id, err := m.ModelUniqueId()
+
 		if err != nil {
 			return "", err
 		}
-	}
 
-	return routePluginId, nil
+		return id, nil
+	}
 }
 
 func (r *RoutePlugins) RoutePluginInfosByPluginIds(pluginIds []string) ([]RoutePlugins, error) {
@@ -126,8 +126,7 @@ func (r *RoutePlugins) RoutePluginInfoByRoutePluginId(routeId string, pluginId s
 }
 
 func (r *RoutePlugins) RoutePluginAdd(routePluginData *RoutePlugins) error {
-	tpmIds := map[string]string{}
-	routePluginId, routePluginIdUniqueErr := r.PluginIdUnique(tpmIds)
+	routePluginId, routePluginIdUniqueErr := r.ModelUniqueId()
 	if routePluginIdUniqueErr != nil {
 		return routePluginIdUniqueErr
 	}
@@ -186,4 +185,14 @@ func (r *RoutePlugins) RoutePluginDelete(id string) error {
 	}
 
 	return nil
+}
+
+func (r *RoutePlugins) RoutePluginInfosByRouteId(routeId string) []RoutePlugins {
+	routePluginInfos := make([]RoutePlugins, 0)
+	packages.GetDb().
+		Table(r.TableName()).
+		Where("route_id = ?", routeId).
+		Find(&routePluginInfos)
+
+	return routePluginInfos
 }

@@ -1,9 +1,11 @@
 package models
 
 import (
+	"apioak-admin/app/enums"
 	"apioak-admin/app/packages"
 	"apioak-admin/app/utils"
 	"apioak-admin/app/validators"
+	"errors"
 	"strings"
 )
 
@@ -21,40 +23,38 @@ func (c *ClusterNodes) TableName() string {
 	return "oak_cluster_nodes"
 }
 
-var clusterNodeId = ""
+var recursionTimesClusterNodes = 1
 
-func (c *ClusterNodes) ClusterNodeIdUnique(cIds map[string]string) (string, error) {
-	if c.ID == "" {
-		tmpID, err := utils.IdGenerate(utils.IdTypeClusterNode)
-		if err != nil {
-			return "", err
-		}
-		c.ID = tmpID
+func (m *ClusterNodes) ModelUniqueId() (string, error) {
+	generateId, generateIdErr := utils.IdGenerate(utils.IdTypeClusterNode)
+	if generateIdErr != nil {
+		return "", generateIdErr
 	}
 
 	result := packages.GetDb().
-		Table(c.TableName()).
+		Table(m.TableName()).
+		Where("id = ?", generateId).
 		Select("id").
-		First(&c)
+		First(m)
 
-	mapId := cIds[c.ID]
-	if (result.RowsAffected == 0) && (c.ID != mapId) {
-		clusterNodeId = c.ID
-		cIds[c.ID] = c.ID
-		return clusterNodeId, nil
+	if result.RowsAffected == 0 {
+		recursionTimesClusterNodes = 1
+		return generateId, nil
 	} else {
-		nodeId, nodeIdErr := utils.IdGenerate(utils.IdTypeClusterNode)
-		if nodeIdErr != nil {
-			return "", nodeIdErr
+		if recursionTimesClusterNodes == utils.IdGenerateMaxTimes {
+			recursionTimesClusterNodes = 1
+			return "", errors.New(enums.CodeMessages(enums.IdConflict))
 		}
-		c.ID = nodeId
-		_, err := c.ClusterNodeIdUnique(cIds)
+
+		recursionTimesClusterNodes++
+		id, err := m.ModelUniqueId()
+
 		if err != nil {
 			return "", err
 		}
-	}
 
-	return clusterNodeId, nil
+		return id, nil
+	}
 }
 
 func (c *ClusterNodes) ClusterNodeInfoById(id string) ClusterNodes {
@@ -134,8 +134,7 @@ func (c *ClusterNodes) ClusterNodeInfoByIp(ip string) ClusterNodes {
 }
 
 func (c *ClusterNodes) ClusterNodeAdd(clusterNodesData *ClusterNodes) error {
-	tpmIds := map[string]string{}
-	clusterNodeIdUnique, clusterNodeIdUniqueErr := c.ClusterNodeIdUnique(tpmIds)
+	clusterNodeIdUnique, clusterNodeIdUniqueErr := c.ModelUniqueId()
 	if clusterNodeIdUniqueErr != nil {
 		return clusterNodeIdUniqueErr
 	}

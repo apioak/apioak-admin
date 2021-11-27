@@ -12,7 +12,8 @@ const (
 	IdTypeCertificate   = "cer"
 	IdTypeClusterNode   = "cnd"
 
-	IdLength = 15
+	IdLength           = 15
+	IdGenerateMaxTimes = 5
 
 	IPV4 = "ipv4"
 	IPV6 = "ipv6"
@@ -36,7 +37,7 @@ const (
 	IsReleaseY = 1 // 是否发布——是
 	IsReleaseN = 2 // 是否发布——否
 
-	ReleaseTypePush = "push" // 发布类型——发布（新增/修改）
+	ReleaseTypePush   = "push"   // 发布类型——发布（新增/修改）
 	ReleaseTypeDelete = "delete" // 发布类型——删除
 
 	// ===================================== service =====================================
