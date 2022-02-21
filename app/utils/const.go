@@ -37,6 +37,10 @@ const (
 	IsReleaseY = 1 // 是否发布——是
 	IsReleaseN = 2 // 是否发布——否
 
+	ReleaseStatusU = 1 // 发布状态——未发布
+	ReleaseStatusT = 2 // 发布状态——待发布
+	ReleaseStatusY = 3 // 发布状态——已发布
+
 	ReleaseTypePush   = "push"   // 发布类型——发布（新增/修改）
 	ReleaseTypeDelete = "delete" // 发布类型——删除
 

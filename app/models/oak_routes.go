@@ -17,7 +17,7 @@ type Routes struct {
 	RequestMethods string `gorm:"column:request_methods"` //Request method
 	RoutePath      string `gorm:"column:route_path"`      //Routing path
 	IsEnable       int    `gorm:"column:is_enable"`       //Routing enable  1:on  2:off
-	IsRelease      int    `gorm:"column:is_release"`      //Routing release  1:on  2:off
+	ReleaseStatus  int    `gorm:"column:release_status"`  //Route release status 1:unpublished  2:to be published  3:published
 	ModelTime
 	Plugins []Plugins `gorm:"many2many:oak_route_plugins;foreignKey:ID;joinForeignKey:RouteID;References:ID;JoinReferences:PluginID"`
 }
@@ -116,10 +116,10 @@ func (r *Routes) RouteInfosByServiceRouteId(serviceId string, routeId string) (R
 	return routeInfo, err
 }
 
-func (r *Routes) RouteAdd(routeData Routes) error {
+func (r *Routes) RouteAdd(routeData Routes) (string, error) {
 	routeId, routeIdUniqueErr := r.ModelUniqueId()
 	if routeIdUniqueErr != nil {
-		return routeIdUniqueErr
+		return routeId, routeIdUniqueErr
 	}
 
 	routeData.ID = routeId
@@ -130,10 +130,10 @@ func (r *Routes) RouteAdd(routeData Routes) error {
 		Create(&routeData).Error
 
 	if addErr != nil {
-		return addErr
+		return routeId, addErr
 	}
 
-	return nil
+	return routeId, nil
 }
 
 func (r *Routes) RouteUpdate(id string, routeData Routes) error {
@@ -149,7 +149,7 @@ func (r *Routes) RouteUpdate(id string, routeData Routes) error {
 	return nil
 }
 
-func (r *Routes) RouteCopy(routeData Routes, routePlugins []RoutePlugins) error {
+func (r *Routes) RouteCopy(routeData Routes, routePlugins []RoutePlugins) (string, []string, error) {
 	tx := packages.GetDb().Begin()
 	defer func() {
 		if r := recover(); r != nil {
@@ -157,13 +157,14 @@ func (r *Routes) RouteCopy(routeData Routes, routePlugins []RoutePlugins) error 
 		}
 	}()
 
+	routePluginIds := make([]string, 0)
 	if err := tx.Error; err != nil {
-		return err
+		return "", routePluginIds, err
 	}
 
 	routeId, routeIdUniqueErr := r.ModelUniqueId()
 	if routeIdUniqueErr != nil {
-		return routeIdUniqueErr
+		return routeId, routePluginIds, routeIdUniqueErr
 	}
 
 	routeData.ID = routeId
@@ -175,7 +176,7 @@ func (r *Routes) RouteCopy(routeData Routes, routePlugins []RoutePlugins) error 
 
 	if addErr != nil {
 		tx.Rollback()
-		return addErr
+		return routeId, routePluginIds, addErr
 	}
 
 	if len(routePlugins) != 0 {
@@ -184,14 +185,15 @@ func (r *Routes) RouteCopy(routeData Routes, routePlugins []RoutePlugins) error 
 			routePluginId, routePluginIdErr := routePluginModel.ModelUniqueId()
 			if routePluginIdErr != nil {
 				tx.Rollback()
-				return routePluginIdErr
+				return routeId, routePluginIds, routePluginIdErr
 			}
 
 			routePlugins[k].ID = routePluginId
 			routePlugins[k].RouteID = routeId
-			routePlugins[k].IsRelease = utils.IsReleaseN
 			routePlugins[k].CreatedAt = time.Now()
 			routePlugins[k].UpdatedAt = time.Now()
+
+			routePluginIds = append(routePluginIds, routePluginId)
 		}
 
 		addRoutePluginErr := tx.
@@ -200,11 +202,11 @@ func (r *Routes) RouteCopy(routeData Routes, routePlugins []RoutePlugins) error 
 
 		if addRoutePluginErr != nil {
 			tx.Rollback()
-			return addRoutePluginErr
+			return routeId, routePluginIds, addRoutePluginErr
 		}
 	}
 
-	return tx.Commit().Error
+	return routeId, routePluginIds, tx.Commit().Error
 }
 
 func (r *Routes) RouteDelete(id string) error {
@@ -266,6 +268,9 @@ func (r *Routes) RouteListPage(
 	if param.IsEnable != 0 {
 		tx = tx.Where("is_enable = ?", param.IsEnable)
 	}
+	if param.ReleaseStatus != 0 {
+		tx = tx.Where("release_status = ?", param.ReleaseStatus)
+	}
 
 	countError := ListCount(tx, &total)
 	if countError != nil {
@@ -310,7 +315,9 @@ func (r *Routes) RouteSwitchEnable(id string, enable int) error {
 	updateErr := packages.GetDb().
 		Table(r.TableName()).
 		Where("id = ?", id).
-		Updates(Routes{IsEnable: enable, IsRelease: utils.IsReleaseN}).Error
+		Updates(Routes{
+			IsEnable:      enable,
+			ReleaseStatus: utils.ReleaseStatusT}).Error
 
 	if updateErr != nil {
 		return updateErr
@@ -319,7 +326,7 @@ func (r *Routes) RouteSwitchEnable(id string, enable int) error {
 	return nil
 }
 
-func (r *Routes) RouteSwitchRelease(id string, release int) error {
+func (r *Routes) RouteSwitchRelease(id string, releaseStatus int) error {
 	id = strings.TrimSpace(id)
 	if len(id) == 0 {
 		return errors.New(enums.CodeMessages(enums.ServiceParamsNull))
@@ -328,7 +335,7 @@ func (r *Routes) RouteSwitchRelease(id string, release int) error {
 	updateErr := packages.GetDb().
 		Table(r.TableName()).
 		Where("id = ?", id).
-		Update("is_release", release).Error
+		Update("release_status", releaseStatus).Error
 
 	if updateErr != nil {
 		return updateErr

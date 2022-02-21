@@ -14,7 +14,9 @@ import (
 func RouteAdd(c *gin.Context) {
 	serviceId := strings.TrimSpace(c.Param("service_id"))
 
-	bindParams := validators.ValidatorRouteAddUpdate{}
+	bindParams := validators.ValidatorRouteAddUpdate{
+		IsRelease: utils.IsReleaseN,
+	}
 	bindParams.ServiceID = serviceId
 	if msg, err := packages.ParseRequestParams(c, &bindParams); err != nil {
 		utils.Error(c, msg)
@@ -114,11 +116,6 @@ func RouteUpdate(c *gin.Context) {
 	}
 	validators.GetRouteAttributesDefault(&bindParams)
 
-	if bindParams.RoutePath == utils.DefaultRoutePath {
-		utils.Error(c, enums.CodeMessages(enums.RouteDefaultPathNoPermission))
-		return
-	}
-
 	serviceId := strings.TrimSpace(c.Param("service_id"))
 	routeId := strings.TrimSpace(c.Param("route_id"))
 
@@ -131,6 +128,12 @@ func RouteUpdate(c *gin.Context) {
 	checkExistRouteErr := services.CheckRouteExist(routeId, serviceId)
 	if checkExistRouteErr != nil {
 		utils.Error(c, checkExistRouteErr.Error())
+		return
+	}
+
+	checkServiceRouteDefaultPathErr := services.CheckServiceRouteDefaultPath(bindParams.ServiceID, routeId, bindParams.RoutePath)
+	if checkServiceRouteDefaultPathErr != nil {
+		utils.Error(c, checkServiceRouteDefaultPathErr.Error())
 		return
 	}
 
@@ -181,7 +184,9 @@ func RouteDelete(c *gin.Context) {
 }
 
 func RouteCopy(c *gin.Context) {
-	var bindParams = validators.ValidatorRouteAddUpdate{}
+	var bindParams = validators.ValidatorRouteAddUpdate{
+		IsRelease: utils.IsReleaseN,
+	}
 	if msg, err := packages.ParseRequestParams(c, &bindParams); err != nil {
 		utils.Error(c, msg)
 		return

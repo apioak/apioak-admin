@@ -17,7 +17,9 @@ func ServiceLoadBalanceList(c *gin.Context) {
 
 func ServiceAdd(c *gin.Context) {
 
-	var bindParams = validators.ServiceAddUpdate{}
+	var bindParams = validators.ServiceAddUpdate{
+		IsRelease: utils.IsReleaseN,
+	}
 	if msg, err := packages.ParseRequestParams(c, &bindParams); err != nil {
 		utils.Error(c, msg)
 		return
@@ -52,7 +54,9 @@ func ServiceAdd(c *gin.Context) {
 func ServiceUpdate(c *gin.Context) {
 	serviceId := strings.TrimSpace(c.Param("id"))
 
-	var bindParams = validators.ServiceAddUpdate{}
+	var bindParams = validators.ServiceAddUpdate{
+		IsRelease: utils.IsReleaseN,
+	}
 	if msg, err := packages.ParseRequestParams(c, &bindParams); err != nil {
 		utils.Error(c, msg)
 		return

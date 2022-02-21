@@ -8,13 +8,13 @@ import (
 )
 
 type RoutePlugins struct {
-	ID        string `gorm:"column:id;primary_key"`      //Plugin id
-	RouteID   string `gorm:"column:route_id;primaryKey"` //Route id
-	PluginID  string `gorm:"column:plugin_id"`           //Plugin id
-	Order     int    `gorm:"column:order"`               //Order sort
-	Config    string `gorm:"column:config"`              //Routing configuration
-	IsEnable  int    `gorm:"column:is_enable"`           //Plugin enable  1:on  2:off
-	IsRelease int    `gorm:"column:is_release"`          //Route plugin release  1:on  2:off
+	ID            string `gorm:"column:id;primary_key"`      //Plugin id
+	RouteID       string `gorm:"column:route_id;primaryKey"` //Route id
+	PluginID      string `gorm:"column:plugin_id"`           //Plugin id
+	Order         int    `gorm:"column:order"`               //Order sort
+	Config        string `gorm:"column:config"`              //Routing configuration
+	IsEnable      int    `gorm:"column:is_enable"`           //Plugin enable  1:on  2:off
+	ReleaseStatus int `gorm:"column:release_status"`         //Route plugin release status 1:unpublished  2:to be published  3:published
 	ModelTime
 	Plugin Plugins `gorm:"foreignKey:PluginID;"`
 }
@@ -139,6 +139,13 @@ func (r *RoutePlugins) RoutePluginAdd(routePluginData *RoutePlugins) error {
 	return err
 }
 
+func (r *RoutePlugins) RoutePluginUpdateColumnsByIds(ids []string, routePluginData *RoutePlugins) error {
+	return packages.GetDb().
+		Table(r.TableName()).
+		Where("id IN ?", ids).
+		Updates(routePluginData).Error
+}
+
 func (r *RoutePlugins) RoutePluginUpdate(id string, routePluginData *RoutePlugins) error {
 	err := packages.GetDb().
 		Table(r.TableName()).
@@ -152,7 +159,9 @@ func (r *RoutePlugins) RoutePluginSwitchEnable(id string, enable int) error {
 	updateErr := packages.GetDb().
 		Table(r.TableName()).
 		Where("id = ?", id).
-		Updates(RoutePlugins{IsEnable: enable, IsRelease: utils.IsReleaseN}).Error
+		Updates(RoutePlugins{
+			IsEnable:      enable,
+			ReleaseStatus: utils.ReleaseStatusT}).Error
 
 	if updateErr != nil {
 		return updateErr

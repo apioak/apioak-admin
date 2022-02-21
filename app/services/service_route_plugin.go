@@ -31,26 +31,16 @@ func CheckRoutePluginExistByRoutePluginId(routeId string, pluginId string) error
 	return nil
 }
 
-func CheckRoutePluginEnableOn(id string) error {
-	routePluginModel := models.RoutePlugins{}
-	routePluginInfo := routePluginModel.RoutePluginInfoById(id, "", "")
-	if routePluginInfo.IsEnable == utils.EnableOn {
-		return errors.New(enums.CodeMessages(enums.SwitchONProhibitsOp))
-	}
-
-	return nil
-}
-
 func CheckRoutePluginDelete(id string) error {
 	routePluginModel := models.RoutePlugins{}
 	routePluginInfo := routePluginModel.RoutePluginInfoById(id, "", "")
 
-	if routePluginInfo.IsEnable == utils.EnableOn {
-		return errors.New(enums.CodeMessages(enums.SwitchONProhibitsOp))
-	}
-
-	if routePluginInfo.IsRelease != utils.IsReleaseY {
-		return errors.New(enums.CodeMessages(enums.EnablePublishedONOp))
+	if routePluginInfo.ReleaseStatus == utils.ReleaseStatusY {
+		if routePluginInfo.IsEnable == utils.EnableOn {
+			return errors.New(enums.CodeMessages(enums.SwitchONProhibitsOp))
+		}
+	} else if routePluginInfo.ReleaseStatus == utils.ReleaseStatusT {
+		return errors.New(enums.CodeMessages(enums.ToReleaseProhibitsOp))
 	}
 
 	return nil
@@ -69,7 +59,7 @@ func CheckRoutePluginEnableChange(id string, enable int) error {
 func CheckRoutePluginRelease(id string) error {
 	routePluginModel := models.RoutePlugins{}
 	routePluginInfo := routePluginModel.RoutePluginInfoById(id, "", "")
-	if routePluginInfo.IsRelease == utils.IsReleaseY {
+	if routePluginInfo.ReleaseStatus == utils.ReleaseStatusY {
 		return errors.New(enums.CodeMessages(enums.SwitchPublished))
 	}
 
@@ -79,12 +69,12 @@ func CheckRoutePluginRelease(id string) error {
 func RoutePluginCreate(routePluginData *validators.RoutePluginAddUpdate) error {
 	config, _ := json.Marshal(routePluginData.Config)
 	createRoutePlugin := models.RoutePlugins{
-		PluginID:  routePluginData.PluginID,
-		RouteID:   routePluginData.RouteID,
-		Order:     routePluginData.Order,
-		Config:    string(config),
-		IsEnable:  routePluginData.IsEnable,
-		IsRelease: utils.IsReleaseN,
+		PluginID:      routePluginData.PluginID,
+		RouteID:       routePluginData.RouteID,
+		Order:         routePluginData.Order,
+		Config:        string(config),
+		IsEnable:      routePluginData.IsEnable,
+		ReleaseStatus: utils.ReleaseStatusU,
 	}
 
 	pluginModel := models.RoutePlugins{}
@@ -96,13 +86,17 @@ func RoutePluginCreate(routePluginData *validators.RoutePluginAddUpdate) error {
 func RoutePluginUpdate(id string, routePluginData *validators.RoutePluginAddUpdate) error {
 	config, _ := json.Marshal(routePluginData.Config)
 	createRoutePlugin := models.RoutePlugins{
-		Order:     routePluginData.Order,
-		Config:    string(config),
-		IsEnable:  routePluginData.IsEnable,
-		IsRelease: utils.IsReleaseN,
+		Order:    routePluginData.Order,
+		Config:   string(config),
+		IsEnable: routePluginData.IsEnable,
 	}
 
 	pluginModel := models.RoutePlugins{}
+	routePluginInfo := pluginModel.RoutePluginInfoById(id, "", "")
+	if routePluginInfo.ReleaseStatus == utils.ReleaseStatusY {
+		createRoutePlugin.ReleaseStatus = utils.ReleaseStatusT
+	}
+
 	updateErr := pluginModel.RoutePluginUpdate(id, &createRoutePlugin)
 
 	return updateErr
@@ -153,14 +147,15 @@ func RoutePluginConfigInfo(id string) (interface{}, error) {
 
 func RoutePluginRelease(id string) error {
 	routePluginModel := models.RoutePlugins{}
-	updateErr := routePluginModel.RoutePluginSwitchRelease(id, utils.IsReleaseY)
+	routePluginInfo := routePluginModel.RoutePluginInfoById(id, "", "")
+	updateErr := routePluginModel.RoutePluginSwitchRelease(id, utils.ReleaseStatusY)
 	if updateErr != nil {
 		return updateErr
 	}
 
 	configReleaseErr := ServiceRoutePluginConfigRelease(utils.ReleaseTypePush, id)
 	if configReleaseErr != nil {
-		routePluginModel.RoutePluginSwitchRelease(id, utils.IsReleaseN)
+		routePluginModel.RoutePluginSwitchRelease(id, routePluginInfo.ReleaseStatus)
 		return configReleaseErr
 	}
 

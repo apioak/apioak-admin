@@ -67,7 +67,7 @@ func CheckServiceRelease(serviceId string) error {
 	serviceModel := &models.Services{}
 	serviceInfo := serviceModel.ServiceInfoById(serviceId)
 
-	if serviceInfo.IsRelease == utils.IsReleaseY {
+	if serviceInfo.ReleaseStatus == utils.ReleaseStatusY {
 		return errors.New(enums.CodeMessages(enums.SwitchPublished))
 	}
 
@@ -78,12 +78,12 @@ func CheckServiceDelete(serviceId string) error {
 	serviceModel := &models.Services{}
 	serviceInfo := serviceModel.ServiceInfoById(serviceId)
 
-	if serviceInfo.IsEnable == utils.EnableOn {
-		return errors.New(enums.CodeMessages(enums.SwitchONProhibitsOp))
-	}
-
-	if serviceInfo.IsRelease != utils.IsReleaseY {
-		return errors.New(enums.CodeMessages(enums.EnablePublishedONOp))
+	if serviceInfo.ReleaseStatus == utils.ReleaseStatusY {
+		if serviceInfo.IsEnable == utils.EnableOn {
+			return errors.New(enums.CodeMessages(enums.SwitchONProhibitsOp))
+		}
+	} else if serviceInfo.ReleaseStatus == utils.ReleaseStatusT {
+		return errors.New(enums.CodeMessages(enums.ToReleaseProhibitsOp))
 	}
 
 	return nil
@@ -165,13 +165,17 @@ func ServiceCreate(serviceData *validators.ServiceAddUpdate) error {
 
 	timeOutByte, _ := json.Marshal(serviceData.Timeouts)
 	createServiceData := models.Services{
-		Protocol:    serviceData.Protocol,
-		HealthCheck: serviceData.HealthCheck,
-		WebSocket:   serviceData.WebSocket,
-		IsEnable:    serviceData.IsEnable,
-		IsRelease:   utils.IsReleaseN,
-		LoadBalance: serviceData.LoadBalance,
-		Timeouts:    string(timeOutByte),
+		Protocol:      serviceData.Protocol,
+		HealthCheck:   serviceData.HealthCheck,
+		WebSocket:     serviceData.WebSocket,
+		IsEnable:      serviceData.IsEnable,
+		ReleaseStatus: utils.ReleaseStatusU,
+		LoadBalance:   serviceData.LoadBalance,
+		Timeouts:      string(timeOutByte),
+	}
+
+	if serviceData.IsRelease == utils.IsReleaseY {
+		createServiceData.ReleaseStatus = utils.ReleaseStatusY
 	}
 
 	for _, domainInfo := range serviceData.ServiceDomains {
@@ -196,7 +200,17 @@ func ServiceCreate(serviceData *validators.ServiceAddUpdate) error {
 		serviceNodeInfos = append(serviceNodeInfos, nodeIPInfo)
 	}
 
-	createErr := serviceModel.ServiceAdd(&createServiceData, &serviceDomainInfos, &serviceNodeInfos)
+	serviceId, createErr := serviceModel.ServiceAdd(&createServiceData, &serviceDomainInfos, &serviceNodeInfos)
+
+	if (createErr == nil) && (serviceData.IsRelease == utils.IsReleaseY) {
+		releaseErr := ServiceRelease(serviceId)
+		if releaseErr != nil {
+			createServiceData.ReleaseStatus = utils.ReleaseStatusU
+			serviceModel.ServiceUpdateColumnsById(serviceId, &createServiceData)
+
+			return releaseErr
+		}
+	}
 
 	return createErr
 }
@@ -205,13 +219,17 @@ func ServiceUpdate(serviceId string, serviceData *validators.ServiceAddUpdate) e
 	timeOutByte, _ := json.Marshal(serviceData.Timeouts)
 
 	updateServiceData := models.Services{
-		Protocol:    serviceData.Protocol,
-		HealthCheck: serviceData.HealthCheck,
-		WebSocket:   serviceData.WebSocket,
-		IsEnable:    serviceData.IsEnable,
-		IsRelease:   utils.IsReleaseN,
-		LoadBalance: serviceData.LoadBalance,
-		Timeouts:    string(timeOutByte),
+		Protocol:      serviceData.Protocol,
+		HealthCheck:   serviceData.HealthCheck,
+		WebSocket:     serviceData.WebSocket,
+		IsEnable:      serviceData.IsEnable,
+		ReleaseStatus: utils.ReleaseStatusT,
+		LoadBalance:   serviceData.LoadBalance,
+		Timeouts:      string(timeOutByte),
+	}
+
+	if serviceData.IsRelease == utils.IsReleaseY {
+		updateServiceData.ReleaseStatus = utils.ReleaseStatusY
 	}
 
 	serviceDomains := make([]validators.ServiceDomainAddUpdate, 0)
@@ -228,6 +246,16 @@ func ServiceUpdate(serviceId string, serviceData *validators.ServiceAddUpdate) e
 
 	serviceModel := &models.Services{}
 	updateErr := serviceModel.ServiceUpdate(serviceId, &updateServiceData, &addDomains, &addNodes, &updateNodes, deleteDomainIds, deleteNodeIds)
+
+	if (updateErr == nil) && (serviceData.IsRelease == utils.IsReleaseY) {
+		releaseErr := ServiceRelease(serviceId)
+		if releaseErr != nil {
+			updateServiceData.ReleaseStatus = utils.ReleaseStatusT
+			serviceModel.ServiceUpdateColumnsById(serviceId, &updateServiceData)
+
+			return releaseErr
+		}
+	}
 
 	return updateErr
 }
@@ -261,7 +289,7 @@ type StructServiceList struct {
 	HealthCheck    int            `json:"health_check"`    //Health check switch  1:on  2:off
 	WebSocket      int            `json:"web_socket"`      //WebSocket  1:on  2:off
 	IsEnable       int            `json:"is_enable"`       //Service enable  1:on  2:off
-	IsRelease      int            `json:"is_release"`      //Service release  1:on  2:off
+	ReleaseStatus  int            `json:"release_status"`  //Service release status 1:unpublished  2:to be published  3:published
 	LoadBalance    int            `json:"load_balance"`    //Load balancing algorithm
 	Timeouts       structTimeouts `json:"timeouts"`        //Time out
 	ServiceDomains []string       `json:"service_domains"` //Domain name
@@ -325,7 +353,7 @@ func (structServiceList *StructServiceList) ServiceListPage(param *validators.Se
 			tmpServiceInfo.HealthCheck = serviceInfo.HealthCheck
 			tmpServiceInfo.WebSocket = serviceInfo.WebSocket
 			tmpServiceInfo.IsEnable = serviceInfo.IsEnable
-			tmpServiceInfo.IsRelease = serviceInfo.IsRelease
+			tmpServiceInfo.ReleaseStatus = serviceInfo.ReleaseStatus
 			tmpServiceInfo.LoadBalance = serviceInfo.LoadBalance
 
 			tmpTimeOuts := structTimeouts{}
@@ -364,6 +392,7 @@ type StructServiceInfo struct {
 	HealthCheck    int                 `json:"health_check"`    //Health check switch  1:on  2:off
 	WebSocket      int                 `json:"web_socket"`      //WebSocket  1:on  2:off
 	IsEnable       int                 `json:"is_enable"`       //Service enable  1:on  2:off
+	ReleaseStatus  int                 `json:"release_status"`  //Service release status 1:unpublished  2:to be published  3:published
 	LoadBalance    int                 `json:"load_balance"`    //Load balancing algorithm
 	Timeouts       structTimeouts      `json:"timeouts"`        //Time out
 	ServiceDomains []string            `json:"service_domains"` //Service Domains
@@ -391,6 +420,7 @@ func (s *StructServiceInfo) ServiceInfoById(serviceId string) (StructServiceInfo
 	serviceInfo.HealthCheck = serviceListInfo.HealthCheck
 	serviceInfo.WebSocket = serviceListInfo.WebSocket
 	serviceInfo.IsEnable = serviceListInfo.IsEnable
+	serviceInfo.ReleaseStatus = serviceListInfo.ReleaseStatus
 	serviceInfo.LoadBalance = serviceListInfo.LoadBalance
 
 	tmpTimeOuts := structTimeouts{}
@@ -426,14 +456,16 @@ func (s *StructServiceInfo) ServiceInfoById(serviceId string) (StructServiceInfo
 
 func ServiceRelease(serviceId string) error {
 	serviceModel := &models.Services{}
-	serviceReleaseErr := serviceModel.ServiceSwitchRelease(serviceId, utils.IsReleaseY)
+	serviceInfo := serviceModel.ServiceInfoById(serviceId)
+
+	serviceReleaseErr := serviceModel.ServiceSwitchRelease(serviceId, utils.ReleaseStatusY)
 	if serviceReleaseErr != nil {
 		return serviceReleaseErr
 	}
 
 	configReleaseErr := ServiceConfigRelease(utils.ReleaseTypePush, serviceId)
 	if configReleaseErr != nil {
-		serviceModel.ServiceSwitchRelease(serviceId, utils.IsReleaseN)
+		serviceModel.ServiceSwitchRelease(serviceId, serviceInfo.ReleaseStatus)
 		return configReleaseErr
 	}
 

@@ -11,13 +11,13 @@ import (
 )
 
 type Certificates struct {
-	ID          string    `gorm:"column:id;primary_key"` //Certificate id
-	Sni         string    `gorm:"column:sni"`            //SNI
-	Certificate string    `gorm:"column:certificate"`    //Certificate content
-	PrivateKey  string    `gorm:"column:private_key"`    //Private key content
-	IsEnable    int       `gorm:"column:is_enable"`      //Certificate enable  1:on  2:off
-	IsRelease   int       `gorm:"column:is_release"`     //Certificate release  1:on  2:off
-	ExpiredAt   time.Time `gorm:"column:expired_at"`     //Expiration time
+	ID            string    `gorm:"column:id;primary_key"` //Certificate id
+	Sni           string    `gorm:"column:sni"`            //SNI
+	Certificate   string    `gorm:"column:certificate"`    //Certificate content
+	PrivateKey    string    `gorm:"column:private_key"`    //Private key content
+	IsEnable      int       `gorm:"column:is_enable"`      //Certificate enable  1:on  2:off
+	ReleaseStatus int       `gorm:"column:release_status"` //Route plugin release status 1:unpublished  2:to be published  3:published
+	ExpiredAt     time.Time `gorm:"column:expired_at"`     //Expiration time
 	ModelTime
 }
 
@@ -60,10 +60,10 @@ func (m *Certificates) ModelUniqueId() (string, error) {
 	}
 }
 
-func (c *Certificates) CertificatesAdd(certificatesData *Certificates) error {
+func (c *Certificates) CertificatesAdd(certificatesData *Certificates) (string, error) {
 	certificatesId, certificatesIdUniqueErr := c.ModelUniqueId()
 	if certificatesIdUniqueErr != nil {
-		return certificatesIdUniqueErr
+		return certificatesId, certificatesIdUniqueErr
 	}
 	certificatesData.ID = certificatesId
 
@@ -71,7 +71,7 @@ func (c *Certificates) CertificatesAdd(certificatesData *Certificates) error {
 		Table(c.TableName()).
 		Create(certificatesData).Error
 
-	return err
+	return certificatesId, err
 }
 
 func (c *Certificates) CertificatesUpdate(id string, certificatesData *Certificates) error {
@@ -115,6 +115,9 @@ func (c *Certificates) CertificateListPage(param *validators.CertificateList) (l
 	if param.IsEnable != 0 {
 		tx = tx.Where("is_enable = ?", param.IsEnable)
 	}
+	if param.ReleaseStatus != 0 {
+		tx = tx.Where("release_status = ?", param.ReleaseStatus)
+	}
 
 	param.Search = strings.TrimSpace(param.Search)
 	if len(param.Search) != 0 {
@@ -150,7 +153,9 @@ func (c *Certificates) CertificateSwitchEnable(id string, enable int) error {
 	updateErr := packages.GetDb().
 		Table(c.TableName()).
 		Where("id = ?", id).
-		Updates(Certificates{IsEnable: enable, IsRelease: utils.IsReleaseN}).Error
+		Updates(Certificates{
+			IsEnable: enable,
+			ReleaseStatus: utils.ReleaseStatusT}).Error
 
 	if updateErr != nil {
 		return updateErr
@@ -163,7 +168,7 @@ func (c *Certificates) CertificateSwitchRelease(id string, release int) error {
 	updateErr := packages.GetDb().
 		Table(c.TableName()).
 		Where("id = ?", id).
-		Update("is_release", release).Error
+		Update("release_status", release).Error
 
 	if updateErr != nil {
 		return updateErr
