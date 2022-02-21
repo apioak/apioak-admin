@@ -154,7 +154,7 @@ func (c *Certificates) CertificateSwitchEnable(id string, enable int) error {
 		Table(c.TableName()).
 		Where("id = ?", id).
 		Updates(Certificates{
-			IsEnable: enable,
+			IsEnable:      enable,
 			ReleaseStatus: utils.ReleaseStatusT}).Error
 
 	if updateErr != nil {
@@ -183,17 +183,10 @@ func (c *Certificates) CertificateInfoByDomainSniInfos(domains []string) []Certi
 		return certificateInfos
 	}
 
-	for _, domain := range domains {
-		certificateInfo := Certificates{}
-		packages.GetDb().
-			Table(c.TableName()).
-			Where("sni LIKE ?", "%"+domain).
-			First(&certificateInfo)
-
-		if len(certificateInfo.ID) != 0 {
-			certificateInfos = append(certificateInfos, certificateInfo)
-		}
-	}
+	packages.GetDb().
+		Table(c.TableName()).
+		Where("sni In ?", domains).
+		Find(&certificateInfos)
 
 	return certificateInfos
 }

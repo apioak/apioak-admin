@@ -240,7 +240,8 @@ func InterceptSni(domains []string) ([]string, error) {
 			return domainSniInfos, errors.New(enums.CodeMessages(enums.ServiceDomainFormatError))
 		}
 
-		domainSniInfo := "." + disassembleDomains[len(disassembleDomains)-2] + "." + disassembleDomains[len(disassembleDomains)-1]
+		disassembleDomains[0] = "*"
+		domainSniInfo := strings.Join(disassembleDomains, ".")
 
 		_, exit := tmpDomainSniMap[domainSniInfo]
 		if exit {

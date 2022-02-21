@@ -71,6 +71,72 @@ func CheckServiceRelease(serviceId string) error {
 		return errors.New(enums.CodeMessages(enums.SwitchPublished))
 	}
 
+	if (serviceInfo.Protocol == utils.ProtocolHTTPS) || (serviceInfo.Protocol == utils.ProtocolHTTPAndHTTPS) {
+		serviceDomainModel := models.ServiceDomains{}
+		serviceDomainInfos, serviceDomainInfosErr := serviceDomainModel.DomainInfosByServiceIds([]string{serviceId})
+		if serviceDomainInfosErr != nil {
+			return serviceDomainInfosErr
+		}
+		if len(serviceDomainInfos) == 0 {
+			return nil
+		}
+
+		serviceDomains := make([]string, 0)
+		for _, serviceDomainInfo := range serviceDomainInfos {
+			serviceDomains = append(serviceDomains, serviceDomainInfo.Domain)
+		}
+
+		domainSnis, domainSnisErr := utils.InterceptSni(serviceDomains)
+		if domainSnisErr != nil {
+			return domainSnisErr
+		}
+
+		certificatesModel := models.Certificates{}
+		domainCertificateInfos := certificatesModel.CertificateInfoByDomainSniInfos(domainSnis)
+
+		if len(domainCertificateInfos) < len(domainSnis) {
+
+			domainCertificatesMap := make(map[string]byte, 0)
+			for _, domainCertificateInfo := range domainCertificateInfos {
+				domainCertificatesMap[domainCertificateInfo.Sni] = 0
+			}
+
+			noCertificateDomains := make([]string, 0)
+			for _, serviceDomainInfo := range serviceDomainInfos {
+				disassembleDomains := strings.Split(serviceDomainInfo.Domain, ".")
+				disassembleDomains[0] = "*"
+				domainSni := strings.Join(disassembleDomains, ".")
+				_, ok := domainCertificatesMap[domainSni]
+				if ok == false {
+					noCertificateDomains = append(noCertificateDomains, serviceDomainInfo.Domain)
+				}
+			}
+
+			if len(noCertificateDomains) != 0 {
+				return fmt.Errorf(fmt.Sprintf(enums.CodeMessages(enums.ServiceDomainSslNull), strings.Join(noCertificateDomains, ",")))
+			}
+		}
+
+		noReleaseCertificates := make([]string, 0)
+		noEnableCertificates := make([]string, 0)
+		for _, domainCertificateInfo := range domainCertificateInfos {
+			if domainCertificateInfo.ReleaseStatus != utils.ReleaseStatusY {
+				noReleaseCertificates = append(noReleaseCertificates, domainCertificateInfo.Sni)
+			}
+			if domainCertificateInfo.IsEnable != utils.EnableOn {
+				noEnableCertificates = append(noEnableCertificates, domainCertificateInfo.Sni)
+			}
+		}
+
+		if len(noReleaseCertificates) != 0 {
+			return fmt.Errorf(fmt.Sprintf(enums.CodeMessages(enums.CertificateNoRelease), strings.Join(noReleaseCertificates, ",")))
+		}
+
+		if len(noEnableCertificates) != 0 {
+			return fmt.Errorf(fmt.Sprintf(enums.CodeMessages(enums.CertificateEnableOff), strings.Join(noEnableCertificates, ",")))
+		}
+	}
+
 	return nil
 }
 

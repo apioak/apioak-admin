@@ -48,6 +48,8 @@ const (
 	CertificateExist       = 10403 // 证书已存在
 	CertificateNull        = 10404 // 证书不存在
 	CertificateDomainExist = 10405 // 证书已被域名绑定，暂不支持该操作
+	CertificateNoRelease   = 10406 // [%s]证书未发布
+	CertificateEnableOff   = 10407 // [%s]证书未开启
 
 	ClusterNodeNull = 10501 // 节点不存在
 
@@ -98,6 +100,8 @@ var ZhMapMessages = map[int]string{
 	CertificateExist:       "证书已存在",
 	CertificateNull:        "证书不存在",
 	CertificateDomainExist: "证书已被域名绑定，暂不允许该操作",
+	CertificateNoRelease:   "[%s]证书未发布",
+	CertificateEnableOff:   "[%s]证书未开启",
 
 	ClusterNodeNull: "节点不存在",
 
@@ -148,6 +152,8 @@ var EnMapMessages = map[int]string{
 	CertificateExist:       "Certificate already exists",
 	CertificateNull:        "Certificate does not exist",
 	CertificateDomainExist: "The certificate has been bound by the domain name, operation is not allowed",
+	CertificateNoRelease:   "[%s]Certificate not release",
+	CertificateEnableOff:   "[%s]Certificate not enabled",
 
 	ClusterNodeNull: "Node does not exist",
 
