@@ -7,6 +7,7 @@ import (
 	"apioak-admin/app/validators"
 	"errors"
 	"strings"
+	"time"
 )
 
 type Routes struct {
@@ -16,7 +17,7 @@ type Routes struct {
 	RequestMethods string `gorm:"column:request_methods"` //Request method
 	RoutePath      string `gorm:"column:route_path"`      //Routing path
 	IsEnable       int    `gorm:"column:is_enable"`       //Routing enable  1:on  2:off
-	IsRelease      int    `gorm:"column:is_release"`      //Routing release  1:on  2:off
+	ReleaseStatus  int    `gorm:"column:release_status"`  //Route release status 1:unpublished  2:to be published  3:published
 	ModelTime
 	Plugins []Plugins `gorm:"many2many:oak_route_plugins;foreignKey:ID;joinForeignKey:RouteID;References:ID;JoinReferences:PluginID"`
 }
@@ -26,40 +27,38 @@ func (r *Routes) TableName() string {
 	return "oak_routes"
 }
 
-var routeId = ""
+var recursionTimesRoute = 1
 
-func (r *Routes) RouteIdUnique(routeIds map[string]string) (string, error) {
-	if r.ID == "" {
-		tmpID, err := utils.IdGenerate(utils.IdTypeRoute)
-		if err != nil {
-			return "", err
-		}
-		r.ID = tmpID
+func (m *Routes) ModelUniqueId() (string, error) {
+	generateId, generateIdErr := utils.IdGenerate(utils.IdTypeRoute)
+	if generateIdErr != nil {
+		return "", generateIdErr
 	}
 
 	result := packages.GetDb().
-		Table(r.TableName()).
+		Table(m.TableName()).
+		Where("id = ?", generateId).
 		Select("id").
-		First(&r)
+		First(m)
 
-	mapId := routeIds[r.ID]
-	if (result.RowsAffected == 0) && (r.ID != mapId) {
-		routeId = r.ID
-		routeIds[r.ID] = r.ID
-		return routeId, nil
+	if result.RowsAffected == 0 {
+		recursionTimesRoute = 1
+		return generateId, nil
 	} else {
-		svcId, svcErr := utils.IdGenerate(utils.IdTypeService)
-		if svcErr != nil {
-			return "", svcErr
+		if recursionTimesRoute == utils.IdGenerateMaxTimes {
+			recursionTimesRoute = 1
+			return "", errors.New(enums.CodeMessages(enums.IdConflict))
 		}
-		r.ID = svcId
-		_, err := r.RouteIdUnique(routeIds)
+
+		recursionTimesRoute++
+		id, err := m.ModelUniqueId()
+
 		if err != nil {
 			return "", err
 		}
-	}
 
-	return routeId, nil
+		return id, nil
+	}
 }
 
 func (r *Routes) RouteInfosByServiceRoutePath(
@@ -117,11 +116,10 @@ func (r *Routes) RouteInfosByServiceRouteId(serviceId string, routeId string) (R
 	return routeInfo, err
 }
 
-func (r *Routes) RouteAdd(routeData Routes) error {
-	tpmIds := map[string]string{}
-	routeId, routeIdUniqueErr := r.RouteIdUnique(tpmIds)
+func (r *Routes) RouteAdd(routeData Routes) (string, error) {
+	routeId, routeIdUniqueErr := r.ModelUniqueId()
 	if routeIdUniqueErr != nil {
-		return routeIdUniqueErr
+		return routeId, routeIdUniqueErr
 	}
 
 	routeData.ID = routeId
@@ -132,10 +130,10 @@ func (r *Routes) RouteAdd(routeData Routes) error {
 		Create(&routeData).Error
 
 	if addErr != nil {
-		return addErr
+		return routeId, addErr
 	}
 
-	return nil
+	return routeId, nil
 }
 
 func (r *Routes) RouteUpdate(id string, routeData Routes) error {
@@ -149,6 +147,66 @@ func (r *Routes) RouteUpdate(id string, routeData Routes) error {
 	}
 
 	return nil
+}
+
+func (r *Routes) RouteCopy(routeData Routes, routePlugins []RoutePlugins) (string, []string, error) {
+	tx := packages.GetDb().Begin()
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+		}
+	}()
+
+	routePluginIds := make([]string, 0)
+	if err := tx.Error; err != nil {
+		return "", routePluginIds, err
+	}
+
+	routeId, routeIdUniqueErr := r.ModelUniqueId()
+	if routeIdUniqueErr != nil {
+		return routeId, routePluginIds, routeIdUniqueErr
+	}
+
+	routeData.ID = routeId
+	routeData.RouteName = routeId
+
+	addErr := tx.
+		Table(r.TableName()).
+		Create(&routeData).Error
+
+	if addErr != nil {
+		tx.Rollback()
+		return routeId, routePluginIds, addErr
+	}
+
+	if len(routePlugins) != 0 {
+		routePluginModel := RoutePlugins{}
+		for k, _ := range routePlugins {
+			routePluginId, routePluginIdErr := routePluginModel.ModelUniqueId()
+			if routePluginIdErr != nil {
+				tx.Rollback()
+				return routeId, routePluginIds, routePluginIdErr
+			}
+
+			routePlugins[k].ID = routePluginId
+			routePlugins[k].RouteID = routeId
+			routePlugins[k].CreatedAt = time.Now()
+			routePlugins[k].UpdatedAt = time.Now()
+
+			routePluginIds = append(routePluginIds, routePluginId)
+		}
+
+		addRoutePluginErr := tx.
+			Table(routePluginModel.TableName()).
+			Create(&routePlugins).Error
+
+		if addRoutePluginErr != nil {
+			tx.Rollback()
+			return routeId, routePluginIds, addRoutePluginErr
+		}
+	}
+
+	return routeId, routePluginIds, tx.Commit().Error
 }
 
 func (r *Routes) RouteDelete(id string) error {
@@ -210,6 +268,9 @@ func (r *Routes) RouteListPage(
 	if param.IsEnable != 0 {
 		tx = tx.Where("is_enable = ?", param.IsEnable)
 	}
+	if param.ReleaseStatus != 0 {
+		tx = tx.Where("release_status = ?", param.ReleaseStatus)
+	}
 
 	countError := ListCount(tx, &total)
 	if countError != nil {
@@ -254,7 +315,27 @@ func (r *Routes) RouteSwitchEnable(id string, enable int) error {
 	updateErr := packages.GetDb().
 		Table(r.TableName()).
 		Where("id = ?", id).
-		Update("is_enable", enable).Error
+		Updates(Routes{
+			IsEnable:      enable,
+			ReleaseStatus: utils.ReleaseStatusT}).Error
+
+	if updateErr != nil {
+		return updateErr
+	}
+
+	return nil
+}
+
+func (r *Routes) RouteSwitchRelease(id string, releaseStatus int) error {
+	id = strings.TrimSpace(id)
+	if len(id) == 0 {
+		return errors.New(enums.CodeMessages(enums.ServiceParamsNull))
+	}
+
+	updateErr := packages.GetDb().
+		Table(r.TableName()).
+		Where("id = ?", id).
+		Update("release_status", releaseStatus).Error
 
 	if updateErr != nil {
 		return updateErr

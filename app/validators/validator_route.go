@@ -24,6 +24,7 @@ var (
 )
 
 type ValidatorRouteAddUpdate struct {
+	IsRelease      int    `json:"is_release" zh:"发布开关" en:"Release status enable" binding:"omitempty,oneof=1 2"`
 	IsEnable       int    `json:"is_enable" zh:"路由开关" en:"Routing enable" binding:"required,oneof=1 2"`
 	RouteName      string `json:"route_name" zh:"路由名称" en:"Route name" binding:"omitempty"`
 	RequestMethods string `json:"request_methods" zh:"请求方法" en:"Request method" binding:"required,min=3,CheckRouteRequestMethodOneOf"`
@@ -32,8 +33,9 @@ type ValidatorRouteAddUpdate struct {
 }
 
 type ValidatorRouteList struct {
-	Search   string `form:"search" json:"search" zh:"搜索内容" en:"Search content" binding:"omitempty"`
-	IsEnable int    `form:"is_enable" json:"is_enable" zh:"路由开关" en:"Routing enable" binding:"omitempty,oneof=1 2"`
+	Search        string `form:"search" json:"search" zh:"搜索内容" en:"Search content" binding:"omitempty"`
+	IsEnable      int    `form:"is_enable" json:"is_enable" zh:"路由开关" en:"Routing enable" binding:"omitempty,oneof=1 2"`
+	ReleaseStatus int    `form:"release_status" json:"release_status" zh:"发布状态" en:"Release status" binding:"omitempty,oneof=1 2 3"`
 	BaseListPage
 }
 
@@ -43,6 +45,10 @@ type RouteUpdateName struct {
 
 type RouteSwitchEnable struct {
 	IsEnable int `json:"is_enable" zh:"路由开关" en:"Route enable" binding:"required,oneof=1 2"`
+}
+
+type RouteSwitchRelease struct {
+	IsRelease int `json:"is_release" zh:"路由发布" en:"Route enable" binding:"required,oneof=1"`
 }
 
 func CheckRoutePathPrefix(fl validator.FieldLevel) bool {

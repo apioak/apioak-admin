@@ -11,13 +11,15 @@ import (
 )
 
 func CertificateAdd(c *gin.Context) {
-	var certificateAddValidator = validators.CertificateAddUpdate{}
-	if msg, err := packages.ParseRequestParams(c, &certificateAddValidator); err != nil {
+	var bindParams = validators.CertificateAddUpdate{
+		IsRelease: utils.IsReleaseN,
+	}
+	if msg, err := packages.ParseRequestParams(c, &bindParams); err != nil {
 		utils.Error(c, msg)
 		return
 	}
 
-	addErr := services.CertificateAdd(&certificateAddValidator)
+	addErr := services.CertificateAdd(&bindParams)
 	if addErr != nil {
 		utils.Error(c, addErr.Error())
 		return
@@ -35,13 +37,15 @@ func CertificateUpdate(c *gin.Context) {
 		return
 	}
 
-	var certificateUpdateValidator = validators.CertificateAddUpdate{}
-	if msg, err := packages.ParseRequestParams(c, &certificateUpdateValidator); err != nil {
+	var bindParams = validators.CertificateAddUpdate{
+		IsRelease: utils.IsReleaseN,
+	}
+	if msg, err := packages.ParseRequestParams(c, &bindParams); err != nil {
 		utils.Error(c, msg)
 		return
 	}
 
-	updateErr := services.CertificateUpdate(id, &certificateUpdateValidator)
+	updateErr := services.CertificateUpdate(id, &bindParams)
 	if updateErr != nil {
 		utils.Error(c, updateErr.Error())
 		return
@@ -66,23 +70,23 @@ func CertificateInfo(c *gin.Context) {
 }
 
 func CertificateList(c *gin.Context) {
-	var certificateListValidator = validators.CertificateList{}
-	if msg, err := packages.ParseRequestParams(c, &certificateListValidator); err != nil {
+	var bindParams = validators.CertificateList{}
+	if msg, err := packages.ParseRequestParams(c, &bindParams); err != nil {
 		utils.Error(c, msg)
 		return
 	}
 
 	certificateInfo := services.CertificateInfo{}
-	certificateList, total, err := certificateInfo.CertificateListPage(&certificateListValidator)
+	certificateList, total, err := certificateInfo.CertificateListPage(&bindParams)
 	if err != nil {
 		utils.Error(c, err.Error())
 		return
 	}
 
 	result := utils.ResultPage{}
-	result.Param = certificateListValidator
-	result.Page = certificateListValidator.Page
-	result.PageSize = certificateListValidator.PageSize
+	result.Param = bindParams
+	result.Page = bindParams.Page
+	result.PageSize = bindParams.PageSize
 	result.Total = total
 	result.Data = certificateList
 
@@ -98,9 +102,9 @@ func CertificateDelete(c *gin.Context) {
 		return
 	}
 
-	checkCertificateEnableOnErr := services.CheckCertificateEnableOn(id)
-	if checkCertificateEnableOnErr != nil {
-		utils.Error(c, checkCertificateEnableOnErr.Error())
+	checkCertificateDeleteErr := services.CheckCertificateDelete(id)
+	if checkCertificateDeleteErr != nil {
+		utils.Error(c, checkCertificateDeleteErr.Error())
 		return
 	}
 
@@ -122,8 +126,8 @@ func CertificateDelete(c *gin.Context) {
 func CertificateSwitchEnable(c *gin.Context) {
 	id := strings.TrimSpace(c.Param("id"))
 
-	var certificateSwitchEnableValidator = validators.CertificateSwitchEnable{}
-	if msg, err := packages.ParseRequestParams(c, &certificateSwitchEnableValidator); err != nil {
+	var bindParams = validators.CertificateSwitchEnable{}
+	if msg, err := packages.ParseRequestParams(c, &bindParams); err != nil {
 		utils.Error(c, msg)
 		return
 	}
@@ -134,13 +138,13 @@ func CertificateSwitchEnable(c *gin.Context) {
 		return
 	}
 
-	checkCertificateEnableChangeErr := services.CheckCertificateEnableChange(id, certificateSwitchEnableValidator.IsEnable)
-	if checkCertificateEnableChangeErr != nil{
+	checkCertificateEnableChangeErr := services.CheckCertificateEnableChange(id, bindParams.IsEnable)
+	if checkCertificateEnableChangeErr != nil {
 		utils.Error(c, checkCertificateEnableChangeErr.Error())
 		return
 	}
 
-	if certificateSwitchEnableValidator.IsEnable == utils.EnableOff {
+	if bindParams.IsEnable == utils.EnableOff {
 		checkCertificateDomainExistErr := services.CheckCertificateDomainExistById(id)
 		if checkCertificateDomainExistErr != nil {
 			utils.Error(c, checkCertificateDomainExistErr.Error())
@@ -148,9 +152,33 @@ func CertificateSwitchEnable(c *gin.Context) {
 		}
 	}
 
-	updateErr := services.CertificateSwitchEnable(id, certificateSwitchEnableValidator.IsEnable)
+	updateErr := services.CertificateSwitchEnable(id, bindParams.IsEnable)
 	if updateErr != nil {
 		utils.Error(c, updateErr.Error())
+		return
+	}
+
+	utils.Ok(c)
+}
+
+func CertificateSwitchRelease(c *gin.Context) {
+	id := strings.TrimSpace(c.Param("id"))
+
+	checkCertificateNullErr := services.CheckCertificateNull(id)
+	if checkCertificateNullErr != nil {
+		utils.Error(c, checkCertificateNullErr.Error())
+		return
+	}
+
+	checkCertificateReleaseErr := services.CheckCertificateRelease(id)
+	if checkCertificateReleaseErr != nil {
+		utils.Error(c, checkCertificateReleaseErr.Error())
+		return
+	}
+
+	certificateReleaseErr := services.CertificateRelease(id)
+	if certificateReleaseErr != nil {
+		utils.Error(c, certificateReleaseErr.Error())
 		return
 	}
 

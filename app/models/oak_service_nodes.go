@@ -1,8 +1,10 @@
 package models
 
 import (
+	"apioak-admin/app/enums"
 	"apioak-admin/app/packages"
 	"apioak-admin/app/utils"
+	"errors"
 )
 
 type ServiceNodes struct {
@@ -16,12 +18,46 @@ type ServiceNodes struct {
 }
 
 var (
-	sNodeId  = ""
+	sNodeId = ""
 )
 
 // TableName sets the insert table name for this struct type
 func (s *ServiceNodes) TableName() string {
 	return "oak_service_nodes"
+}
+
+var recursionTimesServiceNodes = 1
+
+func (m *ServiceNodes) ModelUniqueId() (string, error) {
+	generateId, generateIdErr := utils.IdGenerate(utils.IdTypeServiceNode)
+	if generateIdErr != nil {
+		return "", generateIdErr
+	}
+
+	result := packages.GetDb().
+		Table(m.TableName()).
+		Where("id = ?", generateId).
+		Select("id").
+		First(m)
+
+	if result.RowsAffected == 0 {
+		recursionTimesServiceNodes = 1
+		return generateId, nil
+	} else {
+		if recursionTimesServiceNodes == utils.IdGenerateMaxTimes {
+			recursionTimesServiceNodes = 1
+			return "", errors.New(enums.CodeMessages(enums.IdConflict))
+		}
+
+		recursionTimesServiceNodes++
+		id, err := m.ModelUniqueId()
+
+		if err != nil {
+			return "", err
+		}
+
+		return id, nil
+	}
 }
 
 func IPTypeMap() map[string]int {

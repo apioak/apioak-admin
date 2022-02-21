@@ -8,6 +8,7 @@ import (
 	"apioak-admin/app/validators"
 	"encoding/json"
 	"errors"
+	"fmt"
 )
 
 func CheckRoutePluginExist(id string, routeId string, pluginId string) error {
@@ -30,11 +31,16 @@ func CheckRoutePluginExistByRoutePluginId(routeId string, pluginId string) error
 	return nil
 }
 
-func CheckRoutePluginEnableOn(id string) error {
+func CheckRoutePluginDelete(id string) error {
 	routePluginModel := models.RoutePlugins{}
 	routePluginInfo := routePluginModel.RoutePluginInfoById(id, "", "")
-	if routePluginInfo.IsEnable == utils.EnableOn {
-		return errors.New(enums.CodeMessages(enums.SwitchONProhibitsOp))
+
+	if routePluginInfo.ReleaseStatus == utils.ReleaseStatusY {
+		if routePluginInfo.IsEnable == utils.EnableOn {
+			return errors.New(enums.CodeMessages(enums.SwitchONProhibitsOp))
+		}
+	} else if routePluginInfo.ReleaseStatus == utils.ReleaseStatusT {
+		return errors.New(enums.CodeMessages(enums.ToReleaseProhibitsOp))
 	}
 
 	return nil
@@ -50,14 +56,25 @@ func CheckRoutePluginEnableChange(id string, enable int) error {
 	return nil
 }
 
+func CheckRoutePluginRelease(id string) error {
+	routePluginModel := models.RoutePlugins{}
+	routePluginInfo := routePluginModel.RoutePluginInfoById(id, "", "")
+	if routePluginInfo.ReleaseStatus == utils.ReleaseStatusY {
+		return errors.New(enums.CodeMessages(enums.SwitchPublished))
+	}
+
+	return nil
+}
+
 func RoutePluginCreate(routePluginData *validators.RoutePluginAddUpdate) error {
 	config, _ := json.Marshal(routePluginData.Config)
 	createRoutePlugin := models.RoutePlugins{
-		PluginID: routePluginData.PluginID,
-		RouteID:  routePluginData.RouteID,
-		Order:    routePluginData.Order,
-		Config:   string(config),
-		IsEnable: routePluginData.IsEnable,
+		PluginID:      routePluginData.PluginID,
+		RouteID:       routePluginData.RouteID,
+		Order:         routePluginData.Order,
+		Config:        string(config),
+		IsEnable:      routePluginData.IsEnable,
+		ReleaseStatus: utils.ReleaseStatusU,
 	}
 
 	pluginModel := models.RoutePlugins{}
@@ -75,6 +92,11 @@ func RoutePluginUpdate(id string, routePluginData *validators.RoutePluginAddUpda
 	}
 
 	pluginModel := models.RoutePlugins{}
+	routePluginInfo := pluginModel.RoutePluginInfoById(id, "", "")
+	if routePluginInfo.ReleaseStatus == utils.ReleaseStatusY {
+		createRoutePlugin.ReleaseStatus = utils.ReleaseStatusT
+	}
+
 	updateErr := pluginModel.RoutePluginUpdate(id, &createRoutePlugin)
 
 	return updateErr
@@ -87,19 +109,21 @@ func RoutePluginSwitchEnable(id string, enable int) error {
 		return updateErr
 	}
 
-	// @todo 触发远程发布数据
-
 	return nil
 }
 
 func RoutePluginDelete(id string) error {
+	configReleaseErr := ServiceRoutePluginConfigRelease(utils.ReleaseTypeDelete, id)
+	if configReleaseErr != nil {
+		return configReleaseErr
+	}
+
 	routePluginModel := models.RoutePlugins{}
 	deleteErr := routePluginModel.RoutePluginDelete(id)
 	if deleteErr != nil {
+		ServiceRoutePluginConfigRelease(utils.ReleaseTypePush, id)
 		return deleteErr
 	}
-
-	// @todo 需要同步远程数据中心
 
 	return nil
 }
@@ -119,4 +143,42 @@ func RoutePluginConfigInfo(id string) (interface{}, error) {
 	parsePluginInfo := newPluginContext.StrategyPluginParse(routePluginInfo.Config)
 
 	return parsePluginInfo, nil
+}
+
+func RoutePluginRelease(id string) error {
+	routePluginModel := models.RoutePlugins{}
+	routePluginInfo := routePluginModel.RoutePluginInfoById(id, "", "")
+	updateErr := routePluginModel.RoutePluginSwitchRelease(id, utils.ReleaseStatusY)
+	if updateErr != nil {
+		return updateErr
+	}
+
+	configReleaseErr := ServiceRoutePluginConfigRelease(utils.ReleaseTypePush, id)
+	if configReleaseErr != nil {
+		routePluginModel.RoutePluginSwitchRelease(id, routePluginInfo.ReleaseStatus)
+		return configReleaseErr
+	}
+
+	return nil
+}
+
+func ServiceRoutePluginConfigRelease(releaseType string, id string) error {
+
+	// @todo 获取指定服务路由插件的配置数据
+	//serviceRouteConfig := generateServicesRoutePluginConfig(serviceId)
+
+	// @todo 获取数据注册中心对应 服务配置 的key
+
+	fmt.Println("=========service route plugin release:", releaseType, id)
+
+	// @todo 发布配置到 数据注册中心
+
+	return nil
+}
+
+func generateServicesRoutePluginConfig(id string) string {
+
+	// @todo 根据服务ID 拼接服务的配置数据（主要是用于同步到数据面使用）
+
+	return ""
 }

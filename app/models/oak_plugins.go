@@ -1,9 +1,11 @@
 package models
 
 import (
+	"apioak-admin/app/enums"
 	"apioak-admin/app/packages"
 	"apioak-admin/app/utils"
 	"apioak-admin/app/validators"
+	"errors"
 	"strings"
 )
 
@@ -22,40 +24,38 @@ func (p *Plugins) TableName() string {
 	return "oak_plugins"
 }
 
-var pluginId = ""
+var recursionTimesPlugins = 1
 
-func (p *Plugins) PluginIdUnique(sIds map[string]string) (string, error) {
-	if p.ID == "" {
-		tmpID, err := utils.IdGenerate(utils.IdTypePlugin)
-		if err != nil {
-			return "", err
-		}
-		p.ID = tmpID
+func (m *Plugins) ModelUniqueId() (string, error) {
+	generateId, generateIdErr := utils.IdGenerate(utils.IdTypePlugin)
+	if generateIdErr != nil {
+		return "", generateIdErr
 	}
 
 	result := packages.GetDb().
-		Table(p.TableName()).
+		Table(m.TableName()).
+		Where("id = ?", generateId).
 		Select("id").
-		First(&p)
+		First(m)
 
-	mapId := sIds[p.ID]
-	if (result.RowsAffected == 0) && (p.ID != mapId) {
-		pluginId = p.ID
-		sIds[p.ID] = p.ID
-		return pluginId, nil
+	if result.RowsAffected == 0 {
+		recursionTimesPlugins = 1
+		return generateId, nil
 	} else {
-		svcId, svcErr := utils.IdGenerate(utils.IdTypePlugin)
-		if svcErr != nil {
-			return "", svcErr
+		if recursionTimesPlugins == utils.IdGenerateMaxTimes {
+			recursionTimesPlugins = 1
+			return "", errors.New(enums.CodeMessages(enums.IdConflict))
 		}
-		p.ID = svcId
-		_, err := p.PluginIdUnique(sIds)
+
+		recursionTimesPlugins++
+		id, err := m.ModelUniqueId()
+
 		if err != nil {
 			return "", err
 		}
-	}
 
-	return pluginId, nil
+		return id, nil
+	}
 }
 
 func (p *Plugins) PluginInfosByTags(tag []string, filterPluginIds []string) ([]Plugins, error) {
@@ -74,8 +74,7 @@ func (p *Plugins) PluginInfosByTags(tag []string, filterPluginIds []string) ([]P
 }
 
 func (p *Plugins) PluginAdd(pluginData *Plugins) error {
-	tpmIds := map[string]string{}
-	pluginId, pluginIdUniqueErr := p.PluginIdUnique(tpmIds)
+	pluginId, pluginIdUniqueErr := p.ModelUniqueId()
 	if pluginIdUniqueErr != nil {
 		return pluginIdUniqueErr
 	}
@@ -88,7 +87,7 @@ func (p *Plugins) PluginAdd(pluginData *Plugins) error {
 	return err
 }
 
-func (p *Plugins) PluginInfoById(id string) (Plugins) {
+func (p *Plugins) PluginInfoById(id string) Plugins {
 	pluginInfo := Plugins{}
 	packages.GetDb().
 		Table(p.TableName()).

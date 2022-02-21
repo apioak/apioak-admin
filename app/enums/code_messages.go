@@ -14,9 +14,13 @@ const (
 	Success = 0  // 成功
 	Error   = -1 // 失败
 
-	SwitchNoChange      = 101 // 开关无变化
-	SwitchONProhibitsOp = 102 // 开关打开状态禁止该操作
-	ParamsError         = 103 // 参数异常
+	SwitchNoChange       = 101 // 开关无变化
+	SwitchONProhibitsOp  = 102 // 开关打开状态禁止该操作
+	ParamsError          = 103 // 参数异常
+	EnablePublishedONOp  = 104 // 开关关闭状态并且已发布才允许该操作
+	SwitchPublished      = 105 // 已发布
+	IdConflict           = 106 // ID冲突
+	ToReleaseProhibitsOp = 107 // 待发布状态禁止该操作
 
 	ServiceNull       = 10001 // 服务不存在
 	ServiceParamsNull = 10002 // 服务参数缺失
@@ -25,13 +29,14 @@ const (
 	ServiceDomainFormatError = 10102 // 服务域名格式错误
 	ServiceDomainSslNull     = 10104 // [%s]服务域名证书缺失
 
-	RouteDefaultPathNoPermission = 10201 // [/*]默认路径暂无权限操作
-	RoutePathExist               = 10202 // 路由路径已存在
-	RouteNull                    = 10203 // 路由不存在
-	RouteServiceNoMatch          = 10204 // 路由不在指定服务下
-	RoutePluginExist             = 10205 // 路由插件已存在
-	RoutePluginNull              = 10206 // 路由插件不存在
-	RoutePluginFormatError       = 10207 // 路由插件配置参数格式有误或参数错误
+	RouteDefaultPathNoPermission    = 10201 // [/*]默认路径暂无权限操作
+	RoutePathExist                  = 10202 // 路由路径已存在
+	RouteNull                       = 10203 // 路由不存在
+	RouteServiceNoMatch             = 10204 // 路由不在指定服务下
+	RoutePluginExist                = 10205 // 路由插件已存在
+	RoutePluginNull                 = 10206 // 路由插件不存在
+	RoutePluginFormatError          = 10207 // 路由插件配置参数格式有误或参数错误
+	RouteDefaultPathForbiddenPrefix = 10208 // [/*]默认路径暂不能作为路由开头
 
 	PluginTagExist   = 10301 // 插件标识已存在
 	PluginNull       = 10302 // 插件不存在
@@ -42,7 +47,7 @@ const (
 	CertificateParseError  = 10402 // 证书解析失败
 	CertificateExist       = 10403 // 证书已存在
 	CertificateNull        = 10404 // 证书不存在
-	CertificateDomainExist = 10405 // 证书已被域名绑定
+	CertificateDomainExist = 10405 // 证书已被域名绑定，暂不支持该操作
 
 	ClusterNodeNull = 10501 // 节点不存在
 
@@ -59,9 +64,13 @@ var ZhMapMessages = map[int]string{
 	Success: "成功",
 	Error:   "失败",
 
-	SwitchNoChange:      "开关无变化",
-	SwitchONProhibitsOp: "开关打开状态禁止该操作",
-	ParamsError:         "参数异常",
+	SwitchNoChange:       "开关无变化",
+	SwitchONProhibitsOp:  "开关打开状态禁止该操作",
+	ParamsError:          "参数异常",
+	EnablePublishedONOp:  "开关关闭状态并且已发布才允许该操作",
+	SwitchPublished:      "已发布",
+	IdConflict:           "ID冲突",
+	ToReleaseProhibitsOp: "待发布状态禁止该操作",
 
 	ServiceNull:       "服务不存在",
 	ServiceParamsNull: "服务参数缺失",
@@ -70,13 +79,14 @@ var ZhMapMessages = map[int]string{
 	ServiceDomainFormatError: "服务域名格式错误",
 	ServiceDomainSslNull:     "[%s]服务域名证书缺失",
 
-	RouteDefaultPathNoPermission: "[/*]默认路径暂无权限操作",
-	RoutePathExist:               "[%s]路由路径已存在",
-	RouteNull:                    "路由不存在",
-	RouteServiceNoMatch:          "路由不在指定服务下",
-	RoutePluginExist:             "路由插件已存在",
-	RoutePluginNull:              "路由插件不存在",
-	RoutePluginFormatError:       "路由插件配置参数格式有误或参数错误",
+	RouteDefaultPathNoPermission:    "[/*]默认路径暂无权限操作",
+	RoutePathExist:                  "[%s]路由路径已存在",
+	RouteNull:                       "路由不存在",
+	RouteServiceNoMatch:             "路由不在指定服务下",
+	RoutePluginExist:                "路由插件已存在",
+	RoutePluginNull:                 "路由插件不存在",
+	RoutePluginFormatError:          "路由插件配置参数格式有误或参数错误",
+	RouteDefaultPathForbiddenPrefix: "[/*]默认路径暂不能作为路由开头",
 
 	PluginTagExist:   "插件标识已存在",
 	PluginNull:       "插件不存在",
@@ -87,7 +97,7 @@ var ZhMapMessages = map[int]string{
 	CertificateParseError:  "证书解析失败",
 	CertificateExist:       "证书已存在",
 	CertificateNull:        "证书不存在",
-	CertificateDomainExist: "证书已被域名绑定",
+	CertificateDomainExist: "证书已被域名绑定，暂不允许该操作",
 
 	ClusterNodeNull: "节点不存在",
 
@@ -104,9 +114,13 @@ var EnMapMessages = map[int]string{
 	Success: "success",
 	Error:   "error",
 
-	SwitchNoChange:      "No change in switch",
-	SwitchONProhibitsOp: "This operation is prohibited when the switch is open",
-	ParamsError:         "Parameter abnormal",
+	SwitchNoChange:       "No change in switch",
+	SwitchONProhibitsOp:  "This operation is prohibited when the switch is open",
+	ParamsError:          "Parameter abnormal",
+	EnablePublishedONOp:  "The operation is only allowed when the switch is off and has been released",
+	SwitchPublished:      "Published",
+	IdConflict:           "ID conflict",
+	ToReleaseProhibitsOp: "Pending status prohibits this operation",
 
 	ServiceNull:       "Service does not exist",
 	ServiceParamsNull: "Missing service parameters",
@@ -115,13 +129,14 @@ var EnMapMessages = map[int]string{
 	ServiceDomainFormatError: "Service domain name format error",
 	ServiceDomainSslNull:     "[%s]Service domain name certificate is missing",
 
-	RouteDefaultPathNoPermission: "[/*]The default path does not have permission to operate temporarily",
-	RoutePathExist:               "[%s]Routing path already exists",
-	RouteNull:                    "Route does not exist",
-	RouteServiceNoMatch:          "The route is not under the specified service",
-	RoutePluginExist:             "Routing plugin already exists",
-	RoutePluginNull:              "The routing plugin does not exist",
-	RoutePluginFormatError:       "The routing plugin configuration parameter format is incorrect or the parameter is wrong",
+	RouteDefaultPathNoPermission:    "[/*]The default path does not have permission to operate temporarily",
+	RoutePathExist:                  "[%s]Routing path already exists",
+	RouteNull:                       "Route does not exist",
+	RouteServiceNoMatch:             "The route is not under the specified service",
+	RoutePluginExist:                "Routing plugin already exists",
+	RoutePluginNull:                 "The routing plugin does not exist",
+	RoutePluginFormatError:          "The routing plugin configuration parameter format is incorrect or the parameter is wrong",
+	RouteDefaultPathForbiddenPrefix: "[/*]The default path cannot be used as the beginning of the route",
 
 	PluginTagExist:   "Plugin tag already exists",
 	PluginNull:       "Plugin does not exist",
@@ -132,7 +147,7 @@ var EnMapMessages = map[int]string{
 	CertificateParseError:  "Certificate parsing failed",
 	CertificateExist:       "Certificate already exists",
 	CertificateNull:        "Certificate does not exist",
-	CertificateDomainExist: "The certificate has been bound by the domain name",
+	CertificateDomainExist: "The certificate has been bound by the domain name, operation is not allowed",
 
 	ClusterNodeNull: "Node does not exist",
 

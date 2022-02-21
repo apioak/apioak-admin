@@ -1,21 +1,23 @@
 package models
 
 import (
+	"apioak-admin/app/enums"
 	"apioak-admin/app/packages"
 	"apioak-admin/app/utils"
 	"apioak-admin/app/validators"
+	"errors"
 	"strings"
 	"time"
 )
 
 type Certificates struct {
-	ID          string    `gorm:"column:id;primary_key"` //Certificate id
-	Sni         string    `gorm:"column:sni"`            //SNI
-	Certificate string    `gorm:"column:certificate"`    //Certificate content
-	PrivateKey  string    `gorm:"column:private_key"`    //Private key content
-	IsEnable    int       `gorm:"column:is_enable"`      //Certificate enable  1:on  2:off
-	IsRelease   int       `gorm:"column:is_release"`     //Certificate release  1:on  2:off
-	ExpiredAt   time.Time `gorm:"column:expired_at"`     //Expiration time
+	ID            string    `gorm:"column:id;primary_key"` //Certificate id
+	Sni           string    `gorm:"column:sni"`            //SNI
+	Certificate   string    `gorm:"column:certificate"`    //Certificate content
+	PrivateKey    string    `gorm:"column:private_key"`    //Private key content
+	IsEnable      int       `gorm:"column:is_enable"`      //Certificate enable  1:on  2:off
+	ReleaseStatus int       `gorm:"column:release_status"` //Route plugin release status 1:unpublished  2:to be published  3:published
+	ExpiredAt     time.Time `gorm:"column:expired_at"`     //Expiration time
 	ModelTime
 }
 
@@ -24,47 +26,44 @@ func (c *Certificates) TableName() string {
 	return "oak_certificates"
 }
 
-var certificatesId = ""
+var recursionTimesCertificates = 1
 
-func (c *Certificates) CertificatesIdUnique(cIds map[string]string) (string, error) {
-	if c.ID == "" {
-		tmpID, err := utils.IdGenerate(utils.IdTypeCertificate)
-		if err != nil {
-			return "", err
-		}
-		c.ID = tmpID
+func (m *Certificates) ModelUniqueId() (string, error) {
+	generateId, generateIdErr := utils.IdGenerate(utils.IdTypeCertificate)
+	if generateIdErr != nil {
+		return "", generateIdErr
 	}
 
 	result := packages.GetDb().
-		Table(c.TableName()).
+		Table(m.TableName()).
+		Where("id = ?", generateId).
 		Select("id").
-		First(&c)
+		First(m)
 
-	mapId := cIds[c.ID]
-	if (result.RowsAffected == 0) && (c.ID != mapId) {
-		certificatesId = c.ID
-		cIds[c.ID] = c.ID
-		return certificatesId, nil
+	if result.RowsAffected == 0 {
+		recursionTimesCertificates = 1
+		return generateId, nil
 	} else {
-		certId, certIdErr := utils.IdGenerate(utils.IdTypeCertificate)
-		if certIdErr != nil {
-			return "", certIdErr
+		if recursionTimesCertificates == utils.IdGenerateMaxTimes {
+			recursionTimesCertificates = 1
+			return "", errors.New(enums.CodeMessages(enums.IdConflict))
 		}
-		c.ID = certId
-		_, err := c.CertificatesIdUnique(cIds)
+
+		recursionTimesCertificates++
+		id, err := m.ModelUniqueId()
+
 		if err != nil {
 			return "", err
 		}
-	}
 
-	return certificatesId, nil
+		return id, nil
+	}
 }
 
-func (c *Certificates) CertificatesAdd(certificatesData *Certificates) error {
-	tpmIds := map[string]string{}
-	certificatesId, certificatesIdUniqueErr := c.CertificatesIdUnique(tpmIds)
+func (c *Certificates) CertificatesAdd(certificatesData *Certificates) (string, error) {
+	certificatesId, certificatesIdUniqueErr := c.ModelUniqueId()
 	if certificatesIdUniqueErr != nil {
-		return certificatesIdUniqueErr
+		return certificatesId, certificatesIdUniqueErr
 	}
 	certificatesData.ID = certificatesId
 
@@ -72,7 +71,7 @@ func (c *Certificates) CertificatesAdd(certificatesData *Certificates) error {
 		Table(c.TableName()).
 		Create(certificatesData).Error
 
-	return err
+	return certificatesId, err
 }
 
 func (c *Certificates) CertificatesUpdate(id string, certificatesData *Certificates) error {
@@ -116,6 +115,9 @@ func (c *Certificates) CertificateListPage(param *validators.CertificateList) (l
 	if param.IsEnable != 0 {
 		tx = tx.Where("is_enable = ?", param.IsEnable)
 	}
+	if param.ReleaseStatus != 0 {
+		tx = tx.Where("release_status = ?", param.ReleaseStatus)
+	}
 
 	param.Search = strings.TrimSpace(param.Search)
 	if len(param.Search) != 0 {
@@ -151,7 +153,22 @@ func (c *Certificates) CertificateSwitchEnable(id string, enable int) error {
 	updateErr := packages.GetDb().
 		Table(c.TableName()).
 		Where("id = ?", id).
-		Update("is_enable", enable).Error
+		Updates(Certificates{
+			IsEnable: enable,
+			ReleaseStatus: utils.ReleaseStatusT}).Error
+
+	if updateErr != nil {
+		return updateErr
+	}
+
+	return nil
+}
+
+func (c *Certificates) CertificateSwitchRelease(id string, release int) error {
+	updateErr := packages.GetDb().
+		Table(c.TableName()).
+		Where("id = ?", id).
+		Update("release_status", release).Error
 
 	if updateErr != nil {
 		return updateErr

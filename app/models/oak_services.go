@@ -10,15 +10,15 @@ import (
 )
 
 type Services struct {
-	ID          string `gorm:"column:id;primary_key"` //Service id
-	Name        string `gorm:"column:name"`           //Service name
-	Protocol    int    `gorm:"column:protocol"`       //Protocol  1:HTTP  2:HTTPS  3:HTTP&HTTPS
-	HealthCheck int    `gorm:"column:health_check"`   //Health check switch  1:on  2:off
-	WebSocket   int    `gorm:"column:web_socket"`     //WebSocket  1:on  2:off
-	IsEnable    int    `gorm:"column:is_enable"`      //Service enable  1:on  2:off
-	IsRelease   int    `gorm:"column:is_release"`     //Service release  1:on  2:off
-	LoadBalance int    `gorm:"column:load_balance"`   //Load balancing algorithm
-	Timeouts    string `gorm:"column:timeouts"`       //Time out
+	ID            string `gorm:"column:id;primary_key"` //Service id
+	Name          string `gorm:"column:name"`           //Service name
+	Protocol      int    `gorm:"column:protocol"`       //Protocol  1:HTTP  2:HTTPS  3:HTTP&HTTPS
+	HealthCheck   int    `gorm:"column:health_check"`   //Health check switch  1:on  2:off
+	WebSocket     int    `gorm:"column:web_socket"`     //WebSocket  1:on  2:off
+	IsEnable      int    `gorm:"column:is_enable"`      //Service enable  1:on  2:off
+	ReleaseStatus int    `gorm:"column:release_status"` //Service release status 1:unpublished  2:to be published  3:published
+	LoadBalance   int    `gorm:"column:load_balance"`   //Load balancing algorithm
+	Timeouts      string `gorm:"column:timeouts"`       //Time out
 	ModelTime
 	Domains []ServiceDomains `gorm:"foreignKey:ServiceID"`
 	Nodes   []ServiceNodes   `gorm:"foreignKey:ServiceID"`
@@ -29,51 +29,49 @@ func (s *Services) TableName() string {
 	return "oak_services"
 }
 
-var serviceId = ""
+var recursionTimesServices = 1
 
-func (s *Services) ServiceIdUnique(sIds map[string]string) (string, error) {
-	if s.ID == "" {
-		tmpID, err := utils.IdGenerate(utils.IdTypeService)
-		if err != nil {
-			return "", err
-		}
-		s.ID = tmpID
+func (m *Services) ModelUniqueId() (string, error) {
+	generateId, generateIdErr := utils.IdGenerate(utils.IdTypeService)
+	if generateIdErr != nil {
+		return "", generateIdErr
 	}
 
 	result := packages.GetDb().
-		Table(s.TableName()).
+		Table(m.TableName()).
+		Where("id = ?", generateId).
 		Select("id").
-		First(&s)
+		First(m)
 
-	mapId := sIds[s.ID]
-	if (result.RowsAffected == 0) && (s.ID != mapId) {
-		serviceId = s.ID
-		sIds[s.ID] = s.ID
-		return serviceId, nil
+	if result.RowsAffected == 0 {
+		recursionTimesServices = 1
+		return generateId, nil
 	} else {
-		svcId, svcErr := utils.IdGenerate(utils.IdTypeService)
-		if svcErr != nil {
-			return "", svcErr
+		if recursionTimesServices == utils.IdGenerateMaxTimes {
+			recursionTimesServices = 1
+			return "", errors.New(enums.CodeMessages(enums.IdConflict))
 		}
-		s.ID = svcId
-		_, err := s.ServiceIdUnique(sIds)
+
+		recursionTimesServices++
+		id, err := m.ModelUniqueId()
+
 		if err != nil {
 			return "", err
 		}
-	}
 
-	return serviceId, nil
+		return id, nil
+	}
 }
 
 func (s *Services) ServiceAdd(
 	serviceInfo *Services,
 	serviceDomains *[]ServiceDomains,
-	serviceNodes *[]ServiceNodes) error {
+	serviceNodes *[]ServiceNodes) (string, error) {
 
 	tpmIds := map[string]string{}
-	serviceId, serviceIdUniqueErr := s.ServiceIdUnique(tpmIds)
+	serviceId, serviceIdUniqueErr := s.ModelUniqueId()
 	if serviceIdUniqueErr != nil {
-		return serviceIdUniqueErr
+		return serviceId, serviceIdUniqueErr
 	}
 
 	tx := packages.GetDb().Begin()
@@ -85,7 +83,7 @@ func (s *Services) ServiceAdd(
 	}()
 
 	if err := tx.Error; err != nil {
-		return err
+		return serviceId, err
 	}
 
 	serviceInfo.ID = serviceId
@@ -95,13 +93,13 @@ func (s *Services) ServiceAdd(
 
 	if createServiceErr != nil {
 		tx.Rollback()
-		return createServiceErr
+		return serviceId, createServiceErr
 	}
 
 	for _, serviceDomain := range *serviceDomains {
-		domainId, domainIdErr := serviceDomain.ServiceDomainIdUnique(tpmIds)
+		domainId, domainIdErr := serviceDomain.ModelUniqueId()
 		if domainIdErr != nil {
-			return domainIdErr
+			return serviceId, domainIdErr
 		}
 
 		serviceDomain.ID = domainId
@@ -111,14 +109,14 @@ func (s *Services) ServiceAdd(
 
 		if domainErr != nil {
 			tx.Rollback()
-			return domainErr
+			return serviceId, domainErr
 		}
 	}
 
 	for _, serviceNode := range *serviceNodes {
 		nodeId, nodeIdErr := serviceNode.ServiceNodeIdUnique(tpmIds)
 		if nodeIdErr != nil {
-			return nodeIdErr
+			return serviceId, nodeIdErr
 		}
 
 		serviceNode.ID = nodeId
@@ -128,15 +126,15 @@ func (s *Services) ServiceAdd(
 
 		if nodeErr != nil {
 			tx.Rollback()
-			return nodeErr
+			return serviceId, nodeErr
 		}
 	}
 
 	serviceRoute := Routes{}
-	routeId, routeIdErr := serviceRoute.RouteIdUnique(tpmIds)
+	routeId, routeIdErr := serviceRoute.ModelUniqueId()
 	if routeIdErr != nil {
 		tx.Rollback()
-		return routeIdErr
+		return serviceId, routeIdErr
 	}
 
 	serviceRoute.ID = routeId
@@ -144,6 +142,7 @@ func (s *Services) ServiceAdd(
 	serviceRoute.RouteName = routeId
 	serviceRoute.RoutePath = utils.DefaultRoutePath
 	serviceRoute.IsEnable = utils.EnableOn
+	serviceRoute.ReleaseStatus = utils.ReleaseStatusY
 	serviceRoute.RequestMethods = utils.RequestMethodALL
 
 	routeCreateErr := tx.
@@ -151,10 +150,17 @@ func (s *Services) ServiceAdd(
 
 	if routeCreateErr != nil {
 		tx.Rollback()
-		return routeCreateErr
+		return serviceId, routeCreateErr
 	}
 
-	return tx.Commit().Error
+	return serviceId, tx.Commit().Error
+}
+
+func (s *Services) ServiceUpdateColumnsById(id string, serviceInfo *Services) error {
+	return packages.GetDb().
+		Table(s.TableName()).
+		Where("id = ?", id).
+		Updates(serviceInfo).Error
 }
 
 func (s *Services) ServiceInfoById(id string) Services {
@@ -224,9 +230,8 @@ func (s *Services) ServiceUpdate(
 	}
 
 	if len(*serviceDomains) > 0 {
-		tpmIds := map[string]string{}
 		for _, serviceDomain := range *serviceDomains {
-			domainId, domainIdErr := serviceDomain.ServiceDomainIdUnique(tpmIds)
+			domainId, domainIdErr := serviceDomain.ModelUniqueId()
 			if domainIdErr != nil {
 				return domainIdErr
 			}
@@ -349,7 +354,35 @@ func (s *Services) ServiceDelete(id string) error {
 		return deleteNodeError
 	}
 
-	// @todo 删除路由，同时删除路由下的插件
+	serviceRouteIds := make([]string, 0)
+	routeModel := Routes{}
+	tx.
+		Table(routeModel.TableName()).
+		Where("service_id = ?", id).
+		Pluck("id", &serviceRouteIds)
+
+	if len(serviceRouteIds) > 0 {
+		deleteRouteError := tx.
+			Table(routeModel.TableName()).
+			Where("id IN ?", serviceRouteIds).
+			Delete(routeModel).Error
+
+		if deleteRouteError != nil {
+			tx.Rollback()
+			return deleteRouteError
+		}
+
+		routePluginModel := RoutePlugins{}
+		deleteRoutePluginError := tx.
+			Table(routePluginModel.TableName()).
+			Where("route_id IN ?", serviceRouteIds).
+			Delete(routePluginModel).Error
+
+		if deleteRoutePluginError != nil {
+			tx.Rollback()
+			return deleteRoutePluginError
+		}
+	}
 
 	return tx.Commit().Error
 }
@@ -368,6 +401,9 @@ func (s *Services) ServiceAllInfosListPage(
 	}
 	if param.IsEnable != 0 {
 		tx = tx.Where("is_enable = ?", param.IsEnable)
+	}
+	if param.ReleaseStatus != 0 {
+		tx = tx.Where("release_status = ?", param.ReleaseStatus)
 	}
 
 	countError := ListCount(tx, &total)
@@ -433,7 +469,9 @@ func (s *Services) ServiceSwitchEnable(id string, enable int) error {
 	updateErr := packages.GetDb().
 		Table(s.TableName()).
 		Where("id = ?", id).
-		Update("is_enable", enable).Error
+		Updates(Services{
+			IsEnable: enable,
+			ReleaseStatus: utils.ReleaseStatusT}).Error
 
 	if updateErr != nil {
 		return updateErr
@@ -451,7 +489,9 @@ func (s *Services) ServiceSwitchWebsocket(id string, webSocket int) error {
 	updateErr := packages.GetDb().
 		Table(s.TableName()).
 		Where("id = ?", id).
-		Update("web_socket", webSocket).Error
+		Updates(Services{
+			WebSocket: webSocket,
+			ReleaseStatus: utils.ReleaseStatusT}).Error
 
 	if updateErr != nil {
 		return updateErr
@@ -469,7 +509,26 @@ func (s *Services) ServiceSwitchHealthCheck(id string, healthCheck int) error {
 	updateErr := packages.GetDb().
 		Table(s.TableName()).
 		Where("id = ?", id).
-		Update("health_check", healthCheck).Error
+		Updates(Services{
+			HealthCheck: healthCheck,
+			ReleaseStatus: utils.ReleaseStatusT}).Error
+
+	if updateErr != nil {
+		return updateErr
+	}
+
+	return nil
+}
+
+func (s *Services) ServiceSwitchRelease(id string, release int) error {
+	if len(id) == 0 {
+		return errors.New(enums.CodeMessages(enums.ServiceParamsNull))
+	}
+
+	updateErr := packages.GetDb().
+		Table(s.TableName()).
+		Where("id = ?", id).
+		Update("release_status", release).Error
 
 	if updateErr != nil {
 		return updateErr

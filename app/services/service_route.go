@@ -30,11 +30,48 @@ func CheckRouteEnableChange(routeId string, enable int) error {
 	return nil
 }
 
-func CheckRouteEnableOnProhibitedOp(routeId string) error {
+func CheckRouteDelete(routeId string) error {
 	routeModel := &models.Routes{}
 	routeInfo := routeModel.RouteInfoByIdServiceId(routeId, "")
-	if routeInfo.IsEnable == utils.EnableOn {
-		return errors.New(enums.CodeMessages(enums.SwitchONProhibitsOp))
+
+	if routeInfo.ReleaseStatus == utils.ReleaseStatusY {
+		if routeInfo.IsEnable == utils.EnableOn {
+			return errors.New(enums.CodeMessages(enums.SwitchONProhibitsOp))
+		}
+	} else if routeInfo.ReleaseStatus == utils.ReleaseStatusT {
+		return errors.New(enums.CodeMessages(enums.ToReleaseProhibitsOp))
+	}
+
+	if routeInfo.RoutePath == utils.DefaultRoutePath {
+		return errors.New(enums.CodeMessages(enums.RouteDefaultPathNoPermission))
+	}
+
+	return nil
+}
+
+func CheckRouteRelease(routeId string) error {
+	routeModel := &models.Routes{}
+	routeInfo := routeModel.RouteInfoByIdServiceId(routeId, "")
+	if routeInfo.ReleaseStatus == utils.ReleaseStatusY {
+		return errors.New(enums.CodeMessages(enums.SwitchPublished))
+	}
+
+	return nil
+}
+
+func CheckServiceRouteDefaultPath(serviceId string, routeId string, path string) error {
+	if path == utils.DefaultRoutePath {
+		return errors.New(enums.CodeMessages(enums.RouteDefaultPathNoPermission))
+	}
+
+	if strings.Index(path, utils.DefaultRoutePath) == 0 {
+		return errors.New(enums.CodeMessages(enums.RouteDefaultPathForbiddenPrefix))
+	}
+
+	routeModel := models.Routes{}
+	routeInfo := routeModel.RouteInfoByIdServiceId(routeId, serviceId)
+	if routeInfo.RoutePath == utils.DefaultRoutePath {
+		return errors.New(enums.CodeMessages(enums.RouteDefaultPathNoPermission))
 	}
 
 	return nil
@@ -71,54 +108,140 @@ func CheckExistServiceRoutePath(serviceId string, path string, filterRouteIds []
 }
 
 func RouteCreate(routeData *validators.ValidatorRouteAddUpdate) error {
+	createRouteData := models.Routes{
+		ServiceID:      routeData.ServiceID,
+		RequestMethods: routeData.RequestMethods,
+		RoutePath:      routeData.RoutePath,
+		IsEnable:       routeData.IsEnable,
+		ReleaseStatus:  utils.ReleaseStatusU,
+	}
+
+	if routeData.IsRelease == utils.IsReleaseY {
+		createRouteData.ReleaseStatus = utils.ReleaseStatusY
+	}
+
+	routeId, err := createRouteData.RouteAdd(createRouteData)
+	if err != nil {
+		return err
+	}
+
+	if routeData.IsRelease == utils.IsReleaseY {
+		configReleaseErr := ServiceRouteConfigRelease(utils.ReleaseTypePush, routeId)
+		if configReleaseErr != nil {
+			createRouteData.ReleaseStatus = utils.ReleaseStatusU
+			createRouteData.RouteUpdate(routeId, createRouteData)
+
+			return configReleaseErr
+		}
+	}
+
+	return nil
+}
+
+func RouteCopy(routeData *validators.ValidatorRouteAddUpdate, sourceRouteId string) error {
+	routePluginModel := models.RoutePlugins{}
+	routePluginInfos := routePluginModel.RoutePluginInfosByRouteId(sourceRouteId)
 
 	createRouteData := models.Routes{
 		ServiceID:      routeData.ServiceID,
 		RequestMethods: routeData.RequestMethods,
 		RoutePath:      routeData.RoutePath,
 		IsEnable:       routeData.IsEnable,
+		ReleaseStatus:  utils.ReleaseStatusU,
+	}
+	if routeData.IsRelease == utils.IsReleaseY {
+		createRouteData.ReleaseStatus = utils.ReleaseStatusY
 	}
 
-	routeModel := models.Routes{}
-	err := routeModel.RouteAdd(createRouteData)
+	routeId, routePluginIds, err := createRouteData.RouteCopy(createRouteData, routePluginInfos)
 	if err != nil {
 		return err
 	}
 
-	// @todo 如果状态是"开启"，则需要同步远程数据中心
+	if routeData.IsRelease == utils.IsReleaseY {
+		configRollBack := false
+		var routePluginReleaseErr error
+		routeReleaseErr := ServiceRouteConfigRelease(utils.ReleaseTypePush, routeId)
+		if routeReleaseErr == nil {
+			if len(routePluginIds) != 0 {
+				for _, routePluginId := range routePluginIds {
+					routePluginReleaseErr = ServiceRoutePluginConfigRelease(utils.ReleaseTypePush, routePluginId)
+					if routePluginReleaseErr != nil {
+						configRollBack = true
+						break
+					}
+				}
+			}
+		}
+
+		if configRollBack {
+			ServiceRouteConfigRelease(utils.ReleaseTypeDelete, routeId)
+
+			for _, routePluginId := range routePluginIds {
+				ServiceRoutePluginConfigRelease(utils.ReleaseTypeDelete, routePluginId)
+			}
+
+			createRouteData.ReleaseStatus = utils.ReleaseStatusU
+			routeModel := models.Routes{}
+			routeModel.RouteUpdate(routeId, createRouteData)
+
+			routePluginModel.ReleaseStatus = utils.ReleaseStatusU
+			routePluginModel.RoutePluginUpdateColumnsByIds(routePluginIds, &routePluginModel)
+
+			return routePluginReleaseErr
+		}
+
+		return routeReleaseErr
+	}
 
 	return nil
 }
 
-func RouteUpdate(id string, routeData *validators.ValidatorRouteAddUpdate) error {
+func RouteUpdate(routeId string, routeData *validators.ValidatorRouteAddUpdate) error {
 	updateRouteData := models.Routes{
 		RequestMethods: routeData.RequestMethods,
 		RoutePath:      routeData.RoutePath,
 		IsEnable:       routeData.IsEnable,
+		ReleaseStatus:  utils.ReleaseStatusT,
 	}
 	if len(routeData.RouteName) != 0 {
 		updateRouteData.RouteName = routeData.RouteName
 	}
+	if routeData.IsRelease == utils.IsReleaseY {
+		updateRouteData.ReleaseStatus = utils.ReleaseStatusY
+	}
 
 	routeModel := models.Routes{}
-	err := routeModel.RouteUpdate(id, updateRouteData)
+	err := routeModel.RouteUpdate(routeId, updateRouteData)
 	if err != nil {
 		return err
 	}
 
-	// @todo 如果状态是"开启"，则需要同步远程数据中心
+	if routeData.IsRelease == utils.IsReleaseY {
+		configReleaseErr := ServiceRouteConfigRelease(utils.ReleaseTypePush, routeId)
+		if configReleaseErr != nil {
+			updateRouteData.ReleaseStatus = utils.ReleaseStatusT
+			routeModel.RouteUpdate(routeId, updateRouteData)
+
+			return configReleaseErr
+		}
+	}
 
 	return nil
 }
 
-func RouteDelete(id string) error {
-	routeModel := models.Routes{}
-	err := routeModel.RouteDelete(id)
-	if err != nil {
-		return err
+func RouteDelete(routeId string) error {
+	configReleaseErr := ServiceRouteConfigRelease(utils.ReleaseTypeDelete, routeId)
+	if configReleaseErr != nil {
+		return configReleaseErr
 	}
 
-	// @todo 如果状态是"开启"，则需要同步远程数据中心
+	routeModel := models.Routes{}
+	err := routeModel.RouteDelete(routeId)
+	if err != nil {
+		ServiceRouteConfigRelease(utils.ReleaseTypePush, routeId)
+		return err
+	}
 
 	return nil
 }
@@ -135,7 +258,7 @@ type StructRouteList struct {
 	RequestMethods []string      `json:"request_methods"`
 	RoutePath      string        `json:"route_path"`
 	IsEnable       int           `json:"is_enable"`
-	IsRelease      int           `json:"is_release"`
+	ReleaseStatus  int           `json:"release_status"`
 	PluginList     []routePlugin `json:"plugin_list"`
 }
 
@@ -153,7 +276,7 @@ func (s *StructRouteList) RouteListPage(serviceId string, param *validators.Vali
 			structRouteList.RequestMethods = strings.Split(routeInfo.RequestMethods, ",")
 			structRouteList.RoutePath = routeInfo.RoutePath
 			structRouteList.IsEnable = routeInfo.IsEnable
-			structRouteList.IsRelease = routeInfo.IsRelease
+			structRouteList.ReleaseStatus = routeInfo.ReleaseStatus
 
 			routePluginInfos := make([]routePlugin, 0)
 			if len(routeInfo.Plugins) != 0 {
@@ -181,6 +304,7 @@ type StructRouteInfo struct {
 	RequestMethods []string `json:"request_methods"`
 	RoutePath      string   `json:"route_path"`
 	IsEnable       int      `json:"is_enable"`
+	ReleaseStatus  int      `json:"release_status"`
 }
 
 func (s *StructRouteInfo) RouteInfoByServiceRouteId(serviceId string, routeId string) (StructRouteInfo, error) {
@@ -197,6 +321,7 @@ func (s *StructRouteInfo) RouteInfoByServiceRouteId(serviceId string, routeId st
 	routeInfo.RequestMethods = strings.Split(routeModelInfo.RequestMethods, ",")
 	routeInfo.RoutePath = routeModelInfo.RoutePath
 	routeInfo.IsEnable = routeModelInfo.IsEnable
+	routeInfo.ReleaseStatus = routeModelInfo.ReleaseStatus
 
 	return routeInfo, nil
 }
@@ -208,9 +333,45 @@ func ServiceRouteSwitchEnable(id string, enable int) error {
 		return err
 	}
 
-	// @todo 触发远程发布数据
+	return nil
+}
+
+func ServiceRouteRelease(id string) error {
+	routeModel := models.Routes{}
+	routeInfo := routeModel.RouteInfoByIdServiceId(id, "")
+	err := routeModel.RouteSwitchRelease(id, utils.ReleaseStatusY)
+	if err != nil {
+		return err
+	}
+
+	configReleaseErr := ServiceRouteConfigRelease(utils.ReleaseTypePush, id)
+	if configReleaseErr != nil {
+		routeModel.RouteSwitchRelease(id, routeInfo.ReleaseStatus)
+		return configReleaseErr
+	}
 
 	return nil
+}
+
+func ServiceRouteConfigRelease(releaseType string, id string) error {
+
+	// @todo 获取指定服务路由的配置数据
+	//serviceRouteConfig := generateServicesRouteConfig(serviceId)
+
+	// @todo 获取数据注册中心对应 服务配置 的key
+
+	fmt.Println("=========service route release:", releaseType, id)
+
+	// @todo 发布配置到 数据注册中心
+
+	return nil
+}
+
+func generateServicesRouteConfig(id string) string {
+
+	// @todo 根据服务ID 拼接服务的配置数据（主要是用于同步到数据面使用）
+
+	return ""
 }
 
 type RouteAddPluginInfo struct {
@@ -257,16 +418,16 @@ func (r *RouteAddPluginInfo) RouteAddPluginList(filterRouteId string) ([]RouteAd
 }
 
 type RoutePluginInfo struct {
-	ID          string `json:"id"`
-	PluginId    string `json:"plugin_id"`
-	Name        string `json:"name"`
-	Tag         string `json:"tag"`
-	Type        int    `json:"type"`
-	Description string `json:"description"`
-	Order       int    `json:"order"`
-	Config      string `json:"config"`
-	IsEnable    int    `json:"is_enable"`
-	IsRelease   int    `json:"is_release"`
+	ID            string `json:"id"`
+	PluginId      string `json:"plugin_id"`
+	Name          string `json:"name"`
+	Tag           string `json:"tag"`
+	Type          int    `json:"type"`
+	Description   string `json:"description"`
+	Order         int    `json:"order"`
+	Config        string `json:"config"`
+	IsEnable      int    `json:"is_enable"`
+	ReleaseStatus int    `json:"release_status"`
 }
 
 func (r *RoutePluginInfo) RoutePluginList(routeId string) []RoutePluginInfo {
@@ -286,7 +447,7 @@ func (r *RoutePluginInfo) RoutePluginList(routeId string) []RoutePluginInfo {
 		routePluginInfo.Order = routePluginConfigInfo.Order
 		routePluginInfo.Config = routePluginConfigInfo.Config
 		routePluginInfo.IsEnable = routePluginConfigInfo.IsEnable
-		routePluginInfo.IsRelease = routePluginConfigInfo.IsRelease
+		routePluginInfo.ReleaseStatus = routePluginConfigInfo.ReleaseStatus
 
 		routePluginList = append(routePluginList, routePluginInfo)
 	}

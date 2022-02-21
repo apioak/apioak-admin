@@ -7,6 +7,7 @@ import (
 	"apioak-admin/app/validators"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strings"
 )
 
@@ -57,11 +58,16 @@ func CheckCertificateDomainExistById(id string) error {
 	return nil
 }
 
-func CheckCertificateEnableOn(id string) error {
+func CheckCertificateDelete(id string) error {
 	certificatesModel := models.Certificates{}
 	certificateInfo := certificatesModel.CertificateInfoById(id)
-	if certificateInfo.IsEnable == utils.EnableOn {
-		return errors.New(enums.CodeMessages(enums.SwitchONProhibitsOp))
+
+	if certificateInfo.ReleaseStatus == utils.ReleaseStatusY {
+		if certificateInfo.IsEnable == utils.EnableOn {
+			return errors.New(enums.CodeMessages(enums.SwitchONProhibitsOp))
+		}
+	} else if certificateInfo.ReleaseStatus == utils.ReleaseStatusT {
+		return errors.New(enums.CodeMessages(enums.ToReleaseProhibitsOp))
 	}
 
 	return nil
@@ -72,6 +78,16 @@ func CheckCertificateEnableChange(id string, enable int) error {
 	certificateInfo := certificatesModel.CertificateInfoById(id)
 	if certificateInfo.IsEnable == enable {
 		return errors.New(enums.CodeMessages(enums.SwitchNoChange))
+	}
+
+	return nil
+}
+
+func CheckCertificateRelease(id string) error {
+	certificatesModel := models.Certificates{}
+	certificateInfo := certificatesModel.CertificateInfoById(id)
+	if certificateInfo.ReleaseStatus == utils.ReleaseStatusY {
+		return errors.New(enums.CodeMessages(enums.SwitchPublished))
 	}
 
 	return nil
@@ -118,16 +134,32 @@ func CertificateAdd(certificateData *validators.CertificateAddUpdate) error {
 	}
 
 	certificatesModel := models.Certificates{
-		Certificate: certificateContent,
-		PrivateKey:  privateKeyContent,
-		ExpiredAt:   certificateInfo.NotAfter,
-		IsEnable:    certificateData.IsEnable,
-		Sni:         certificateInfo.CommonName,
+		Certificate:   certificateContent,
+		PrivateKey:    privateKeyContent,
+		ExpiredAt:     certificateInfo.NotAfter,
+		IsEnable:      certificateData.IsEnable,
+		ReleaseStatus: utils.ReleaseStatusU,
+		Sni:           certificateInfo.CommonName,
 	}
 
-	addErr := certificatesModel.CertificatesAdd(&certificatesModel)
+	if certificateData.IsRelease == utils.IsReleaseY {
+		certificatesModel.ReleaseStatus = utils.ReleaseStatusY
+	}
+
+	certificateId, addErr := certificatesModel.CertificatesAdd(&certificatesModel)
 	if addErr != nil {
 		return addErr
+	}
+
+	if certificateData.IsRelease == utils.IsReleaseY {
+		configReleaseErr := CertificateConfigRelease(utils.ReleaseTypePush, certificateId)
+		if configReleaseErr != nil {
+			certificatesModel.ReleaseStatus = utils.ReleaseStatusU
+			certificatesModel.CertificatesUpdate(certificateId, &certificatesModel)
+			return configReleaseErr
+		}
+
+		return configReleaseErr
 	}
 
 	return nil
@@ -171,20 +203,37 @@ func CertificateUpdate(id string, certificateData *validators.CertificateAddUpda
 	certificatesModel.ExpiredAt = certificateInfo.NotAfter
 	certificatesModel.IsEnable = certificateData.IsEnable
 	certificatesModel.Sni = certificateInfo.CommonName
+	certificatesModel.ReleaseStatus = utils.ReleaseStatusT
+
+	if certificateData.IsRelease == utils.IsReleaseY {
+		certificatesModel.ReleaseStatus = utils.ReleaseStatusY
+	}
 
 	updateErr := certificatesModel.CertificatesUpdate(id, &certificatesModel)
 	if updateErr != nil {
 		return updateErr
 	}
 
+	if certificateData.IsRelease == utils.IsReleaseY {
+		configReleaseErr := CertificateConfigRelease(utils.ReleaseTypePush, id)
+		if configReleaseErr != nil {
+			certificatesModel.ReleaseStatus = utils.ReleaseStatusT
+			certificatesModel.CertificatesUpdate(id, &certificatesModel)
+			return configReleaseErr
+		}
+
+		return configReleaseErr
+	}
+
 	return nil
 }
 
 type CertificateContent struct {
-	ID          string `json:"id"`
-	Certificate string `json:"certificate"`
-	PrivateKey  string `json:"private_key"`
-	IsEnable    int    `json:"is_enable"`
+	ID            string `json:"id"`
+	Certificate   string `json:"certificate"`
+	PrivateKey    string `json:"private_key"`
+	IsEnable      int    `json:"is_enable"`
+	ReleaseStatus int    `json:"release_status"`
 }
 
 func (c *CertificateContent) CertificateContentInfo(id string) CertificateContent {
@@ -200,16 +249,17 @@ func (c *CertificateContent) CertificateContentInfo(id string) CertificateConten
 	certificateContent.Certificate = certificateInfo.Certificate
 	certificateContent.PrivateKey = certificateInfo.PrivateKey
 	certificateContent.IsEnable = certificateInfo.IsEnable
+	certificateContent.ReleaseStatus = certificateInfo.ReleaseStatus
 
 	return certificateContent
 }
 
 type CertificateInfo struct {
-	ID        string `json:"id"`
-	Sni       string `json:"sni"`
-	ExpiredAt int64  `json:"expired_at"`
-	IsEnable  int    `json:"is_enable"`
-	IsRelease int    `json:"is_release"`
+	ID            string `json:"id"`
+	Sni           string `json:"sni"`
+	ExpiredAt     int64  `json:"expired_at"`
+	IsEnable      int    `json:"is_enable"`
+	ReleaseStatus int    `json:"release_status"`
 }
 
 func (c *CertificateInfo) CertificateListPage(param *validators.CertificateList) ([]CertificateInfo, int, error) {
@@ -224,7 +274,7 @@ func (c *CertificateInfo) CertificateListPage(param *validators.CertificateList)
 			certificateInfo.Sni = certificateListInfo.Sni
 			certificateInfo.ExpiredAt = certificateListInfo.ExpiredAt.Unix()
 			certificateInfo.IsEnable = certificateListInfo.IsEnable
-			certificateInfo.IsRelease = certificateListInfo.IsRelease
+			certificateInfo.ReleaseStatus = certificateListInfo.ReleaseStatus
 
 			certificateList = append(certificateList, certificateInfo)
 		}
@@ -234,13 +284,17 @@ func (c *CertificateInfo) CertificateListPage(param *validators.CertificateList)
 }
 
 func CertificateDelete(id string) error {
+	configReleaseErr := CertificateConfigRelease(utils.ReleaseTypeDelete, id)
+	if configReleaseErr != nil {
+		return configReleaseErr
+	}
+
 	certificatesModel := models.Certificates{}
 	deleteErr := certificatesModel.CertificateDelete(id)
 	if deleteErr != nil {
+		CertificateConfigRelease(utils.ReleaseTypePush, id)
 		return deleteErr
 	}
-
-	// @todo 需要同步远程数据中心
 
 	return nil
 }
@@ -252,7 +306,43 @@ func CertificateSwitchEnable(id string, enable int) error {
 		return updateErr
 	}
 
-	// @todo 触发远程发布数据
+	return nil
+}
+
+func CertificateRelease(id string) error {
+	certificatesModel := models.Certificates{}
+	certificateInfo := certificatesModel.CertificateInfoById(id)
+	updateErr := certificatesModel.CertificateSwitchRelease(id, utils.ReleaseStatusY)
+	if updateErr != nil {
+		return updateErr
+	}
+
+	configReleaseErr := CertificateConfigRelease(utils.ReleaseTypePush, id)
+	if configReleaseErr != nil {
+		certificatesModel.CertificateSwitchRelease(id, certificateInfo.ReleaseStatus)
+		return configReleaseErr
+	}
 
 	return nil
+}
+
+func CertificateConfigRelease(releaseType string, certificateId string) error {
+
+	// @todo 获取指定服务的配置数据
+	//certificateConfig := generateCertificateConfig(certificateId)
+
+	// @todo 获取数据注册中心对应 服务配置 的key
+
+	fmt.Println("=========certificate release:", releaseType, certificateId)
+
+	// @todo 发布配置到 数据注册中心
+
+	return nil
+}
+
+func generateCertificateConfig(serviceId string) string {
+
+	// @todo 根据服务ID 拼接服务的配置数据（主要是用于同步到数据面使用）
+
+	return ""
 }

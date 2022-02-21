@@ -1,8 +1,10 @@
 package models
 
 import (
+	"apioak-admin/app/enums"
 	"apioak-admin/app/packages"
 	"apioak-admin/app/utils"
+	"errors"
 )
 
 type Users struct {
@@ -18,40 +20,38 @@ func (u *Users) TableName() string {
 	return "oak_users"
 }
 
-var userId = ""
+var recursionTimesUsers = 1
 
-func (u *Users) UserIdUnique(uIds map[string]string) (string, error) {
-	if u.ID == "" {
-		tmpID, err := utils.IdGenerate(utils.IdTypeUser)
-		if err != nil {
-			return "", err
-		}
-		u.ID = tmpID
+func (m *Users) ModelUniqueId() (string, error) {
+	generateId, generateIdErr := utils.IdGenerate(utils.IdTypeUser)
+	if generateIdErr != nil {
+		return "", generateIdErr
 	}
 
 	result := packages.GetDb().
-		Table(u.TableName()).
+		Table(m.TableName()).
+		Where("id = ?", generateId).
 		Select("id").
-		First(&u)
+		First(m)
 
-	mapId := uIds[u.ID]
-	if (result.RowsAffected == 0) && (u.ID != mapId) {
-		userId = u.ID
-		uIds[u.ID] = u.ID
-		return userId, nil
+	if result.RowsAffected == 0 {
+		recursionTimesUsers = 1
+		return generateId, nil
 	} else {
-		usId, certIdErr := utils.IdGenerate(utils.IdTypeUser)
-		if certIdErr != nil {
-			return "", certIdErr
+		if recursionTimesUsers == utils.IdGenerateMaxTimes {
+			recursionTimesUsers = 1
+			return "", errors.New(enums.CodeMessages(enums.IdConflict))
 		}
-		u.ID = usId
-		_, err := u.UserIdUnique(uIds)
+
+		recursionTimesUsers++
+		id, err := m.ModelUniqueId()
+
 		if err != nil {
 			return "", err
 		}
-	}
 
-	return userId, nil
+		return id, nil
+	}
 }
 
 func (u *Users) UserInfosByEmailFilterIds(email string, filterIds []string) []Users {
@@ -70,8 +70,7 @@ func (u *Users) UserInfosByEmailFilterIds(email string, filterIds []string) []Us
 }
 
 func (u *Users) UserAdd(userData *Users) error {
-	tpmIds := map[string]string{}
-	userId, userIdUniqueErr := u.UserIdUnique(tpmIds)
+	userId, userIdUniqueErr := u.ModelUniqueId()
 	if userIdUniqueErr != nil {
 		return userIdUniqueErr
 	}

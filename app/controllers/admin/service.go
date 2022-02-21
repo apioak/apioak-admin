@@ -1,13 +1,13 @@
 package admin
 
 import (
-	"apioak-admin/app/enums"
 	"apioak-admin/app/models"
 	"apioak-admin/app/packages"
 	"apioak-admin/app/services"
 	"apioak-admin/app/utils"
 	"apioak-admin/app/validators"
 	"github.com/gin-gonic/gin"
+	"strings"
 )
 
 func ServiceLoadBalanceList(c *gin.Context) {
@@ -17,30 +17,32 @@ func ServiceLoadBalanceList(c *gin.Context) {
 
 func ServiceAdd(c *gin.Context) {
 
-	var serviceAddUpdateValidator = validators.ServiceAddUpdate{}
-	if msg, err := packages.ParseRequestParams(c, &serviceAddUpdateValidator); err != nil {
+	var bindParams = validators.ServiceAddUpdate{
+		IsRelease: utils.IsReleaseN,
+	}
+	if msg, err := packages.ParseRequestParams(c, &bindParams); err != nil {
 		utils.Error(c, msg)
 		return
 	}
 
-	validators.CorrectServiceAttributesDefault(&serviceAddUpdateValidator)
-	validators.CorrectServiceTimeOut(&serviceAddUpdateValidator.Timeouts)
-	validators.CorrectServiceDomains(&serviceAddUpdateValidator.ServiceDomains)
-	validators.CorrectServiceAddNodes(&serviceAddUpdateValidator.ServiceNodes)
+	validators.CorrectServiceAttributesDefault(&bindParams)
+	validators.CorrectServiceTimeOut(&bindParams.Timeouts)
+	validators.CorrectServiceDomains(&bindParams.ServiceDomains)
+	validators.CorrectServiceAddNodes(&bindParams.ServiceNodes)
 
-	checkExistDomainErr := services.CheckExistDomain(serviceAddUpdateValidator.ServiceDomains, []string{})
+	checkExistDomainErr := services.CheckExistDomain(bindParams.ServiceDomains, []string{})
 	if checkExistDomainErr != nil {
 		utils.Error(c, checkExistDomainErr.Error())
 		return
 	}
 
-	checkDomainCertificateErr := services.CheckDomainCertificate(serviceAddUpdateValidator.Protocol, serviceAddUpdateValidator.ServiceDomains)
+	checkDomainCertificateErr := services.CheckDomainCertificate(bindParams.Protocol, bindParams.ServiceDomains)
 	if checkDomainCertificateErr != nil {
 		utils.Error(c, checkDomainCertificateErr.Error())
 		return
 	}
 
-	createErr := services.ServiceCreate(&serviceAddUpdateValidator)
+	createErr := services.ServiceCreate(&bindParams)
 	if createErr != nil {
 		utils.Error(c, createErr.Error())
 		return
@@ -50,17 +52,19 @@ func ServiceAdd(c *gin.Context) {
 }
 
 func ServiceUpdate(c *gin.Context) {
-	serviceId := c.Param("id")
+	serviceId := strings.TrimSpace(c.Param("id"))
 
-	var serviceAddUpdateValidator = validators.ServiceAddUpdate{}
-	if msg, err := packages.ParseRequestParams(c, &serviceAddUpdateValidator); err != nil {
+	var bindParams = validators.ServiceAddUpdate{
+		IsRelease: utils.IsReleaseN,
+	}
+	if msg, err := packages.ParseRequestParams(c, &bindParams); err != nil {
 		utils.Error(c, msg)
 		return
 	}
 
-	validators.CorrectServiceTimeOut(&serviceAddUpdateValidator.Timeouts)
-	validators.CorrectServiceDomains(&serviceAddUpdateValidator.ServiceDomains)
-	validators.CorrectServiceAddNodes(&serviceAddUpdateValidator.ServiceNodes)
+	validators.CorrectServiceTimeOut(&bindParams.Timeouts)
+	validators.CorrectServiceDomains(&bindParams.ServiceDomains)
+	validators.CorrectServiceAddNodes(&bindParams.ServiceNodes)
 
 	checkServiceExistErr := services.CheckServiceExist(serviceId)
 	if checkServiceExistErr != nil {
@@ -68,19 +72,19 @@ func ServiceUpdate(c *gin.Context) {
 		return
 	}
 
-	err := services.CheckExistDomain(serviceAddUpdateValidator.ServiceDomains, []string{serviceId})
+	err := services.CheckExistDomain(bindParams.ServiceDomains, []string{serviceId})
 	if err != nil {
 		utils.Error(c, err.Error())
 		return
 	}
 
-	checkDomainCertificateErr := services.CheckDomainCertificate(serviceAddUpdateValidator.Protocol, serviceAddUpdateValidator.ServiceDomains)
+	checkDomainCertificateErr := services.CheckDomainCertificate(bindParams.Protocol, bindParams.ServiceDomains)
 	if checkDomainCertificateErr != nil {
 		utils.Error(c, checkDomainCertificateErr.Error())
 		return
 	}
 
-	updateErr := services.ServiceUpdate(serviceId, &serviceAddUpdateValidator)
+	updateErr := services.ServiceUpdate(serviceId, &bindParams)
 	if updateErr != nil {
 		utils.Error(c, updateErr.Error())
 		return
@@ -90,7 +94,7 @@ func ServiceUpdate(c *gin.Context) {
 }
 
 func ServiceInfo(c *gin.Context) {
-	serviceId := c.Param("id")
+	serviceId := strings.TrimSpace(c.Param("id"))
 
 	checkServiceExistErr := services.CheckServiceExist(serviceId)
 	if checkServiceExistErr != nil {
@@ -133,21 +137,21 @@ func ServiceList(c *gin.Context) {
 }
 
 func ServiceDelete(c *gin.Context) {
-	serviceId := c.Param("id")
+	serviceId := strings.TrimSpace(c.Param("id"))
 
-	serviceModel := &models.Services{}
-	serviceInfo := serviceModel.ServiceInfoById(serviceId)
-	if len(serviceInfo.ID) == 0 {
-		utils.Error(c, enums.CodeMessages(enums.ServiceNull))
+	checkServiceExistErr := services.CheckServiceExist(serviceId)
+	if checkServiceExistErr != nil {
+		utils.Error(c, checkServiceExistErr.Error())
 		return
 	}
 
-	if serviceInfo.IsEnable == utils.EnableOn {
-		utils.Error(c, enums.CodeMessages(enums.SwitchONProhibitsOp))
+	checkServiceDeleteErr := services.CheckServiceDelete(serviceId)
+	if checkServiceDeleteErr != nil {
+		utils.Error(c, checkServiceDeleteErr.Error())
 		return
 	}
 
-	deleteErr := serviceModel.ServiceDelete(serviceId)
+	deleteErr := services.ServiceDelete(serviceId)
 	if deleteErr != nil {
 		utils.Error(c, deleteErr.Error())
 		return
@@ -159,20 +163,20 @@ func ServiceDelete(c *gin.Context) {
 func ServiceUpdateName(c *gin.Context) {
 	serviceId := c.Param("id")
 
-	var serviceUpdateNameValidator = validators.ServiceUpdateName{}
-	if msg, err := packages.ParseRequestParams(c, &serviceUpdateNameValidator); err != nil {
+	var bindParams = validators.ServiceUpdateName{}
+	if msg, err := packages.ParseRequestParams(c, &bindParams); err != nil {
 		utils.Error(c, msg)
 		return
 	}
 
-	serviceModel := &models.Services{}
-	serviceInfo := serviceModel.ServiceInfoById(serviceId)
-	if len(serviceInfo.ID) == 0 {
-		utils.Error(c, enums.CodeMessages(enums.ServiceNull))
+	checkServiceExistErr := services.CheckServiceExist(serviceId)
+	if checkServiceExistErr != nil {
+		utils.Error(c, checkServiceExistErr.Error())
 		return
 	}
 
-	updateErr := serviceModel.ServiceUpdateName(serviceId, serviceUpdateNameValidator.Name)
+	serviceModel := &models.Services{}
+	updateErr := serviceModel.ServiceUpdateName(serviceId, bindParams.Name)
 	if updateErr != nil {
 		utils.Error(c, updateErr.Error())
 		return
@@ -182,27 +186,28 @@ func ServiceUpdateName(c *gin.Context) {
 }
 
 func ServiceSwitchEnable(c *gin.Context) {
-	serviceId := c.Param("id")
+	serviceId := strings.TrimSpace(c.Param("id"))
 
-	var serviceSwitchEnableValidator = validators.ServiceSwitchEnable{}
-	if msg, err := packages.ParseRequestParams(c, &serviceSwitchEnableValidator); err != nil {
+	var bindParams = validators.ServiceSwitchEnable{}
+	if msg, err := packages.ParseRequestParams(c, &bindParams); err != nil {
 		utils.Error(c, msg)
 		return
 	}
 
+	checkServiceExistErr := services.CheckServiceExist(serviceId)
+	if checkServiceExistErr != nil {
+		utils.Error(c, checkServiceExistErr.Error())
+		return
+	}
+
+	checkServiceEnableChangeErr := services.CheckServiceEnableChange(serviceId, bindParams.IsEnable)
+	if checkServiceEnableChangeErr != nil {
+		utils.Error(c, checkServiceEnableChangeErr.Error())
+		return
+	}
+
 	serviceModel := &models.Services{}
-	serviceInfo := serviceModel.ServiceInfoById(serviceId)
-	if len(serviceInfo.ID) == 0 {
-		utils.Error(c, enums.CodeMessages(enums.ServiceNull))
-		return
-	}
-
-	if serviceSwitchEnableValidator.IsEnable == serviceInfo.IsEnable {
-		utils.Error(c, enums.CodeMessages(enums.SwitchNoChange))
-		return
-	}
-
-	updateErr := serviceModel.ServiceSwitchEnable(serviceId, serviceSwitchEnableValidator.IsEnable)
+	updateErr := serviceModel.ServiceSwitchEnable(serviceId, bindParams.IsEnable)
 	if updateErr != nil {
 		utils.Error(c, updateErr.Error())
 		return
@@ -212,31 +217,52 @@ func ServiceSwitchEnable(c *gin.Context) {
 }
 
 func ServiceSwitchRelease(c *gin.Context) {
-	
+	serviceId := strings.TrimSpace(c.Param("id"))
+
+	checkServiceExistErr := services.CheckServiceExist(serviceId)
+	if checkServiceExistErr != nil {
+		utils.Error(c, checkServiceExistErr.Error())
+		return
+	}
+
+	checkServiceReleaseErr := services.CheckServiceRelease(serviceId)
+	if checkServiceReleaseErr != nil {
+		utils.Error(c, checkServiceReleaseErr.Error())
+		return
+	}
+
+	serviceReleaseErr := services.ServiceRelease(serviceId)
+	if serviceReleaseErr != nil {
+		utils.Error(c, serviceReleaseErr.Error())
+		return
+	}
+
+	utils.Ok(c)
 }
 
 func ServiceSwitchWebsocket(c *gin.Context) {
-	serviceId := c.Param("id")
+	serviceId := strings.TrimSpace(c.Param("id"))
 
-	var serviceSwitchWebsocketValidator = validators.ServiceSwitchWebsocket{}
-	if msg, err := packages.ParseRequestParams(c, &serviceSwitchWebsocketValidator); err != nil {
+	var bindParams = validators.ServiceSwitchWebsocket{}
+	if msg, err := packages.ParseRequestParams(c, &bindParams); err != nil {
 		utils.Error(c, msg)
 		return
 	}
 
+	checkServiceExistErr := services.CheckServiceExist(serviceId)
+	if checkServiceExistErr != nil {
+		utils.Error(c, checkServiceExistErr.Error())
+		return
+	}
+
+	checkServiceWebsocketChangeErr := services.CheckServiceWebsocketChange(serviceId, bindParams.WebSocket)
+	if checkServiceWebsocketChangeErr != nil {
+		utils.Error(c, checkServiceWebsocketChangeErr.Error())
+		return
+	}
+
 	serviceModel := &models.Services{}
-	serviceInfo := serviceModel.ServiceInfoById(serviceId)
-	if len(serviceInfo.ID) == 0 {
-		utils.Error(c, enums.CodeMessages(enums.ServiceNull))
-		return
-	}
-
-	if serviceSwitchWebsocketValidator.WebSocket == serviceInfo.WebSocket {
-		utils.Error(c, enums.CodeMessages(enums.SwitchNoChange))
-		return
-	}
-
-	updateErr := serviceModel.ServiceSwitchWebsocket(serviceId, serviceSwitchWebsocketValidator.WebSocket)
+	updateErr := serviceModel.ServiceSwitchWebsocket(serviceId, bindParams.WebSocket)
 	if updateErr != nil {
 		utils.Error(c, updateErr.Error())
 		return
@@ -246,27 +272,28 @@ func ServiceSwitchWebsocket(c *gin.Context) {
 }
 
 func ServiceSwitchHealthCheck(c *gin.Context) {
-	serviceId := c.Param("id")
+	serviceId := strings.TrimSpace(c.Param("id"))
 
-	var serviceSwitchHealthCheckValidator = validators.ServiceSwitchHealthCheck{}
-	if msg, err := packages.ParseRequestParams(c, &serviceSwitchHealthCheckValidator); err != nil {
+	var bindParams = validators.ServiceSwitchHealthCheck{}
+	if msg, err := packages.ParseRequestParams(c, &bindParams); err != nil {
 		utils.Error(c, msg)
 		return
 	}
 
+	checkServiceExistErr := services.CheckServiceExist(serviceId)
+	if checkServiceExistErr != nil {
+		utils.Error(c, checkServiceExistErr.Error())
+		return
+	}
+
+	checkServiceHealthCheckChangeErr := services.CheckServiceHealthCheckChange(serviceId, bindParams.HealthCheck)
+	if checkServiceHealthCheckChangeErr != nil {
+		utils.Error(c, checkServiceHealthCheckChangeErr.Error())
+		return
+	}
+
 	serviceModel := &models.Services{}
-	serviceInfo := serviceModel.ServiceInfoById(serviceId)
-	if len(serviceInfo.ID) == 0 {
-		utils.Error(c, enums.CodeMessages(enums.ServiceNull))
-		return
-	}
-
-	if serviceSwitchHealthCheckValidator.HealthCheck == serviceInfo.HealthCheck {
-		utils.Error(c, enums.CodeMessages(enums.SwitchNoChange))
-		return
-	}
-
-	updateErr := serviceModel.ServiceSwitchHealthCheck(serviceId, serviceSwitchHealthCheckValidator.HealthCheck)
+	updateErr := serviceModel.ServiceSwitchHealthCheck(serviceId, bindParams.HealthCheck)
 	if updateErr != nil {
 		utils.Error(c, updateErr.Error())
 		return
