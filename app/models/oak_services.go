@@ -20,8 +20,12 @@ type Services struct {
 	LoadBalance   int    `gorm:"column:load_balance"`   //Load balancing algorithm
 	Timeouts      string `gorm:"column:timeouts"`       //Time out
 	ModelTime
-	Domains []ServiceDomains `gorm:"foreignKey:ServiceID"`
-	Nodes   []ServiceNodes   `gorm:"foreignKey:ServiceID"`
+}
+
+type ServiceDomainNode struct {
+	Services
+	Domains []ServiceDomains `gorm:"foreignKey:ServiceID"` //domains
+	Nodes   []ServiceNodes   `gorm:"foreignKey:ServiceID"` //nodes(upstreams)
 }
 
 // TableName sets the insert table name for this struct type
@@ -285,28 +289,53 @@ func (s *Services) ServiceUpdate(
 	return tx.Commit().Error
 }
 
-func (s *Services) ServiceDomainNodeByIds(serviceIds []string) ([]Services, error) {
-	serviceInfos := make([]Services, 0)
+func (s *Services) ServiceDomainNodeById(serviceId string) (ServiceDomainNode, error) {
+	serviceDomainNode := ServiceDomainNode{}
 	err := errors.New(enums.CodeMessages(enums.ServiceParamsNull))
-	if len(serviceIds) == 0 {
-		return serviceInfos, err
+	if len(serviceId) == 0 {
+		return serviceDomainNode, err
 	}
 
 	packages.GetDb().
-		Table(s.TableName()).
-		Where("id IN ?", serviceIds).
+		Table(serviceDomainNode.TableName()).
+		Where("id = ?", serviceId).
 		Preload("Domains").
 		Preload("Nodes").
 		Order("updated_at desc").
-		Find(&serviceInfos)
+		First(&serviceDomainNode)
 
-	if len(serviceInfos) == 0 {
+	if serviceDomainNode.ID != serviceId {
 		err = errors.New(enums.CodeMessages(enums.ServiceNull))
 	} else {
 		err = nil
 	}
 
-	return serviceInfos, err
+	return serviceDomainNode, err
+}
+
+func (s *Services) ServiceDomainNodeByIds(serviceIds []string) ([]ServiceDomainNode, error) {
+	serviceDomainNode := ServiceDomainNode{}
+	serviceDomainNodes := make([]ServiceDomainNode, 0)
+	err := errors.New(enums.CodeMessages(enums.ServiceParamsNull))
+	if len(serviceIds) == 0 {
+		return serviceDomainNodes, err
+	}
+
+	packages.GetDb().
+		Table(serviceDomainNode.TableName()).
+		Where("id IN ?", serviceIds).
+		Preload("Domains").
+		Preload("Nodes").
+		Order("updated_at desc").
+		Find(&serviceDomainNodes)
+
+	if len(serviceDomainNodes) == 0 {
+		err = errors.New(enums.CodeMessages(enums.ServiceNull))
+	} else {
+		err = nil
+	}
+
+	return serviceDomainNodes, err
 }
 
 func (s *Services) ServiceDelete(id string) error {
@@ -389,9 +418,11 @@ func (s *Services) ServiceDelete(id string) error {
 
 func (s *Services) ServiceAllInfosListPage(
 	serviceIds []string,
-	param *validators.ServiceList) (list []Services, total int, listError error) {
+	param *validators.ServiceList) (list []ServiceDomainNode, total int, listError error) {
+	serviceDomainNode := ServiceDomainNode{}
+
 	tx := packages.GetDb().
-		Table(s.TableName())
+		Table(serviceDomainNode.TableName())
 
 	if len(serviceIds) != 0 {
 		tx = tx.Where("id IN ?", serviceIds)
@@ -470,7 +501,7 @@ func (s *Services) ServiceSwitchEnable(id string, enable int) error {
 		Table(s.TableName()).
 		Where("id = ?", id).
 		Updates(Services{
-			IsEnable: enable,
+			IsEnable:      enable,
 			ReleaseStatus: utils.ReleaseStatusT}).Error
 
 	if updateErr != nil {
@@ -490,7 +521,7 @@ func (s *Services) ServiceSwitchWebsocket(id string, webSocket int) error {
 		Table(s.TableName()).
 		Where("id = ?", id).
 		Updates(Services{
-			WebSocket: webSocket,
+			WebSocket:     webSocket,
 			ReleaseStatus: utils.ReleaseStatusT}).Error
 
 	if updateErr != nil {
@@ -510,7 +541,7 @@ func (s *Services) ServiceSwitchHealthCheck(id string, healthCheck int) error {
 		Table(s.TableName()).
 		Where("id = ?", id).
 		Updates(Services{
-			HealthCheck: healthCheck,
+			HealthCheck:   healthCheck,
 			ReleaseStatus: utils.ReleaseStatusT}).Error
 
 	if updateErr != nil {

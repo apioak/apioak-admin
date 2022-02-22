@@ -14,7 +14,7 @@ func InitGoroutineFunc() {
 func ClusterNodeWatch() {
 	etcdClient := packages.GetEtcdClient()
 	for true {
-		rch := etcdClient.Watch(context.Background(), utils.EtcdKeyWatchClusterNode)
+		rch := etcdClient.Watch(context.TODO(), utils.EtcdKeyWatchClusterNode)
 		for wresp := range rch {
 			for _, ev := range wresp.Events {
 

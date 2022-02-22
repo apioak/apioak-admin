@@ -35,6 +35,7 @@ type ConfigDatabase struct {
 
 type ConfigEtcd struct {
 	HostPort string `yaml:"host_port" mapstructure:"host_port"`
+	TimeOut  int64  `yaml:"time_out" mapstructure:"time_out"`
 }
 
 type ConfigToken struct {

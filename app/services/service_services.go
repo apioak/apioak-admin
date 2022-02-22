@@ -3,8 +3,10 @@ package services
 import (
 	"apioak-admin/app/enums"
 	"apioak-admin/app/models"
+	"apioak-admin/app/packages"
 	"apioak-admin/app/utils"
 	"apioak-admin/app/validators"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -539,22 +541,107 @@ func ServiceRelease(serviceId string) error {
 }
 
 func ServiceConfigRelease(releaseType string, serviceId string) error {
+	serviceConfig, serviceConfigErr := generateServicesConfig(serviceId)
+	if serviceConfigErr != nil {
+		return serviceConfigErr
+	}
 
-	// @todo 获取指定服务的配置数据
-	//serviceConfig := generateServicesConfig(serviceId)
+	serviceConfigJson, serviceConfigJsonErr := json.Marshal(serviceConfig)
+	if serviceConfigJsonErr != nil {
+		return serviceConfigJsonErr
+	}
+	serviceConfigStr := string(serviceConfigJson)
 
-	// @todo 获取数据注册中心对应 服务配置 的key
+	etcdServiceKey := utils.EtcdKey(utils.EtcdKeyTypeService, serviceId)
+	if len(etcdServiceKey) == 0 {
+		return errors.New(enums.CodeMessages(enums.EtcdKeyNull))
+	}
 
-	fmt.Println("=========service release:", releaseType, serviceId)
+	etcdClient := packages.GetEtcdClient()
 
-	// @todo 发布配置到 数据注册中心
+	var respErr error
+	if strings.ToLower(releaseType) == utils.ReleaseTypePush {
+		_, respErr = etcdClient.Put(context.TODO(), etcdServiceKey, serviceConfigStr)
+	} else if strings.ToLower(releaseType) == utils.ReleaseTypePush {
+		_, respErr = etcdClient.Delete(context.TODO(), etcdServiceKey)
+	}
+
+	if respErr != nil {
+		return respErr
+	}
 
 	return nil
 }
 
-func generateServicesConfig(serviceId string) string {
+type ServiceUpstreamConfig struct {
+	IPType int    `json:"ip_type"`
+	IP     string `json:"ip"`
+	Port   int    `json:"port"`
+	Weight int    `json:"weight"`
+}
 
-	// @todo 根据服务ID 拼接服务的配置数据（主要是用于同步到数据面使用）
+type ServiceTimeOutConfig struct {
+	ConnectionTimeout int `json:"connection_timeout"`
+	ReadTimeout       int `json:"read_timeout"`
+	SendTimeout       int `json:"send_timeout"`
+}
 
-	return ""
+type ServiceConfig struct {
+	ID          string                  `json:"id"`
+	Protocol    int                     `json:"protocol"`
+	HealthCheck int                     `json:"health_check"`
+	WebSocket   int                     `json:"web_socket"`
+	IsEnable    int                     `json:"is_enable"`
+	LoadBalance int                     `json:"load_balance"`
+	TimeOut     ServiceTimeOutConfig    `json:"time_out"`
+	Domains     []string                `json:"domains"`
+	Upstreams   []ServiceUpstreamConfig `json:"upstreams"`
+}
+
+func generateServicesConfig(serviceId string) (ServiceConfig, error) {
+	serviceConfig := ServiceConfig{}
+	serviceMode := models.Services{}
+	serviceInfo, serviceInfoErr := serviceMode.ServiceDomainNodeById(serviceId)
+	if serviceInfoErr != nil {
+		return serviceConfig, serviceInfoErr
+	}
+
+	serviceTimeOutConfig := ServiceTimeOutConfig{}
+	timeOutInfoErr := json.Unmarshal([]byte(serviceInfo.Timeouts), &serviceTimeOutConfig)
+	if timeOutInfoErr != nil {
+		return serviceConfig, timeOutInfoErr
+	}
+
+	domains := make([]string, 0)
+	if len(serviceInfo.Domains) != 0 {
+		for _, domain := range serviceInfo.Domains {
+			domains = append(domains, domain.Domain)
+		}
+	}
+
+	upstreams := make([]ServiceUpstreamConfig, 0)
+	if len(serviceInfo.Nodes) != 0 {
+		for _, nodeInfo := range serviceInfo.Nodes {
+			serviceUpstreamConfig := ServiceUpstreamConfig{
+				IPType: nodeInfo.IPType,
+				IP:     nodeInfo.NodeIP,
+				Port:   nodeInfo.NodePort,
+				Weight: nodeInfo.NodeWeight,
+			}
+
+			upstreams = append(upstreams, serviceUpstreamConfig)
+		}
+	}
+
+	serviceConfig.ID = serviceInfo.ID
+	serviceConfig.Protocol = serviceInfo.Protocol
+	serviceConfig.HealthCheck = serviceInfo.HealthCheck
+	serviceConfig.WebSocket = serviceInfo.WebSocket
+	serviceConfig.IsEnable = serviceInfo.IsEnable
+	serviceConfig.LoadBalance = serviceInfo.LoadBalance
+	serviceConfig.TimeOut = serviceTimeOutConfig
+	serviceConfig.Domains = domains
+	serviceConfig.Upstreams = upstreams
+
+	return serviceConfig, nil
 }

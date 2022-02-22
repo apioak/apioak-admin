@@ -254,3 +254,24 @@ func InterceptSni(domains []string) ([]string, error) {
 
 	return domainSniInfos, nil
 }
+
+func EtcdKey(keyType string, id string) string {
+	key := ""
+	if (len(keyType) == 0) || (len(id) == 0) {
+		return key
+	}
+
+	prefix := "/apioak/"
+	switch strings.ToLower(keyType) {
+	case EtcdKeyTypeService:
+		key = prefix + EtcdKeyTypeService + "/" + id
+	case EtcdKeyTypeRoute:
+		key = prefix + EtcdKeyTypeRoute + "/" + id
+	case EtcdKeyTypePlugin:
+		key = prefix + EtcdKeyTypePlugin + "/" + id
+	case EtcdKeyTypeCertificate:
+		key = prefix + EtcdKeyTypeCertificate + "/" + id
+	}
+
+	return key
+}

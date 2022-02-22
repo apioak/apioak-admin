@@ -60,6 +60,8 @@ const (
 	UserNoLoggingIn     = 10606 // 用户未登录
 	UserLoggingInError  = 10607 // 用户登录失败
 	UserLoggingInExpire = 10608 // 用户登录已过期
+
+	EtcdKeyNull = 10701 // ETCD的key不能为空
 )
 
 var ZhMapMessages = map[int]string{
@@ -112,6 +114,8 @@ var ZhMapMessages = map[int]string{
 	UserNoLoggingIn:     "用户未登录",
 	UserLoggingInError:  "用户登录失败",
 	UserLoggingInExpire: "用户登录已过期",
+
+	EtcdKeyNull: "ETCD的key不能为空",
 }
 
 var EnMapMessages = map[int]string{
@@ -164,6 +168,8 @@ var EnMapMessages = map[int]string{
 	UserNoLoggingIn:     "User is not logged in",
 	UserLoggingInError:  "User login failed",
 	UserLoggingInExpire: "User login has expired",
+
+	EtcdKeyNull: "The key of ETCD cannot be empty",
 }
 
 func CodeMessages(code int) string {
