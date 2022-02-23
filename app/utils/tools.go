@@ -149,6 +149,16 @@ func AllRequestMethod() []string {
 	}
 }
 
+func ConfigAllRequestMethod() []string {
+	return []string{
+		RequestMethodGET,
+		RequestMethodPOST,
+		RequestMethodPUT,
+		RequestMethodDELETE,
+		RequestMethodOPTIONS,
+	}
+}
+
 func Md5(src string) string {
 	m := md5.New()
 	m.Write([]byte(src))
@@ -240,7 +250,8 @@ func InterceptSni(domains []string) ([]string, error) {
 			return domainSniInfos, errors.New(enums.CodeMessages(enums.ServiceDomainFormatError))
 		}
 
-		domainSniInfo := "." + disassembleDomains[len(disassembleDomains)-2] + "." + disassembleDomains[len(disassembleDomains)-1]
+		disassembleDomains[0] = "*"
+		domainSniInfo := strings.Join(disassembleDomains, ".")
 
 		_, exit := tmpDomainSniMap[domainSniInfo]
 		if exit {
@@ -252,4 +263,25 @@ func InterceptSni(domains []string) ([]string, error) {
 	}
 
 	return domainSniInfos, nil
+}
+
+func EtcdKey(keyType string, id string) string {
+	key := ""
+	if (len(keyType) == 0) || (len(id) == 0) {
+		return key
+	}
+
+	prefix := "/apioak/"
+	switch strings.ToLower(keyType) {
+	case EtcdKeyTypeService:
+		key = prefix + EtcdKeyTypeService + "/" + id
+	case EtcdKeyTypeRoute:
+		key = prefix + EtcdKeyTypeRoute + "/" + id
+	case EtcdKeyTypePlugin:
+		key = prefix + EtcdKeyTypePlugin + "/" + id
+	case EtcdKeyTypeCertificate:
+		key = prefix + EtcdKeyTypeCertificate + "/" + id
+	}
+
+	return key
 }

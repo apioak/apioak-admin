@@ -48,6 +48,8 @@ const (
 	CertificateExist       = 10403 // 证书已存在
 	CertificateNull        = 10404 // 证书不存在
 	CertificateDomainExist = 10405 // 证书已被域名绑定，暂不支持该操作
+	CertificateNoRelease   = 10406 // [%s]证书未发布
+	CertificateEnableOff   = 10407 // [%s]证书未开启
 
 	ClusterNodeNull = 10501 // 节点不存在
 
@@ -58,6 +60,8 @@ const (
 	UserNoLoggingIn     = 10606 // 用户未登录
 	UserLoggingInError  = 10607 // 用户登录失败
 	UserLoggingInExpire = 10608 // 用户登录已过期
+
+	EtcdKeyNull = 10701 // ETCD的key不能为空
 )
 
 var ZhMapMessages = map[int]string{
@@ -98,6 +102,8 @@ var ZhMapMessages = map[int]string{
 	CertificateExist:       "证书已存在",
 	CertificateNull:        "证书不存在",
 	CertificateDomainExist: "证书已被域名绑定，暂不允许该操作",
+	CertificateNoRelease:   "[%s]证书未发布",
+	CertificateEnableOff:   "[%s]证书未开启",
 
 	ClusterNodeNull: "节点不存在",
 
@@ -108,6 +114,8 @@ var ZhMapMessages = map[int]string{
 	UserNoLoggingIn:     "用户未登录",
 	UserLoggingInError:  "用户登录失败",
 	UserLoggingInExpire: "用户登录已过期",
+
+	EtcdKeyNull: "ETCD的key不能为空",
 }
 
 var EnMapMessages = map[int]string{
@@ -148,6 +156,8 @@ var EnMapMessages = map[int]string{
 	CertificateExist:       "Certificate already exists",
 	CertificateNull:        "Certificate does not exist",
 	CertificateDomainExist: "The certificate has been bound by the domain name, operation is not allowed",
+	CertificateNoRelease:   "[%s]Certificate not release",
+	CertificateEnableOff:   "[%s]Certificate not enabled",
 
 	ClusterNodeNull: "Node does not exist",
 
@@ -158,6 +168,8 @@ var EnMapMessages = map[int]string{
 	UserNoLoggingIn:     "User is not logged in",
 	UserLoggingInError:  "User login failed",
 	UserLoggingInExpire: "User login has expired",
+
+	EtcdKeyNull: "The key of ETCD cannot be empty",
 }
 
 func CodeMessages(code int) string {

@@ -12,6 +12,11 @@ const (
 	IdTypeCertificate   = "cer"
 	IdTypeClusterNode   = "cnd"
 
+	EtcdKeyTypeService     = "service"
+	EtcdKeyTypeRoute       = "route"
+	EtcdKeyTypePlugin      = "plugin"
+	EtcdKeyTypeCertificate = "certificate"
+
 	IdLength           = 15
 	IdGenerateMaxTimes = 5
 
@@ -61,6 +66,7 @@ const (
 	DefaultRoutePath = "/*"
 
 	RequestMethodALL     = "ALL"
+
 	RequestMethodGET     = "GET"
 	RequestMethodPOST    = "POST"
 	RequestMethodPUT     = "PUT"

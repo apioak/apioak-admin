@@ -3,12 +3,14 @@ package services
 import (
 	"apioak-admin/app/enums"
 	"apioak-admin/app/models"
+	"apioak-admin/app/packages"
 	"apioak-admin/app/services/plugins"
 	"apioak-admin/app/utils"
 	"apioak-admin/app/validators"
+	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
+	"strings"
 )
 
 func CheckRoutePluginExist(id string, routeId string, pluginId string) error {
@@ -163,22 +165,67 @@ func RoutePluginRelease(id string) error {
 }
 
 func ServiceRoutePluginConfigRelease(releaseType string, id string) error {
+	routePluginConfig, routePluginConfigErr := generateRoutePluginConfig(id)
+	if routePluginConfigErr != nil {
+		return routePluginConfigErr
+	}
 
-	// @todo 获取指定服务路由插件的配置数据
-	//serviceRouteConfig := generateServicesRoutePluginConfig(serviceId)
+	routePluginConfigJson, routePluginConfigJsonErr := json.Marshal(routePluginConfig)
+	if routePluginConfigJsonErr != nil {
+		return routePluginConfigJsonErr
+	}
+	routePluginConfigStr := string(routePluginConfigJson)
 
-	// @todo 获取数据注册中心对应 服务配置 的key
+	etcdKey := utils.EtcdKey(utils.EtcdKeyTypePlugin, id)
+	if len(etcdKey) == 0 {
+		return errors.New(enums.CodeMessages(enums.EtcdKeyNull))
+	}
 
-	fmt.Println("=========service route plugin release:", releaseType, id)
+	etcdClient := packages.GetEtcdClient()
 
-	// @todo 发布配置到 数据注册中心
+	var respErr error
+	if strings.ToLower(releaseType) == utils.ReleaseTypePush {
+		_, respErr = etcdClient.Put(context.Background(), etcdKey, routePluginConfigStr)
+	} else if strings.ToLower(releaseType) == utils.ReleaseTypePush {
+		_, respErr = etcdClient.Delete(context.Background(), etcdKey)
+	}
+
+	if respErr != nil {
+		return respErr
+	}
 
 	return nil
 }
 
-func generateServicesRoutePluginConfig(id string) string {
+type RoutePluginConfig struct {
+	ID        string `json:"id"`
+	RouteID   string `json:"route_id"`
+	PluginTag string `json:"plugin_tag"`
+	Order     int    `json:"order"`
+	IsEnable  int    `json:"is_enable"`
+	Config    string `json:"config"`
+}
 
-	// @todo 根据服务ID 拼接服务的配置数据（主要是用于同步到数据面使用）
+func generateRoutePluginConfig(id string) (RoutePluginConfig, error) {
+	routePluginConfig := RoutePluginConfig{}
+	routePluginModel := models.RoutePlugins{}
+	routePluginInfo := routePluginModel.RoutePluginInfoById(id, "", "")
+	if len(routePluginInfo.ID) == 0 {
+		return routePluginConfig, errors.New(enums.CodeMessages(enums.RoutePluginNull))
+	}
 
-	return ""
+	pluginModel := models.Plugins{}
+	pluginInfo := pluginModel.PluginInfoById(routePluginInfo.PluginID)
+	if len(pluginInfo.ID) == 0 {
+		return routePluginConfig, errors.New(enums.CodeMessages(enums.PluginNull))
+	}
+
+	routePluginConfig.ID = routePluginInfo.ID
+	routePluginConfig.RouteID = routePluginInfo.RouteID
+	routePluginConfig.PluginTag = pluginInfo.Tag
+	routePluginConfig.Order = routePluginInfo.Order
+	routePluginConfig.IsEnable = routePluginInfo.IsEnable
+	routePluginConfig.Config = routePluginInfo.Config
+
+	return routePluginConfig, nil
 }

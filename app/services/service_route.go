@@ -3,8 +3,11 @@ package services
 import (
 	"apioak-admin/app/enums"
 	"apioak-admin/app/models"
+	"apioak-admin/app/packages"
 	"apioak-admin/app/utils"
 	"apioak-admin/app/validators"
+	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -354,24 +357,77 @@ func ServiceRouteRelease(id string) error {
 }
 
 func ServiceRouteConfigRelease(releaseType string, id string) error {
+	routeConfig, routeConfigErr := generateRouteConfig(id)
+	if routeConfigErr != nil {
+		return routeConfigErr
+	}
 
-	// @todo 获取指定服务路由的配置数据
-	//serviceRouteConfig := generateServicesRouteConfig(serviceId)
+	routeConfigJson, routeConfigJsonErr := json.Marshal(routeConfig)
+	if routeConfigJsonErr != nil {
+		return routeConfigJsonErr
+	}
+	routeConfigStr := string(routeConfigJson)
 
-	// @todo 获取数据注册中心对应 服务配置 的key
+	etcdKey := utils.EtcdKey(utils.EtcdKeyTypeRoute, id)
+	if len(etcdKey) == 0 {
+		return errors.New(enums.CodeMessages(enums.EtcdKeyNull))
+	}
 
-	fmt.Println("=========service route release:", releaseType, id)
+	etcdClient := packages.GetEtcdClient()
 
-	// @todo 发布配置到 数据注册中心
+	var respErr error
+	if strings.ToLower(releaseType) == utils.ReleaseTypePush {
+		_, respErr = etcdClient.Put(context.Background(), etcdKey, routeConfigStr)
+	} else if strings.ToLower(releaseType) == utils.ReleaseTypePush {
+		_, respErr = etcdClient.Delete(context.Background(), etcdKey)
+	}
+
+	if respErr != nil {
+		return respErr
+	}
 
 	return nil
 }
 
-func generateServicesRouteConfig(id string) string {
+type RouteConfig struct {
+	ID        string   `json:"id"`
+	ServiceID string   `json:"service_id"`
+	Path      string   `json:"path"`
+	IsEnable  int      `json:"is_enable"`
+	Methods   []string `json:"methods"`
+}
 
-	// @todo 根据服务ID 拼接服务的配置数据（主要是用于同步到数据面使用）
+func generateRouteConfig(id string) (RouteConfig, error) {
+	routeConfig := RouteConfig{}
+	routeModel := models.Routes{}
+	routeInfo, routeInfoErr := routeModel.RouteInfosById(id)
+	if routeInfoErr != nil {
+		return routeConfig, routeInfoErr
+	}
 
-	return ""
+	methods := strings.Split(routeInfo.RequestMethods, ",")
+
+	var allMethod bool
+	if len(methods) != 0 {
+		for _, method := range methods {
+			if method == utils.RequestMethodALL {
+				allMethod = true
+				break
+			}
+		}
+	}
+
+	if allMethod == true {
+		methods = utils.ConfigAllRequestMethod()
+	}
+
+	routeConfig.ID = routeInfo.ID
+	routeConfig.ServiceID = routeInfo.ServiceID
+	routeConfig.Path = routeInfo.RoutePath
+	routeConfig.IsEnable = routeInfo.IsEnable
+	routeConfig.Methods = methods
+
+	return routeConfig, nil
 }
 
 type RouteAddPluginInfo struct {

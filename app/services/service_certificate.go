@@ -3,11 +3,12 @@ package services
 import (
 	"apioak-admin/app/enums"
 	"apioak-admin/app/models"
+	"apioak-admin/app/packages"
 	"apioak-admin/app/utils"
 	"apioak-admin/app/validators"
+	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"strings"
 )
 
@@ -327,22 +328,59 @@ func CertificateRelease(id string) error {
 }
 
 func CertificateConfigRelease(releaseType string, certificateId string) error {
+	certificateConfig, certificateConfigErr := generateCertificateConfig(certificateId)
+	if certificateConfigErr != nil {
+		return certificateConfigErr
+	}
 
-	// @todo 获取指定服务的配置数据
-	//certificateConfig := generateCertificateConfig(certificateId)
+	certificateConfigJson, certificateConfigJsonErr := json.Marshal(certificateConfig)
+	if certificateConfigJsonErr != nil {
+		return certificateConfigJsonErr
+	}
+	certificateConfigStr := string(certificateConfigJson)
 
-	// @todo 获取数据注册中心对应 服务配置 的key
+	etcdKey := utils.EtcdKey(utils.EtcdKeyTypeCertificate, certificateId)
+	if len(etcdKey) == 0 {
+		return errors.New(enums.CodeMessages(enums.EtcdKeyNull))
+	}
 
-	fmt.Println("=========certificate release:", releaseType, certificateId)
+	etcdClient := packages.GetEtcdClient()
 
-	// @todo 发布配置到 数据注册中心
+	var respErr error
+	if strings.ToLower(releaseType) == utils.ReleaseTypePush {
+		_, respErr = etcdClient.Put(context.Background(), etcdKey, certificateConfigStr)
+	} else if strings.ToLower(releaseType) == utils.ReleaseTypePush {
+		_, respErr = etcdClient.Delete(context.Background(), etcdKey)
+	}
+
+	if respErr != nil {
+		return respErr
+	}
 
 	return nil
 }
 
-func generateCertificateConfig(serviceId string) string {
+type CertificateConfig struct {
+	ID       string `json:"id"`
+	Sni      string `json:"sni"`
+	IsEnable int    `json:"is_enable"`
+	Pem      string `json:"pem"`
+	Key      string `json:"key"`
+}
 
-	// @todo 根据服务ID 拼接服务的配置数据（主要是用于同步到数据面使用）
+func generateCertificateConfig(id string) (CertificateConfig, error) {
+	certificateConfig := CertificateConfig{}
+	certificateModel := models.Certificates{}
+	certificateInfo := certificateModel.CertificateInfoById(id)
+	if len(certificateInfo.ID) == 0 {
+		return certificateConfig, errors.New(enums.CodeMessages(enums.CertificateNull))
+	}
 
-	return ""
+	certificateConfig.ID = certificateInfo.ID
+	certificateConfig.Sni = certificateInfo.Sni
+	certificateConfig.IsEnable = certificateInfo.IsEnable
+	certificateConfig.Pem = certificateInfo.Certificate
+	certificateConfig.Key = certificateInfo.PrivateKey
+
+	return certificateConfig, nil
 }

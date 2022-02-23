@@ -3,8 +3,10 @@ package services
 import (
 	"apioak-admin/app/enums"
 	"apioak-admin/app/models"
+	"apioak-admin/app/packages"
 	"apioak-admin/app/utils"
 	"apioak-admin/app/validators"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -69,6 +71,72 @@ func CheckServiceRelease(serviceId string) error {
 
 	if serviceInfo.ReleaseStatus == utils.ReleaseStatusY {
 		return errors.New(enums.CodeMessages(enums.SwitchPublished))
+	}
+
+	if (serviceInfo.Protocol == utils.ProtocolHTTPS) || (serviceInfo.Protocol == utils.ProtocolHTTPAndHTTPS) {
+		serviceDomainModel := models.ServiceDomains{}
+		serviceDomainInfos, serviceDomainInfosErr := serviceDomainModel.DomainInfosByServiceIds([]string{serviceId})
+		if serviceDomainInfosErr != nil {
+			return serviceDomainInfosErr
+		}
+		if len(serviceDomainInfos) == 0 {
+			return nil
+		}
+
+		serviceDomains := make([]string, 0)
+		for _, serviceDomainInfo := range serviceDomainInfos {
+			serviceDomains = append(serviceDomains, serviceDomainInfo.Domain)
+		}
+
+		domainSnis, domainSnisErr := utils.InterceptSni(serviceDomains)
+		if domainSnisErr != nil {
+			return domainSnisErr
+		}
+
+		certificatesModel := models.Certificates{}
+		domainCertificateInfos := certificatesModel.CertificateInfoByDomainSniInfos(domainSnis)
+
+		if len(domainCertificateInfos) < len(domainSnis) {
+
+			domainCertificatesMap := make(map[string]byte, 0)
+			for _, domainCertificateInfo := range domainCertificateInfos {
+				domainCertificatesMap[domainCertificateInfo.Sni] = 0
+			}
+
+			noCertificateDomains := make([]string, 0)
+			for _, serviceDomainInfo := range serviceDomainInfos {
+				disassembleDomains := strings.Split(serviceDomainInfo.Domain, ".")
+				disassembleDomains[0] = "*"
+				domainSni := strings.Join(disassembleDomains, ".")
+				_, ok := domainCertificatesMap[domainSni]
+				if ok == false {
+					noCertificateDomains = append(noCertificateDomains, serviceDomainInfo.Domain)
+				}
+			}
+
+			if len(noCertificateDomains) != 0 {
+				return fmt.Errorf(fmt.Sprintf(enums.CodeMessages(enums.ServiceDomainSslNull), strings.Join(noCertificateDomains, ",")))
+			}
+		}
+
+		noReleaseCertificates := make([]string, 0)
+		noEnableCertificates := make([]string, 0)
+		for _, domainCertificateInfo := range domainCertificateInfos {
+			if domainCertificateInfo.ReleaseStatus != utils.ReleaseStatusY {
+				noReleaseCertificates = append(noReleaseCertificates, domainCertificateInfo.Sni)
+			}
+			if domainCertificateInfo.IsEnable != utils.EnableOn {
+				noEnableCertificates = append(noEnableCertificates, domainCertificateInfo.Sni)
+			}
+		}
+
+		if len(noReleaseCertificates) != 0 {
+			return fmt.Errorf(fmt.Sprintf(enums.CodeMessages(enums.CertificateNoRelease), strings.Join(noReleaseCertificates, ",")))
+		}
+
+		if len(noEnableCertificates) != 0 {
+			return fmt.Errorf(fmt.Sprintf(enums.CodeMessages(enums.CertificateEnableOff), strings.Join(noEnableCertificates, ",")))
+		}
 	}
 
 	return nil
@@ -473,22 +541,114 @@ func ServiceRelease(serviceId string) error {
 }
 
 func ServiceConfigRelease(releaseType string, serviceId string) error {
+	serviceConfig, serviceConfigErr := generateServicesConfig(serviceId)
+	if serviceConfigErr != nil {
+		return serviceConfigErr
+	}
 
-	// @todo 获取指定服务的配置数据
-	//serviceConfig := generateServicesConfig(serviceId)
+	serviceConfigJson, serviceConfigJsonErr := json.Marshal(serviceConfig)
+	if serviceConfigJsonErr != nil {
+		return serviceConfigJsonErr
+	}
+	serviceConfigStr := string(serviceConfigJson)
 
-	// @todo 获取数据注册中心对应 服务配置 的key
+	etcdKey := utils.EtcdKey(utils.EtcdKeyTypeService, serviceId)
+	if len(etcdKey) == 0 {
+		return errors.New(enums.CodeMessages(enums.EtcdKeyNull))
+	}
 
-	fmt.Println("=========service release:", releaseType, serviceId)
+	etcdClient := packages.GetEtcdClient()
 
-	// @todo 发布配置到 数据注册中心
+	var respErr error
+	if strings.ToLower(releaseType) == utils.ReleaseTypePush {
+		_, respErr = etcdClient.Put(context.Background(), etcdKey, serviceConfigStr)
+	} else if strings.ToLower(releaseType) == utils.ReleaseTypePush {
+		_, respErr = etcdClient.Delete(context.Background(), etcdKey)
+	}
+
+	if respErr != nil {
+		return respErr
+	}
 
 	return nil
 }
 
-func generateServicesConfig(serviceId string) string {
+type ServiceUpstreamConfig struct {
+	IPType int    `json:"ip_type"`
+	IP     string `json:"ip"`
+	Port   int    `json:"port"`
+	Weight int    `json:"weight"`
+}
 
-	// @todo 根据服务ID 拼接服务的配置数据（主要是用于同步到数据面使用）
+type ServiceTimeOutConfig struct {
+	ConnectionTimeout int `json:"connection_timeout"`
+	ReadTimeout       int `json:"read_timeout"`
+	SendTimeout       int `json:"send_timeout"`
+}
 
-	return ""
+type ServiceConfig struct {
+	ID          string                  `json:"id"`
+	Protocol    int                     `json:"protocol"`
+	HealthCheck int                     `json:"health_check"`
+	WebSocket   int                     `json:"web_socket"`
+	IsEnable    int                     `json:"is_enable"`
+	LoadBalance int                     `json:"load_balance"`
+	TimeOut     ServiceTimeOutConfig    `json:"time_out"`
+	Domains     []string                `json:"domains"`
+	DomainSnis  map[string]string       `json:"domain_snis"`
+	Upstreams   []ServiceUpstreamConfig `json:"upstreams"`
+}
+
+func generateServicesConfig(id string) (ServiceConfig, error) {
+	serviceConfig := ServiceConfig{}
+	serviceModel := models.Services{}
+	serviceInfo, serviceInfoErr := serviceModel.ServiceDomainNodeById(id)
+	if serviceInfoErr != nil {
+		return serviceConfig, serviceInfoErr
+	}
+
+	serviceTimeOutConfig := ServiceTimeOutConfig{}
+	timeOutInfoErr := json.Unmarshal([]byte(serviceInfo.Timeouts), &serviceTimeOutConfig)
+	if timeOutInfoErr != nil {
+		return serviceConfig, timeOutInfoErr
+	}
+
+	domains := make([]string, 0)
+	domainSnis := make(map[string]string, 0)
+	if len(serviceInfo.Domains) != 0 {
+		for _, domain := range serviceInfo.Domains {
+			domains = append(domains, domain.Domain)
+			disassembleDomains := strings.Split(domain.Domain, ".")
+			disassembleDomains[0] = "*"
+			domainSniInfo := strings.Join(disassembleDomains, ".")
+			domainSnis[domain.Domain] = domainSniInfo
+		}
+	}
+
+	upstreams := make([]ServiceUpstreamConfig, 0)
+	if len(serviceInfo.Nodes) != 0 {
+		for _, nodeInfo := range serviceInfo.Nodes {
+			serviceUpstreamConfig := ServiceUpstreamConfig{
+				IPType: nodeInfo.IPType,
+				IP:     nodeInfo.NodeIP,
+				Port:   nodeInfo.NodePort,
+				Weight: nodeInfo.NodeWeight,
+			}
+
+			upstreams = append(upstreams, serviceUpstreamConfig)
+		}
+	}
+
+	serviceConfig.ID = serviceInfo.ID
+	serviceConfig.Protocol = serviceInfo.Protocol
+	serviceConfig.HealthCheck = serviceInfo.HealthCheck
+	serviceConfig.WebSocket = serviceInfo.WebSocket
+	serviceConfig.IsEnable = serviceInfo.IsEnable
+	serviceConfig.LoadBalance = serviceInfo.LoadBalance
+	serviceConfig.TimeOut = serviceTimeOutConfig
+	serviceConfig.Domains = domains
+	serviceConfig.DomainSnis = domainSnis
+	serviceConfig.Upstreams = upstreams
+
+	return serviceConfig, nil
 }
