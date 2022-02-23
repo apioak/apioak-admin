@@ -66,6 +66,7 @@ const (
 	DefaultRoutePath = "/*"
 
 	RequestMethodALL     = "ALL"
+
 	RequestMethodGET     = "GET"
 	RequestMethodPOST    = "POST"
 	RequestMethodPUT     = "PUT"

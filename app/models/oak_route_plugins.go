@@ -174,7 +174,7 @@ func (r *RoutePlugins) RoutePluginSwitchRelease(id string, release int) error {
 	updateErr := packages.GetDb().
 		Table(r.TableName()).
 		Where("id = ?", id).
-		Update("is_release", release).Error
+		Update("release_status", release).Error
 
 	if updateErr != nil {
 		return updateErr

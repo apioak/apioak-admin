@@ -149,6 +149,16 @@ func AllRequestMethod() []string {
 	}
 }
 
+func ConfigAllRequestMethod() []string {
+	return []string{
+		RequestMethodGET,
+		RequestMethodPOST,
+		RequestMethodPUT,
+		RequestMethodDELETE,
+		RequestMethodOPTIONS,
+	}
+}
+
 func Md5(src string) string {
 	m := md5.New()
 	m.Write([]byte(src))

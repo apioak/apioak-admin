@@ -552,8 +552,8 @@ func ServiceConfigRelease(releaseType string, serviceId string) error {
 	}
 	serviceConfigStr := string(serviceConfigJson)
 
-	etcdServiceKey := utils.EtcdKey(utils.EtcdKeyTypeService, serviceId)
-	if len(etcdServiceKey) == 0 {
+	etcdKey := utils.EtcdKey(utils.EtcdKeyTypeService, serviceId)
+	if len(etcdKey) == 0 {
 		return errors.New(enums.CodeMessages(enums.EtcdKeyNull))
 	}
 
@@ -561,9 +561,9 @@ func ServiceConfigRelease(releaseType string, serviceId string) error {
 
 	var respErr error
 	if strings.ToLower(releaseType) == utils.ReleaseTypePush {
-		_, respErr = etcdClient.Put(context.TODO(), etcdServiceKey, serviceConfigStr)
+		_, respErr = etcdClient.Put(context.Background(), etcdKey, serviceConfigStr)
 	} else if strings.ToLower(releaseType) == utils.ReleaseTypePush {
-		_, respErr = etcdClient.Delete(context.TODO(), etcdServiceKey)
+		_, respErr = etcdClient.Delete(context.Background(), etcdKey)
 	}
 
 	if respErr != nil {
@@ -595,13 +595,14 @@ type ServiceConfig struct {
 	LoadBalance int                     `json:"load_balance"`
 	TimeOut     ServiceTimeOutConfig    `json:"time_out"`
 	Domains     []string                `json:"domains"`
+	DomainSnis  map[string]string       `json:"domain_snis"`
 	Upstreams   []ServiceUpstreamConfig `json:"upstreams"`
 }
 
-func generateServicesConfig(serviceId string) (ServiceConfig, error) {
+func generateServicesConfig(id string) (ServiceConfig, error) {
 	serviceConfig := ServiceConfig{}
-	serviceMode := models.Services{}
-	serviceInfo, serviceInfoErr := serviceMode.ServiceDomainNodeById(serviceId)
+	serviceModel := models.Services{}
+	serviceInfo, serviceInfoErr := serviceModel.ServiceDomainNodeById(id)
 	if serviceInfoErr != nil {
 		return serviceConfig, serviceInfoErr
 	}
@@ -613,9 +614,14 @@ func generateServicesConfig(serviceId string) (ServiceConfig, error) {
 	}
 
 	domains := make([]string, 0)
+	domainSnis := make(map[string]string, 0)
 	if len(serviceInfo.Domains) != 0 {
 		for _, domain := range serviceInfo.Domains {
 			domains = append(domains, domain.Domain)
+			disassembleDomains := strings.Split(domain.Domain, ".")
+			disassembleDomains[0] = "*"
+			domainSniInfo := strings.Join(disassembleDomains, ".")
+			domainSnis[domain.Domain] = domainSniInfo
 		}
 	}
 
@@ -641,6 +647,7 @@ func generateServicesConfig(serviceId string) (ServiceConfig, error) {
 	serviceConfig.LoadBalance = serviceInfo.LoadBalance
 	serviceConfig.TimeOut = serviceTimeOutConfig
 	serviceConfig.Domains = domains
+	serviceConfig.DomainSnis = domainSnis
 	serviceConfig.Upstreams = upstreams
 
 	return serviceConfig, nil
