@@ -112,18 +112,6 @@ func decodeCertificateData(certificateContent string) (string, error) {
 }
 
 func CertificateAdd(certificateData *validators.CertificateAddUpdate) error {
-	certificateContent, certificateContentErr := decodeCertificateData(certificateData.Certificate)
-	if certificateContentErr != nil {
-		return certificateContentErr
-	}
-	certificateData.Certificate = certificateContent
-
-	privateKeyContent, privateKeyContentErr := decodeCertificateData(certificateData.PrivateKey)
-	if privateKeyContentErr != nil {
-		return privateKeyContentErr
-	}
-	certificateData.PrivateKey = privateKeyContent
-
 	certificateInfo, certificateInfoErr := utils.DiscernCertificate(&certificateData.Certificate)
 	if certificateInfoErr != nil {
 		return certificateInfoErr
@@ -135,8 +123,8 @@ func CertificateAdd(certificateData *validators.CertificateAddUpdate) error {
 	}
 
 	certificatesModel := models.Certificates{
-		Certificate:   certificateContent,
-		PrivateKey:    privateKeyContent,
+		Certificate:   certificateData.Certificate,
+		PrivateKey:    certificateData.PrivateKey,
 		ExpiredAt:     certificateInfo.NotAfter,
 		IsEnable:      certificateData.IsEnable,
 		ReleaseStatus: utils.ReleaseStatusU,
@@ -167,18 +155,6 @@ func CertificateAdd(certificateData *validators.CertificateAddUpdate) error {
 }
 
 func CertificateUpdate(id string, certificateData *validators.CertificateAddUpdate) error {
-	certificateContent, certificateContentErr := decodeCertificateData(certificateData.Certificate)
-	if certificateContentErr != nil {
-		return certificateContentErr
-	}
-	certificateData.Certificate = certificateContent
-
-	privateKeyContent, privateKeyContentErr := decodeCertificateData(certificateData.PrivateKey)
-	if privateKeyContentErr != nil {
-		return privateKeyContentErr
-	}
-	certificateData.PrivateKey = privateKeyContent
-
 	certificateInfo, certificateInfoErr := utils.DiscernCertificate(&certificateData.Certificate)
 	if certificateInfoErr != nil {
 		return certificateInfoErr
@@ -199,8 +175,8 @@ func CertificateUpdate(id string, certificateData *validators.CertificateAddUpda
 		return checkCertificateExistErr
 	}
 
-	certificatesModel.Certificate = certificateContent
-	certificatesModel.PrivateKey = privateKeyContent
+	certificatesModel.Certificate = certificateData.Certificate
+	certificatesModel.PrivateKey = certificateData.PrivateKey
 	certificatesModel.ExpiredAt = certificateInfo.NotAfter
 	certificatesModel.IsEnable = certificateData.IsEnable
 	certificatesModel.Sni = certificateInfo.CommonName
