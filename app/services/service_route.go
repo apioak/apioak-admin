@@ -201,11 +201,17 @@ func RouteCopy(routeData *validators.ValidatorRouteAddUpdate, sourceRouteId stri
 }
 
 func RouteUpdate(routeId string, routeData *validators.ValidatorRouteAddUpdate) error {
+	routeModel := models.Routes{}
+	routeInfo, routeInfoErr := routeModel.RouteInfoById(routeId)
+	if routeInfoErr != nil {
+		return routeInfoErr
+	}
+
 	updateRouteData := models.Routes{
 		RequestMethods: routeData.RequestMethods,
 		RoutePath:      routeData.RoutePath,
 		IsEnable:       routeData.IsEnable,
-		ReleaseStatus:  utils.ReleaseStatusT,
+		ReleaseStatus:  routeInfo.ReleaseStatus,
 	}
 	if len(routeData.RouteName) != 0 {
 		updateRouteData.RouteName = routeData.RouteName
@@ -214,7 +220,6 @@ func RouteUpdate(routeId string, routeData *validators.ValidatorRouteAddUpdate) 
 		updateRouteData.ReleaseStatus = utils.ReleaseStatusY
 	}
 
-	routeModel := models.Routes{}
 	err := routeModel.RouteUpdate(routeId, updateRouteData)
 	if err != nil {
 		return err
@@ -329,16 +334,6 @@ func (s *StructRouteInfo) RouteInfoByServiceRouteId(serviceId string, routeId st
 	return routeInfo, nil
 }
 
-func ServiceRouteSwitchEnable(id string, enable int) error {
-	routeModel := models.Routes{}
-	err := routeModel.RouteSwitchEnable(id, enable)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func ServiceRouteRelease(id string) error {
 	routeModel := models.Routes{}
 	routeInfo := routeModel.RouteInfoByIdServiceId(id, "")
@@ -400,7 +395,7 @@ type RouteConfig struct {
 func generateRouteConfig(id string) (RouteConfig, error) {
 	routeConfig := RouteConfig{}
 	routeModel := models.Routes{}
-	routeInfo, routeInfoErr := routeModel.RouteInfosById(id)
+	routeInfo, routeInfoErr := routeModel.RouteInfoById(id)
 	if routeInfoErr != nil {
 		return routeConfig, routeInfoErr
 	}

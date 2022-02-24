@@ -150,12 +150,18 @@ func (c *Certificates) CertificateDelete(id string) error {
 }
 
 func (c *Certificates) CertificateSwitchEnable(id string, enable int) error {
+	certificateInfo := c.CertificateInfoById(id)
+	releaseStatus := certificateInfo.ReleaseStatus
+	if certificateInfo.ReleaseStatus == utils.ReleaseStatusY {
+		releaseStatus = utils.ReleaseStatusT
+	}
+
 	updateErr := packages.GetDb().
 		Table(c.TableName()).
 		Where("id = ?", id).
 		Updates(Certificates{
 			IsEnable:      enable,
-			ReleaseStatus: utils.ReleaseStatusT}).Error
+			ReleaseStatus: releaseStatus}).Error
 
 	if updateErr != nil {
 		return updateErr

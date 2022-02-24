@@ -2,6 +2,7 @@ package admin
 
 import (
 	"apioak-admin/app/enums"
+	"apioak-admin/app/models"
 	"apioak-admin/app/packages"
 	"apioak-admin/app/services"
 	"apioak-admin/app/utils"
@@ -152,7 +153,8 @@ func CertificateSwitchEnable(c *gin.Context) {
 		}
 	}
 
-	updateErr := services.CertificateSwitchEnable(id, bindParams.IsEnable)
+	certificatesModel := models.Certificates{}
+	updateErr := certificatesModel.CertificateSwitchEnable(id, bindParams.IsEnable)
 	if updateErr != nil {
 		utils.Error(c, updateErr.Error())
 		return

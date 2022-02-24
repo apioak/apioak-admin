@@ -497,12 +497,18 @@ func (s *Services) ServiceSwitchEnable(id string, enable int) error {
 		return errors.New(enums.CodeMessages(enums.ServiceParamsNull))
 	}
 
+	serviceInfo := s.ServiceInfoById(id)
+	releaseStatus := serviceInfo.ReleaseStatus
+	if serviceInfo.ReleaseStatus == utils.ReleaseStatusY {
+		releaseStatus = utils.ReleaseStatusT
+	}
+
 	updateErr := packages.GetDb().
 		Table(s.TableName()).
 		Where("id = ?", id).
 		Updates(Services{
 			IsEnable:      enable,
-			ReleaseStatus: utils.ReleaseStatusT}).Error
+			ReleaseStatus: releaseStatus}).Error
 
 	if updateErr != nil {
 		return updateErr
@@ -517,12 +523,18 @@ func (s *Services) ServiceSwitchWebsocket(id string, webSocket int) error {
 		return errors.New(enums.CodeMessages(enums.ServiceParamsNull))
 	}
 
+	serviceInfo := s.ServiceInfoById(id)
+	releaseStatus := serviceInfo.ReleaseStatus
+	if serviceInfo.ReleaseStatus == utils.ReleaseStatusY {
+		releaseStatus = utils.ReleaseStatusT
+	}
+
 	updateErr := packages.GetDb().
 		Table(s.TableName()).
 		Where("id = ?", id).
 		Updates(Services{
 			WebSocket:     webSocket,
-			ReleaseStatus: utils.ReleaseStatusT}).Error
+			ReleaseStatus: releaseStatus}).Error
 
 	if updateErr != nil {
 		return updateErr
@@ -537,12 +549,18 @@ func (s *Services) ServiceSwitchHealthCheck(id string, healthCheck int) error {
 		return errors.New(enums.CodeMessages(enums.ServiceParamsNull))
 	}
 
+	serviceInfo := s.ServiceInfoById(id)
+	releaseStatus := serviceInfo.ReleaseStatus
+	if serviceInfo.ReleaseStatus == utils.ReleaseStatusY {
+		releaseStatus = utils.ReleaseStatusT
+	}
+
 	updateErr := packages.GetDb().
 		Table(s.TableName()).
 		Where("id = ?", id).
 		Updates(Services{
 			HealthCheck:   healthCheck,
-			ReleaseStatus: utils.ReleaseStatusT}).Error
+			ReleaseStatus: releaseStatus}).Error
 
 	if updateErr != nil {
 		return updateErr

@@ -288,7 +288,8 @@ func RouteSwitchEnable(c *gin.Context) {
 		return
 	}
 
-	updateErr := services.ServiceRouteSwitchEnable(routeId, bindParams.IsEnable)
+	routeModel := models.Routes{}
+	updateErr := routeModel.RouteSwitchEnable(routeId, bindParams.IsEnable)
 	if updateErr != nil {
 		utils.Error(c, updateErr.Error())
 		return
@@ -545,7 +546,8 @@ func RoutePluginSwitchEnable(c *gin.Context) {
 		return
 	}
 
-	updateErr := services.RoutePluginSwitchEnable(routePluginId, bindParams.IsEnable)
+	routePluginModel := models.RoutePlugins{}
+	updateErr := routePluginModel.RoutePluginSwitchEnable(routePluginId, bindParams.IsEnable)
 	if updateErr != nil {
 		utils.Error(c, updateErr.Error())
 		return

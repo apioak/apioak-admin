@@ -104,16 +104,6 @@ func RoutePluginUpdate(id string, routePluginData *validators.RoutePluginAddUpda
 	return updateErr
 }
 
-func RoutePluginSwitchEnable(id string, enable int) error {
-	routePluginModel := models.RoutePlugins{}
-	updateErr := routePluginModel.RoutePluginSwitchEnable(id, enable)
-	if updateErr != nil {
-		return updateErr
-	}
-
-	return nil
-}
-
 func RoutePluginDelete(id string) error {
 	configReleaseErr := ServiceRoutePluginConfigRelease(utils.ReleaseTypeDelete, id)
 	if configReleaseErr != nil {

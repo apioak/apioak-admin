@@ -284,14 +284,16 @@ func ServiceCreate(serviceData *validators.ServiceAddUpdate) error {
 }
 
 func ServiceUpdate(serviceId string, serviceData *validators.ServiceAddUpdate) error {
+	serviceModel := models.Services{}
 	timeOutByte, _ := json.Marshal(serviceData.Timeouts)
+	serviceInfo := serviceModel.ServiceInfoById(serviceId)
 
 	updateServiceData := models.Services{
 		Protocol:      serviceData.Protocol,
 		HealthCheck:   serviceData.HealthCheck,
 		WebSocket:     serviceData.WebSocket,
 		IsEnable:      serviceData.IsEnable,
-		ReleaseStatus: utils.ReleaseStatusT,
+		ReleaseStatus: serviceInfo.ReleaseStatus,
 		LoadBalance:   serviceData.LoadBalance,
 		Timeouts:      string(timeOutByte),
 	}
@@ -312,7 +314,6 @@ func ServiceUpdate(serviceId string, serviceData *validators.ServiceAddUpdate) e
 	addDomains, deleteDomainIds := GetToOperateDomains(serviceId, &serviceDomains)
 	addNodes, updateNodes, deleteNodeIds := GetToOperateNodes(serviceId, &serviceData.ServiceNodes)
 
-	serviceModel := &models.Services{}
 	updateErr := serviceModel.ServiceUpdate(serviceId, &updateServiceData, &addDomains, &addNodes, &updateNodes, deleteDomainIds, deleteNodeIds)
 
 	if (updateErr == nil) && (serviceData.IsRelease == utils.IsReleaseY) {

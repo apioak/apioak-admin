@@ -80,7 +80,7 @@ func (r *Routes) RouteInfosByServiceRoutePath(
 	return routesInfos, err
 }
 
-func (r *Routes) RouteInfosById(routeId string) (Routes, error) {
+func (r *Routes) RouteInfoById(routeId string) (Routes, error) {
 	routeInfo := Routes{}
 	err := packages.GetDb().
 		Table(r.TableName()).
@@ -312,12 +312,22 @@ func (r *Routes) RouteSwitchEnable(id string, enable int) error {
 		return errors.New(enums.CodeMessages(enums.ServiceParamsNull))
 	}
 
+	routeInfo, routeInfoErr := r.RouteInfoById(id)
+	if routeInfoErr != nil {
+		return routeInfoErr
+	}
+
+	releaseStatus := routeInfo.ReleaseStatus
+	if routeInfo.ReleaseStatus == utils.ReleaseStatusY {
+		releaseStatus = utils.ReleaseStatusT
+	}
+
 	updateErr := packages.GetDb().
 		Table(r.TableName()).
 		Where("id = ?", id).
 		Updates(Routes{
 			IsEnable:      enable,
-			ReleaseStatus: utils.ReleaseStatusT}).Error
+			ReleaseStatus: releaseStatus}).Error
 
 	if updateErr != nil {
 		return updateErr

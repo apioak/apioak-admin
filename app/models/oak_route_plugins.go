@@ -14,7 +14,7 @@ type RoutePlugins struct {
 	Order         int    `gorm:"column:order"`               //Order sort
 	Config        string `gorm:"column:config"`              //Routing configuration
 	IsEnable      int    `gorm:"column:is_enable"`           //Plugin enable  1:on  2:off
-	ReleaseStatus int `gorm:"column:release_status"`         //Route plugin release status 1:unpublished  2:to be published  3:published
+	ReleaseStatus int    `gorm:"column:release_status"`      //Route plugin release status 1:unpublished  2:to be published  3:published
 	ModelTime
 	Plugin Plugins `gorm:"foreignKey:PluginID;"`
 }
@@ -156,12 +156,18 @@ func (r *RoutePlugins) RoutePluginUpdate(id string, routePluginData *RoutePlugin
 }
 
 func (r *RoutePlugins) RoutePluginSwitchEnable(id string, enable int) error {
+	routePluginInfo := r.RoutePluginInfoById(id, "", "")
+	releaseStatus := routePluginInfo.ReleaseStatus
+	if routePluginInfo.ReleaseStatus == utils.ReleaseStatusY {
+		releaseStatus = utils.ReleaseStatusT
+	}
+	
 	updateErr := packages.GetDb().
 		Table(r.TableName()).
 		Where("id = ?", id).
 		Updates(RoutePlugins{
 			IsEnable:      enable,
-			ReleaseStatus: utils.ReleaseStatusT}).Error
+			ReleaseStatus: releaseStatus}).Error
 
 	if updateErr != nil {
 		return updateErr
