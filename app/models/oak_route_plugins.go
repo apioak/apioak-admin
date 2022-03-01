@@ -125,6 +125,23 @@ func (r *RoutePlugins) RoutePluginInfoByRoutePluginId(routeId string, pluginId s
 	return routePluginInfo
 }
 
+func (r *RoutePlugins) RoutePluginInfosByRouteIdRelease(routeIds []string, releaseStatus []int) []RoutePlugins {
+	routePluginInfos := make([]RoutePlugins, 0)
+	if len(routeIds) == 0 {
+		return routePluginInfos
+	}
+
+	db := packages.GetDb().
+		Table(r.TableName()).
+		Where("route_id IN ?", routeIds)
+	if len(releaseStatus) != 0 {
+		db = db.Where("release_status IN ?", releaseStatus)
+	}
+	db.Find(&routePluginInfos)
+
+	return routePluginInfos
+}
+
 func (r *RoutePlugins) RoutePluginAdd(routePluginData *RoutePlugins) error {
 	routePluginId, routePluginIdUniqueErr := r.ModelUniqueId()
 	if routePluginIdUniqueErr != nil {
@@ -161,7 +178,7 @@ func (r *RoutePlugins) RoutePluginSwitchEnable(id string, enable int) error {
 	if routePluginInfo.ReleaseStatus == utils.ReleaseStatusY {
 		releaseStatus = utils.ReleaseStatusT
 	}
-	
+
 	updateErr := packages.GetDb().
 		Table(r.TableName()).
 		Where("id = ?", id).

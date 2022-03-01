@@ -37,6 +37,7 @@ const (
 	RoutePluginNull                 = 10206 // 路由插件不存在
 	RoutePluginFormatError          = 10207 // 路由插件配置参数格式有误或参数错误
 	RouteDefaultPathForbiddenPrefix = 10208 // [/*]默认路径暂不能作为路由开头
+	RouteDefaultPathNull            = 10209 // [/*]默认路径路由不存在
 
 	PluginTagExist   = 10301 // 插件标识已存在
 	PluginNull       = 10302 // 插件不存在
@@ -61,7 +62,8 @@ const (
 	UserLoggingInError  = 10607 // 用户登录失败
 	UserLoggingInExpire = 10608 // 用户登录已过期
 
-	EtcdKeyNull = 10701 // ETCD的key不能为空
+	EtcdKeyNull     = 10701 // ETCD的key不能为空
+	EtcdUnavailable = 10702 // ETCD不可用
 )
 
 var ZhMapMessages = map[int]string{
@@ -91,6 +93,7 @@ var ZhMapMessages = map[int]string{
 	RoutePluginNull:                 "路由插件不存在",
 	RoutePluginFormatError:          "路由插件配置参数格式有误或参数错误",
 	RouteDefaultPathForbiddenPrefix: "[/*]默认路径暂不能作为路由开头",
+	RouteDefaultPathNull:            "[/*]默认路径路由不存在",
 
 	PluginTagExist:   "插件标识已存在",
 	PluginNull:       "插件不存在",
@@ -115,7 +118,8 @@ var ZhMapMessages = map[int]string{
 	UserLoggingInError:  "用户登录失败",
 	UserLoggingInExpire: "用户登录已过期",
 
-	EtcdKeyNull: "ETCD的key不能为空",
+	EtcdKeyNull:     "ETCD的key不能为空",
+	EtcdUnavailable: "ETCD不可用",
 }
 
 var EnMapMessages = map[int]string{
@@ -145,6 +149,7 @@ var EnMapMessages = map[int]string{
 	RoutePluginNull:                 "The routing plugin does not exist",
 	RoutePluginFormatError:          "The routing plugin configuration parameter format is incorrect or the parameter is wrong",
 	RouteDefaultPathForbiddenPrefix: "[/*]The default path cannot be used as the beginning of the route",
+	RouteDefaultPathNull:            "[/*]The default route route does not exist",
 
 	PluginTagExist:   "Plugin tag already exists",
 	PluginNull:       "Plugin does not exist",
@@ -169,7 +174,8 @@ var EnMapMessages = map[int]string{
 	UserLoggingInError:  "User login failed",
 	UserLoggingInExpire: "User login has expired",
 
-	EtcdKeyNull: "The key of ETCD cannot be empty",
+	EtcdKeyNull:     "The key of ETCD cannot be empty",
+	EtcdUnavailable: "ETCD is not available",
 }
 
 func CodeMessages(code int) string {

@@ -11,6 +11,7 @@ import (
 	"encoding/json"
 	"errors"
 	"strings"
+	"time"
 )
 
 func CheckRoutePluginExist(id string, routeId string, pluginId string) error {
@@ -172,16 +173,18 @@ func ServiceRoutePluginConfigRelease(releaseType string, id string) error {
 	}
 
 	etcdClient := packages.GetEtcdClient()
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*utils.EtcdTimeOut)
+	defer cancel()
 
 	var respErr error
 	if strings.ToLower(releaseType) == utils.ReleaseTypePush {
-		_, respErr = etcdClient.Put(context.Background(), etcdKey, routePluginConfigStr)
+		_, respErr = etcdClient.Put(ctx, etcdKey, routePluginConfigStr)
 	} else if strings.ToLower(releaseType) == utils.ReleaseTypePush {
-		_, respErr = etcdClient.Delete(context.Background(), etcdKey)
+		_, respErr = etcdClient.Delete(ctx, etcdKey)
 	}
 
 	if respErr != nil {
-		return respErr
+		return errors.New(enums.CodeMessages(enums.EtcdUnavailable))
 	}
 
 	return nil

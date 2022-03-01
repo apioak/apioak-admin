@@ -116,6 +116,24 @@ func (r *Routes) RouteInfosByServiceRouteId(serviceId string, routeId string) (R
 	return routeInfo, err
 }
 
+func (r *Routes) RouteInfosByServiceIdReleaseStatus(serviceId string, releaseStatus []int) []Routes {
+	routeInfos := make([]Routes, 0)
+	if len(serviceId) == 0 {
+		return routeInfos
+	}
+
+	db := packages.GetDb().
+		Table(r.TableName()).
+		Where("service_id = ?", serviceId)
+
+	if len(releaseStatus) != 0 {
+		db = db.Where("release_status IN ?", releaseStatus)
+	}
+	db.Find(&routeInfos)
+
+	return routeInfos
+}
+
 func (r *Routes) RouteAdd(routeData Routes) (string, error) {
 	routeId, routeIdUniqueErr := r.ModelUniqueId()
 	if routeIdUniqueErr != nil {
@@ -149,7 +167,7 @@ func (r *Routes) RouteUpdate(id string, routeData Routes) error {
 	return nil
 }
 
-func (r *Routes) RouteCopy(routeData Routes, routePlugins []RoutePlugins) (string, []string, error) {
+func (r *Routes) RouteCopy(routeData Routes, routePlugins []RoutePlugins) (string, error) {
 	tx := packages.GetDb().Begin()
 	defer func() {
 		if r := recover(); r != nil {
@@ -157,14 +175,13 @@ func (r *Routes) RouteCopy(routeData Routes, routePlugins []RoutePlugins) (strin
 		}
 	}()
 
-	routePluginIds := make([]string, 0)
 	if err := tx.Error; err != nil {
-		return "", routePluginIds, err
+		return "", err
 	}
 
 	routeId, routeIdUniqueErr := r.ModelUniqueId()
 	if routeIdUniqueErr != nil {
-		return routeId, routePluginIds, routeIdUniqueErr
+		return routeId, routeIdUniqueErr
 	}
 
 	routeData.ID = routeId
@@ -176,7 +193,7 @@ func (r *Routes) RouteCopy(routeData Routes, routePlugins []RoutePlugins) (strin
 
 	if addErr != nil {
 		tx.Rollback()
-		return routeId, routePluginIds, addErr
+		return routeId, addErr
 	}
 
 	if len(routePlugins) != 0 {
@@ -185,15 +202,14 @@ func (r *Routes) RouteCopy(routeData Routes, routePlugins []RoutePlugins) (strin
 			routePluginId, routePluginIdErr := routePluginModel.ModelUniqueId()
 			if routePluginIdErr != nil {
 				tx.Rollback()
-				return routeId, routePluginIds, routePluginIdErr
+				return routeId, routePluginIdErr
 			}
 
 			routePlugins[k].ID = routePluginId
 			routePlugins[k].RouteID = routeId
+			routePlugins[k].ReleaseStatus = utils.ReleaseStatusU
 			routePlugins[k].CreatedAt = time.Now()
 			routePlugins[k].UpdatedAt = time.Now()
-
-			routePluginIds = append(routePluginIds, routePluginId)
 		}
 
 		addRoutePluginErr := tx.
@@ -202,11 +218,11 @@ func (r *Routes) RouteCopy(routeData Routes, routePlugins []RoutePlugins) (strin
 
 		if addRoutePluginErr != nil {
 			tx.Rollback()
-			return routeId, routePluginIds, addRoutePluginErr
+			return routeId, addRoutePluginErr
 		}
 	}
 
-	return routeId, routePluginIds, tx.Commit().Error
+	return routeId, tx.Commit().Error
 }
 
 func (r *Routes) RouteDelete(id string) error {

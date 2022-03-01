@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 	"errors"
 	"strings"
+	"time"
 )
 
 func CheckCertificateNull(id string) error {
@@ -180,6 +181,9 @@ func CertificateUpdate(id string, certificateData *validators.CertificateAddUpda
 	certificatesModel.ExpiredAt = certificateInfo.NotAfter
 	certificatesModel.IsEnable = certificateData.IsEnable
 	certificatesModel.Sni = certificateInfo.CommonName
+	if certificateExistInfo.ReleaseStatus == utils.ReleaseStatusY {
+		certificatesModel.ReleaseStatus = utils.ReleaseStatusT
+	}
 
 	if certificateData.IsRelease == utils.IsReleaseY {
 		certificatesModel.ReleaseStatus = utils.ReleaseStatusY
@@ -193,7 +197,9 @@ func CertificateUpdate(id string, certificateData *validators.CertificateAddUpda
 	if certificateData.IsRelease == utils.IsReleaseY {
 		configReleaseErr := CertificateConfigRelease(utils.ReleaseTypePush, id)
 		if configReleaseErr != nil {
-			certificatesModel.ReleaseStatus = certificateExistInfo.ReleaseStatus
+			if certificateExistInfo.ReleaseStatus != utils.ReleaseStatusU {
+				certificatesModel.ReleaseStatus = utils.ReleaseStatusT
+			}
 			certificatesModel.CertificatesUpdate(id, &certificatesModel)
 			return configReleaseErr
 		}
@@ -310,16 +316,18 @@ func CertificateConfigRelease(releaseType string, certificateId string) error {
 	}
 
 	etcdClient := packages.GetEtcdClient()
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*utils.EtcdTimeOut)
+	defer cancel()
 
 	var respErr error
 	if strings.ToLower(releaseType) == utils.ReleaseTypePush {
-		_, respErr = etcdClient.Put(context.Background(), etcdKey, certificateConfigStr)
+		_, respErr = etcdClient.Put(ctx, etcdKey, certificateConfigStr)
 	} else if strings.ToLower(releaseType) == utils.ReleaseTypePush {
-		_, respErr = etcdClient.Delete(context.Background(), etcdKey)
+		_, respErr = etcdClient.Delete(ctx, etcdKey)
 	}
 
 	if respErr != nil {
-		return respErr
+		return errors.New(enums.CodeMessages(enums.EtcdUnavailable))
 	}
 
 	return nil

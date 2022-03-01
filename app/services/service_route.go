@@ -11,6 +11,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 )
 
 func CheckRouteExist(routeId string, serviceId string) error {
@@ -45,10 +46,6 @@ func CheckRouteDelete(routeId string) error {
 		return errors.New(enums.CodeMessages(enums.ToReleaseProhibitsOp))
 	}
 
-	if routeInfo.RoutePath == utils.DefaultRoutePath {
-		return errors.New(enums.CodeMessages(enums.RouteDefaultPathNoPermission))
-	}
-
 	return nil
 }
 
@@ -62,7 +59,7 @@ func CheckRouteRelease(routeId string) error {
 	return nil
 }
 
-func CheckServiceRouteDefaultPath(serviceId string, routeId string, path string) error {
+func CheckServiceRoutePath(path string) error {
 	if path == utils.DefaultRoutePath {
 		return errors.New(enums.CodeMessages(enums.RouteDefaultPathNoPermission))
 	}
@@ -71,8 +68,12 @@ func CheckServiceRouteDefaultPath(serviceId string, routeId string, path string)
 		return errors.New(enums.CodeMessages(enums.RouteDefaultPathForbiddenPrefix))
 	}
 
+	return nil
+}
+
+func CheckEditDefaultPathRoute(routeId string) error {
 	routeModel := models.Routes{}
-	routeInfo := routeModel.RouteInfoByIdServiceId(routeId, serviceId)
+	routeInfo := routeModel.RouteInfoByIdServiceId(routeId, "")
 	if routeInfo.RoutePath == utils.DefaultRoutePath {
 		return errors.New(enums.CodeMessages(enums.RouteDefaultPathNoPermission))
 	}
@@ -156,44 +157,21 @@ func RouteCopy(routeData *validators.ValidatorRouteAddUpdate, sourceRouteId stri
 		createRouteData.ReleaseStatus = utils.ReleaseStatusY
 	}
 
-	routeId, routePluginIds, err := createRouteData.RouteCopy(createRouteData, routePluginInfos)
+	routeId, err := createRouteData.RouteCopy(createRouteData, routePluginInfos)
 	if err != nil {
 		return err
 	}
 
 	if routeData.IsRelease == utils.IsReleaseY {
-		configRollBack := false
-		var routePluginReleaseErr error
 		routeReleaseErr := ServiceRouteConfigRelease(utils.ReleaseTypePush, routeId)
-		if routeReleaseErr == nil {
-			if len(routePluginIds) != 0 {
-				for _, routePluginId := range routePluginIds {
-					routePluginReleaseErr = ServiceRoutePluginConfigRelease(utils.ReleaseTypePush, routePluginId)
-					if routePluginReleaseErr != nil {
-						configRollBack = true
-						break
-					}
-				}
-			}
-		}
-
-		if configRollBack {
-			ServiceRouteConfigRelease(utils.ReleaseTypeDelete, routeId)
-
-			for _, routePluginId := range routePluginIds {
-				ServiceRoutePluginConfigRelease(utils.ReleaseTypeDelete, routePluginId)
-			}
-
-			createRouteData.ReleaseStatus = utils.ReleaseStatusU
+		if routeReleaseErr != nil {
 			routeModel := models.Routes{}
-			routeModel.RouteUpdate(routeId, createRouteData)
-
-			routePluginModel.ReleaseStatus = utils.ReleaseStatusU
-			routePluginModel.RoutePluginUpdateColumnsByIds(routePluginIds, &routePluginModel)
-
-			return routePluginReleaseErr
+			routeModel.ReleaseStatus = utils.ReleaseStatusU
+			routeUpdateErr := routeModel.RouteUpdate(routeId, routeModel)
+			if routeUpdateErr != nil {
+				return routeUpdateErr
+			}
 		}
-
 		return routeReleaseErr
 	}
 
@@ -211,11 +189,14 @@ func RouteUpdate(routeId string, routeData *validators.ValidatorRouteAddUpdate) 
 		RequestMethods: routeData.RequestMethods,
 		RoutePath:      routeData.RoutePath,
 		IsEnable:       routeData.IsEnable,
-		ReleaseStatus:  routeInfo.ReleaseStatus,
 	}
 	if len(routeData.RouteName) != 0 {
 		updateRouteData.RouteName = routeData.RouteName
 	}
+	if routeInfo.ReleaseStatus == utils.ReleaseStatusY {
+		updateRouteData.ReleaseStatus = utils.ReleaseStatusT
+	}
+
 	if routeData.IsRelease == utils.IsReleaseY {
 		updateRouteData.ReleaseStatus = utils.ReleaseStatusY
 	}
@@ -228,7 +209,9 @@ func RouteUpdate(routeId string, routeData *validators.ValidatorRouteAddUpdate) 
 	if routeData.IsRelease == utils.IsReleaseY {
 		configReleaseErr := ServiceRouteConfigRelease(utils.ReleaseTypePush, routeId)
 		if configReleaseErr != nil {
-			updateRouteData.ReleaseStatus = utils.ReleaseStatusT
+			if routeInfo.ReleaseStatus != utils.ReleaseStatusU {
+				updateRouteData.ReleaseStatus = utils.ReleaseStatusT
+			}
 			routeModel.RouteUpdate(routeId, updateRouteData)
 
 			return configReleaseErr
@@ -369,16 +352,18 @@ func ServiceRouteConfigRelease(releaseType string, id string) error {
 	}
 
 	etcdClient := packages.GetEtcdClient()
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*utils.EtcdTimeOut)
+	defer cancel()
 
 	var respErr error
 	if strings.ToLower(releaseType) == utils.ReleaseTypePush {
-		_, respErr = etcdClient.Put(context.Background(), etcdKey, routeConfigStr)
+		_, respErr = etcdClient.Put(ctx, etcdKey, routeConfigStr)
 	} else if strings.ToLower(releaseType) == utils.ReleaseTypePush {
-		_, respErr = etcdClient.Delete(context.Background(), etcdKey)
+		_, respErr = etcdClient.Delete(ctx, etcdKey)
 	}
 
 	if respErr != nil {
-		return respErr
+		return errors.New(enums.CodeMessages(enums.EtcdUnavailable))
 	}
 
 	return nil

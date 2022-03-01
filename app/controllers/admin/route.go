@@ -131,9 +131,15 @@ func RouteUpdate(c *gin.Context) {
 		return
 	}
 
-	checkServiceRouteDefaultPathErr := services.CheckServiceRouteDefaultPath(bindParams.ServiceID, routeId, bindParams.RoutePath)
-	if checkServiceRouteDefaultPathErr != nil {
-		utils.Error(c, checkServiceRouteDefaultPathErr.Error())
+	checkEditDefaultPathRouteErr := services.CheckEditDefaultPathRoute(routeId)
+	if checkEditDefaultPathRouteErr != nil {
+		utils.Error(c, checkEditDefaultPathRouteErr.Error())
+		return
+	}
+
+	checkServiceRoutePathErr := services.CheckServiceRoutePath(bindParams.RoutePath)
+	if checkServiceRoutePathErr != nil {
+		utils.Error(c, checkServiceRoutePathErr.Error())
 		return
 	}
 
@@ -165,6 +171,12 @@ func RouteDelete(c *gin.Context) {
 	checkExistRouteErr := services.CheckRouteExist(routeId, serviceId)
 	if checkExistRouteErr != nil {
 		utils.Error(c, checkExistRouteErr.Error())
+		return
+	}
+
+	checkEditDefaultPathRouteErr := services.CheckEditDefaultPathRoute(routeId)
+	if checkEditDefaultPathRouteErr != nil {
+		utils.Error(c, checkEditDefaultPathRouteErr.Error())
 		return
 	}
 
@@ -279,6 +291,12 @@ func RouteSwitchEnable(c *gin.Context) {
 	checkExistRouteErr := services.CheckRouteExist(routeId, serviceId)
 	if checkExistRouteErr != nil {
 		utils.Error(c, checkExistRouteErr.Error())
+		return
+	}
+
+	checkEditDefaultPathRouteErr := services.CheckEditDefaultPathRoute(routeId)
+	if checkEditDefaultPathRouteErr != nil {
+		utils.Error(c, checkEditDefaultPathRouteErr.Error())
 		return
 	}
 

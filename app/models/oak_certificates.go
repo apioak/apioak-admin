@@ -122,7 +122,10 @@ func (c *Certificates) CertificateListPage(param *validators.CertificateList) (l
 	param.Search = strings.TrimSpace(param.Search)
 	if len(param.Search) != 0 {
 		search := "%" + param.Search + "%"
-		tx = tx.Where("sni LIKE ?", search)
+		tx = tx.Where(
+			packages.GetDb().Table(c.TableName()).
+				Where("sni LIKE ?", search).
+				Or("id LIKE ?", search))
 	}
 
 	countError := ListCount(tx, &total)

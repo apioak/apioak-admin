@@ -11,6 +11,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 )
 
 func CheckServiceExist(serviceId string) error {
@@ -297,6 +298,9 @@ func ServiceUpdate(serviceId string, serviceData *validators.ServiceAddUpdate) e
 		LoadBalance:   serviceData.LoadBalance,
 		Timeouts:      string(timeOutByte),
 	}
+	if serviceInfo.ReleaseStatus == utils.ReleaseStatusY {
+		updateServiceData.ReleaseStatus = utils.ReleaseStatusT
+	}
 
 	if serviceData.IsRelease == utils.IsReleaseY {
 		updateServiceData.ReleaseStatus = utils.ReleaseStatusY
@@ -319,7 +323,9 @@ func ServiceUpdate(serviceId string, serviceData *validators.ServiceAddUpdate) e
 	if (updateErr == nil) && (serviceData.IsRelease == utils.IsReleaseY) {
 		releaseErr := ServiceRelease(serviceId)
 		if releaseErr != nil {
-			updateServiceData.ReleaseStatus = utils.ReleaseStatusT
+			if serviceInfo.ReleaseStatus != utils.ReleaseStatusU {
+				updateServiceData.ReleaseStatus = utils.ReleaseStatusT
+			}
 			serviceModel.ServiceUpdateColumnsById(serviceId, &updateServiceData)
 
 			return releaseErr
@@ -333,6 +339,40 @@ func ServiceDelete(serviceId string) error {
 	configReleaseErr := ServiceConfigRelease(utils.ReleaseTypeDelete, serviceId)
 	if configReleaseErr != nil {
 		return configReleaseErr
+	}
+
+	// 获取该服务下所有的已发布和待发布的路由和路由插件
+	routeModel := models.Routes{}
+	releaseRouteInfos := routeModel.RouteInfosByServiceIdReleaseStatus(serviceId, []int{})
+
+	routeIds := make([]string, 0)
+	if len(releaseRouteInfos) != 0 {
+		for _, releaseRouteInfo := range releaseRouteInfos {
+			routeIds = append(routeIds, releaseRouteInfo.ID)
+		}
+	}
+
+	routePluginModel := models.RoutePlugins{}
+	routePluginInfos :=routePluginModel.RoutePluginInfosByRouteIdRelease(routeIds, []int{utils.ReleaseStatusT, utils.ReleaseStatusY})
+
+	if len(releaseRouteInfos) != 0 {
+		for _, releaseRouteInfo := range releaseRouteInfos {
+			if releaseRouteInfo.ReleaseStatus != utils.ReleaseStatusU {
+				routeDeleteReleaseErr := ServiceRouteConfigRelease(utils.ReleaseTypeDelete, releaseRouteInfo.ID)
+				if routeDeleteReleaseErr != nil {
+					return routeDeleteReleaseErr
+				}
+			}
+		}
+	}
+
+	if len(routePluginInfos) != 0 {
+		for _, routePluginInfo := range routePluginInfos {
+			routePluginDeleteReleaseErr := ServiceRoutePluginConfigRelease(utils.ReleaseTypeDelete, routePluginInfo.ID)
+			if routePluginDeleteReleaseErr != nil {
+				return routePluginDeleteReleaseErr
+			}
+		}
 	}
 
 	serviceModel := &models.Services{}
@@ -533,12 +573,31 @@ func ServiceRelease(serviceId string) error {
 	}
 
 	configReleaseErr := ServiceConfigRelease(utils.ReleaseTypePush, serviceId)
-	if configReleaseErr != nil {
-		serviceModel.ServiceSwitchRelease(serviceId, serviceInfo.ReleaseStatus)
-		return configReleaseErr
+	if configReleaseErr == nil {
+		routeModel := models.Routes{}
+		defaultRouteInfos, defaultRouteInfoErr := routeModel.RouteInfosByServiceRoutePath(serviceId, []string{utils.DefaultRoutePath}, []string{})
+		if len(defaultRouteInfos) == 0 {
+			serviceModel.ServiceSwitchRelease(serviceId, serviceInfo.ReleaseStatus)
+			return errors.New(enums.CodeMessages(enums.RouteDefaultPathNull))
+		}
+
+		if defaultRouteInfoErr != nil {
+			serviceModel.ServiceSwitchRelease(serviceId, serviceInfo.ReleaseStatus)
+			return defaultRouteInfoErr
+		}
+		defaultRouteInfo := defaultRouteInfos[0]
+
+		routeReleaseErr := ServiceRouteConfigRelease(utils.ReleaseTypePush, defaultRouteInfo.ID)
+		if routeReleaseErr != nil {
+			serviceModel.ServiceSwitchRelease(serviceId, serviceInfo.ReleaseStatus)
+			return routeReleaseErr
+		}
+
+		routeModel.ReleaseStatus = utils.ReleaseStatusY
+		routeModel.RouteUpdate(defaultRouteInfo.ID, routeModel)
 	}
 
-	return nil
+	return configReleaseErr
 }
 
 func ServiceConfigRelease(releaseType string, serviceId string) error {
@@ -559,16 +618,18 @@ func ServiceConfigRelease(releaseType string, serviceId string) error {
 	}
 
 	etcdClient := packages.GetEtcdClient()
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*utils.EtcdTimeOut)
+	defer cancel()
 
 	var respErr error
 	if strings.ToLower(releaseType) == utils.ReleaseTypePush {
-		_, respErr = etcdClient.Put(context.Background(), etcdKey, serviceConfigStr)
+		_, respErr = etcdClient.Put(ctx, etcdKey, serviceConfigStr)
 	} else if strings.ToLower(releaseType) == utils.ReleaseTypePush {
-		_, respErr = etcdClient.Delete(context.Background(), etcdKey)
+		_, respErr = etcdClient.Delete(ctx, etcdKey)
 	}
 
 	if respErr != nil {
-		return respErr
+		return errors.New(enums.CodeMessages(enums.EtcdUnavailable))
 	}
 
 	return nil
