@@ -19,6 +19,10 @@ type Routes struct {
 	IsEnable       int    `gorm:"column:is_enable"`       //Routing enable  1:on  2:off
 	ReleaseStatus  int    `gorm:"column:release_status"`  //Route release status 1:unpublished  2:to be published  3:published
 	ModelTime
+}
+
+type RoutesPlugins struct {
+	Routes
 	Plugins []Plugins `gorm:"many2many:oak_route_plugins;foreignKey:ID;joinForeignKey:RouteID;References:ID;JoinReferences:PluginID"`
 }
 
@@ -262,11 +266,35 @@ func (r *Routes) RouteDelete(id string) error {
 	return tx.Commit().Error
 }
 
-func (r *Routes) RouteListPage(
-	serviceId string,
-	param *validators.ValidatorRouteList) (list []Routes, total int, listError error) {
+type RoutePluginConfigs struct {
+	ID            string `json:"id"`
+	Name          string `json:"name"`
+	Tag           string `json:"tag"`
+	Icon          string `json:"icon"`
+	Type          int    `json:"type"`
+	Config        string `json:"config"`
+	IsEnable      int    `json:"is_enable"`
+	ReleaseStatus int    `json:"release_status"`
+}
+
+type RoutePluginConfigList struct {
+	ID             string               `json:"id"`
+	ServiceID      string               `json:"service_id"`
+	RouteName      string               `json:"route_name"`
+	RequestMethods string               `json:"request_methods"`
+	RoutePath      string               `json:"route_path"`
+	IsEnable       int                  `json:"is_enable"`
+	ReleaseStatus  int                  `json:"release_status"`
+	Plugins        []RoutePluginConfigs `json:"plugins"`
+}
+
+func (r *Routes) RouteListPage(serviceId string, param *validators.ValidatorRouteList) (list []RoutePluginConfigList, total int, listError error) {
+	list = make([]RoutePluginConfigList, 0)
+	routesPluginList := make([]RoutesPlugins, 0)
+
+	routesPlugins := RoutesPlugins{}
 	tx := packages.GetDb().
-		Table(r.TableName()).
+		Table(routesPlugins.TableName()).
 		Where("service_id = ?", serviceId)
 
 	param.Search = strings.TrimSpace(param.Search)
@@ -298,7 +326,66 @@ func (r *Routes) RouteListPage(
 		Preload("Plugins").
 		Order("created_at desc")
 
-	listError = ListPaginate(tx, &list, &param.BaseListPage)
+	listError = ListPaginate(tx, &routesPluginList, &param.BaseListPage)
+
+	if len(routesPluginList) == 0 {
+		return
+	}
+
+	routeIds := make([]string, 0)
+	for _, routesPluginInfo := range routesPluginList {
+		routeIds = append(routeIds, routesPluginInfo.ID)
+	}
+
+	routePluginsModel := RoutePlugins{}
+	routesPluginConfigList := routePluginsModel.RoutePluginAllListByRouteIds(routeIds)
+
+	routesPluginConfigMap := make(map[string]map[string]RoutePlugins)
+	if len(routesPluginConfigList) != 0 {
+		for _, routesPluginConfigInfo := range routesPluginConfigList {
+			if len(routesPluginConfigMap[routesPluginConfigInfo.RouteID]) == 0 {
+				routesPluginConfigMap[routesPluginConfigInfo.RouteID] = make(map[string]RoutePlugins)
+			}
+			routesPluginConfigMap[routesPluginConfigInfo.RouteID][routesPluginConfigInfo.PluginID] = routesPluginConfigInfo
+		}
+	}
+
+	for _, routesPluginInfo := range routesPluginList {
+		routePluginConfigList := RoutePluginConfigList{
+			ID:             routesPluginInfo.ID,
+			ServiceID:      routesPluginInfo.ServiceID,
+			RouteName:      routesPluginInfo.RouteName,
+			RequestMethods: routesPluginInfo.RequestMethods,
+			RoutePath:      routesPluginInfo.RoutePath,
+			IsEnable:       routesPluginInfo.IsEnable,
+			ReleaseStatus:  routesPluginInfo.ReleaseStatus,
+		}
+
+		routePluginsList := make([]RoutePluginConfigs, 0)
+		if len(routesPluginInfo.Plugins) != 0 {
+			for _, pluginInfo := range routesPluginInfo.Plugins {
+				routePluginConfigs := RoutePluginConfigs{
+					ID:   pluginInfo.ID,
+					Name: pluginInfo.Name,
+					Tag:  pluginInfo.Tag,
+					Icon: pluginInfo.Icon,
+					Type: pluginInfo.Type,
+				}
+
+				routePluginConfigInfo, ok := routesPluginConfigMap[routesPluginInfo.ID][pluginInfo.ID]
+				if ok {
+					routePluginConfigs.Config = routePluginConfigInfo.Config
+					routePluginConfigs.IsEnable = routePluginConfigInfo.IsEnable
+					routePluginConfigs.ReleaseStatus = routePluginConfigInfo.ReleaseStatus
+				}
+
+				routePluginsList = append(routePluginsList, routePluginConfigs)
+			}
+		}
+		routePluginConfigList.Plugins = routePluginsList
+
+		list = append(list, routePluginConfigList)
+	}
 
 	return
 }

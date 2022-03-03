@@ -10,58 +10,52 @@ import (
 	"strings"
 )
 
+func ClusterNodeAdd(c *gin.Context) {
+	var bindParams = validators.ClusterNodeAdd{
+		NodeStatus: utils.ClusterNodeStatusUnhealthy,
+	}
+	if msg, err := packages.ParseRequestParams(c, &bindParams); err != nil {
+		utils.Error(c, msg)
+		return
+	}
+
+	checkClusterNodeExistErr := services.CheckClusterNodeExist(bindParams.NodeIP)
+	if checkClusterNodeExistErr != nil {
+		utils.Error(c, checkClusterNodeExistErr.Error())
+		return
+	}
+
+	addErr := services.ClusterNodeAdd(&bindParams)
+	if addErr != nil {
+		utils.Error(c, addErr.Error())
+		return
+	}
+
+	utils.Ok(c)
+}
+
 func ClusterNodeList(c *gin.Context) {
-	var clusterNodeListValidator = validators.ClusterNodeList{}
-	if msg, err := packages.ParseRequestParams(c, &clusterNodeListValidator); err != nil {
+	var bindParams = validators.ClusterNodeList{}
+	if msg, err := packages.ParseRequestParams(c, &bindParams); err != nil {
 		utils.Error(c, msg)
 		return
 	}
 
 	clusterNodeListInfo := services.ClusterNodeListInfo{}
-	clusterNodeList, total, err := clusterNodeListInfo.ClusterNodeListPage(&clusterNodeListValidator)
+	clusterNodeList, total, err := clusterNodeListInfo.ClusterNodeListPage(&bindParams)
 	if err != nil {
 		utils.Error(c, err.Error())
 		return
 	}
 
 	result := utils.ResultPage{}
-	result.Param = clusterNodeListValidator
-	result.Page = clusterNodeListValidator.Page
-	result.PageSize = clusterNodeListValidator.PageSize
+	result.Param = bindParams
+	result.Page = bindParams.Page
+	result.PageSize = bindParams.PageSize
 	result.Total = total
 	result.Data = clusterNodeList
 
 	utils.Ok(c, result)
-}
-
-func ClusterNodeSwitchEnable(c *gin.Context) {
-	id := strings.TrimSpace(c.Param("id"))
-
-	var clusterNodeSwitchEnableValidator = validators.ClusterNodeSwitchEnable{}
-	if msg, err := packages.ParseRequestParams(c, &clusterNodeSwitchEnableValidator); err != nil {
-		utils.Error(c, msg)
-		return
-	}
-
-	checkClusterNodeNullErr := services.CheckClusterNodeNull(id)
-	if checkClusterNodeNullErr != nil {
-		utils.Error(c, checkClusterNodeNullErr.Error())
-		return
-	}
-
-	checkClusterNodeEnableChangeErr := services.CheckClusterNodeEnableChange(id, clusterNodeSwitchEnableValidator.IsEnable)
-	if checkClusterNodeEnableChangeErr != nil {
-		utils.Error(c, checkClusterNodeEnableChangeErr.Error())
-		return
-	}
-
-	updateErr := services.ClusterNodeSwitchEnable(id, clusterNodeSwitchEnableValidator.IsEnable)
-	if updateErr != nil {
-		utils.Error(c, updateErr.Error())
-		return
-	}
-
-	utils.Ok(c)
 }
 
 func ClusterNodeDelete(c *gin.Context) {
@@ -70,12 +64,6 @@ func ClusterNodeDelete(c *gin.Context) {
 	checkClusterNodeNullErr := services.CheckClusterNodeNull(id)
 	if checkClusterNodeNullErr != nil {
 		utils.Error(c, checkClusterNodeNullErr.Error())
-		return
-	}
-
-	checkClusterNodeEnableOnErr := services.CheckClusterNodeEnableOn(id)
-	if checkClusterNodeEnableOnErr != nil {
-		utils.Error(c, checkClusterNodeEnableOnErr.Error())
 		return
 	}
 

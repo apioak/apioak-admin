@@ -49,7 +49,8 @@ func main() {
 		panic(err)
 	}
 
-	cores.InitGoroutineFunc()
+	// 携程监听ETCD
+	//cores.InitGoroutineFunc()
 
 	// 服务启动
 	if err := cores.RunFramework(&conf); err != nil {

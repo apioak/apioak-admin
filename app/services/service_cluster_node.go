@@ -5,9 +5,7 @@ import (
 	"apioak-admin/app/models"
 	"apioak-admin/app/utils"
 	"apioak-admin/app/validators"
-	"encoding/json"
 	"errors"
-	"strings"
 )
 
 func CheckClusterNodeNull(id string) error {
@@ -20,34 +18,37 @@ func CheckClusterNodeNull(id string) error {
 	return nil
 }
 
-func CheckClusterNodeEnableChange(id string, enable int) error {
+func CheckClusterNodeExist(ip string) error {
 	clusterNodesModel := models.ClusterNodes{}
-	clusterNodeInfo := clusterNodesModel.ClusterNodeInfoById(id)
-	if clusterNodeInfo.IsEnable == enable {
-		return errors.New(enums.CodeMessages(enums.SwitchNoChange))
+	clusterNodeInfo := clusterNodesModel.ClusterNodeInfoByIp(ip)
+	if len(clusterNodeInfo.ID) != 0 {
+		return errors.New(enums.CodeMessages(enums.ClusterNodeExist))
 	}
 
 	return nil
 }
 
-func CheckClusterNodeEnableOn(id string) error {
-	clusterNodesModel := models.ClusterNodes{}
-	clusterNodeInfo := clusterNodesModel.ClusterNodeInfoById(id)
-	if clusterNodeInfo.IsEnable == utils.EnableOn {
-		return errors.New(enums.CodeMessages(enums.SwitchONProhibitsOp))
+func ClusterNodeAdd(clusterNodeAdd *validators.ClusterNodeAdd) error {
+	ipTypeName, ipTypeNameErr := utils.DiscernIP(clusterNodeAdd.NodeIP)
+	if ipTypeNameErr != nil {
+		return ipTypeNameErr
 	}
 
-	return nil
-}
-
-func ClusterNodeSwitchEnable(id string, enable int) error {
-	clusterNodesModel := models.ClusterNodes{}
-	updateErr := clusterNodesModel.ClusterNodeSwitchEnable(id, enable)
-	if updateErr != nil {
-		return updateErr
+	ipType, ipTypeErr := utils.IPNameToType(ipTypeName)
+	if ipTypeErr != nil {
+		return ipTypeErr
 	}
 
-	// @todo 触发远程发送数据 开启/停止 网关服务，会保持与远程服务的通信
+	clusterNodesModel := models.ClusterNodes{
+		NodeIP:     clusterNodeAdd.NodeIP,
+		IPType:     ipType,
+		NodeStatus: clusterNodeAdd.NodeStatus,
+	}
+
+	addErr := clusterNodesModel.ClusterNodeAdd(&clusterNodesModel)
+	if addErr != nil {
+		return addErr
+	}
 
 	return nil
 }
@@ -55,8 +56,8 @@ func ClusterNodeSwitchEnable(id string, enable int) error {
 type ClusterNodeListInfo struct {
 	ID         string `json:"id"`
 	NodeIP     string `json:"node_ip"`
+	IPType     int    `json:"ip_type"`
 	NodeStatus int    `json:"node_status"`
-	IsEnable   int    `json:"is_enable"`
 }
 
 func (c *ClusterNodeListInfo) ClusterNodeListPage(param *validators.ClusterNodeList) ([]ClusterNodeListInfo, int, error) {
@@ -68,9 +69,9 @@ func (c *ClusterNodeListInfo) ClusterNodeListPage(param *validators.ClusterNodeL
 		for _, clusterNodeListInfo := range clusterNodeListInfos {
 			clusterNodeInfo := ClusterNodeListInfo{}
 			clusterNodeInfo.ID = clusterNodeListInfo.ID
+			clusterNodeInfo.IPType = clusterNodeListInfo.IPType
 			clusterNodeInfo.NodeIP = clusterNodeListInfo.NodeIP
 			clusterNodeInfo.NodeStatus = clusterNodeListInfo.NodeStatus
-			clusterNodeInfo.IsEnable = clusterNodeListInfo.IsEnable
 
 			clusterNodeList = append(clusterNodeList, clusterNodeInfo)
 		}
@@ -86,61 +87,5 @@ func ClusterNodeDelete(id string) error {
 		return deleteErr
 	}
 
-	// @todo 触发远程发送数据 开启/停止 网关服务，停止与远程服务的通信
-
 	return nil
-}
-
-func ClusterNodeWatchAdd(watchValue string) {
-	defer func() {
-		if r := recover(); r != nil {
-			// @todo 记录日志信息（详细报错信息）
-		}
-	}()
-
-	type clusterNodeInfo struct {
-		NodeIP   string `json:"node_ip"`
-		IsEnable int    `json:"is_enable"`
-	}
-
-	clusterNode := clusterNodeInfo{}
-	err := json.Unmarshal([]byte(watchValue), &clusterNode)
-	if err != nil {
-		// @todo 记录日志错误信息
-	}
-
-	ipTypeName, ipTypeNameErr := utils.DiscernIP(clusterNode.NodeIP)
-	if ipTypeNameErr != nil {
-		// @todo 记录日志错误信息
-	}
-
-	ipType, ipTypeErr := utils.IPNameToType(ipTypeName)
-	if ipTypeErr != nil {
-		// @todo 记录日志错误信息
-	}
-
-	clusterNodesModel := models.ClusterNodes{
-		NodeIP:     clusterNode.NodeIP,
-		IPType:     ipType,
-		NodeStatus: utils.ClusterNodeStatusHealth,
-		IsEnable:   clusterNode.IsEnable,
-	}
-
-	clusterNodesInfo := clusterNodesModel.ClusterNodeInfoByIp(clusterNode.NodeIP)
-
-	if strings.TrimSpace(clusterNodesInfo.NodeIP) == strings.TrimSpace(clusterNode.NodeIP) {
-
-		updateErr := clusterNodesModel.ClusterNodeUpdate(clusterNodesInfo.ID, &clusterNodesModel)
-		if updateErr != nil {
-			// @todo 记录日志错误信息
-		}
-
-	} else {
-		addErr := clusterNodesModel.ClusterNodeAdd(&clusterNodesModel)
-		if addErr != nil {
-			// @todo 记录日志错误信息
-		}
-	}
-
-	return
 }

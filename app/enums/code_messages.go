@@ -52,7 +52,8 @@ const (
 	CertificateNoRelease   = 10406 // [%s]证书未发布
 	CertificateEnableOff   = 10407 // [%s]证书未开启
 
-	ClusterNodeNull = 10501 // 节点不存在
+	ClusterNodeNull  = 10501 // 节点不存在
+	ClusterNodeExist = 10502 // 节点已存在
 
 	UserEmailExist      = 10601 // 邮箱已注册
 	UserNull            = 10602 // 用户不存在
@@ -108,7 +109,8 @@ var ZhMapMessages = map[int]string{
 	CertificateNoRelease:   "[%s]证书未发布",
 	CertificateEnableOff:   "[%s]证书未开启",
 
-	ClusterNodeNull: "节点不存在",
+	ClusterNodeNull:  "节点不存在",
+	ClusterNodeExist: "节点已存在",
 
 	UserEmailExist:      "邮箱已注册",
 	UserNull:            "用户不存在",
@@ -164,7 +166,8 @@ var EnMapMessages = map[int]string{
 	CertificateNoRelease:   "[%s]Certificate not release",
 	CertificateEnableOff:   "[%s]Certificate not enabled",
 
-	ClusterNodeNull: "Node does not exist",
+	ClusterNodeNull:  "Node does not exist",
+	ClusterNodeExist: "Node already exists",
 
 	UserEmailExist:      "Email has been registered",
 	UserNull:            "User does not exist",

@@ -14,7 +14,6 @@ type ClusterNodes struct {
 	NodeIP     string `gorm:"column:node_ip"`        //Node IP
 	IPType     int    `gorm:"column:ip_type"`        //IP Type  1:IPV4  2:IPV6
 	NodeStatus int    `gorm:"column:node_status"`    //Node status  1:health  2:Unhealthy
-	IsEnable   int    `gorm:"column:is_enable"`      //Node enable  1:on  2:off
 	ModelTime
 }
 
@@ -84,8 +83,8 @@ func (c *ClusterNodes) ClusterNodeListPage(param *validators.ClusterNodeList) (l
 	tx := packages.GetDb().
 		Table(c.TableName())
 
-	if param.IsEnable != 0 {
-		tx = tx.Where("is_enable = ?", param.IsEnable)
+	if param.IPType != 0 {
+		tx = tx.Where("ip_type = ?", param.IPType)
 	}
 	if param.NodeStatus != 0 {
 		tx = tx.Where("node_status = ?", param.NodeStatus)
@@ -94,7 +93,10 @@ func (c *ClusterNodes) ClusterNodeListPage(param *validators.ClusterNodeList) (l
 	param.Search = strings.TrimSpace(param.Search)
 	if len(param.Search) != 0 {
 		search := "%" + param.Search + "%"
-		tx = tx.Where("node_ip LIKE ?", search)
+		tx = tx.Where(packages.GetDb().
+			Table(c.TableName()).
+			Where("node_ip LIKE ?", search).
+			Or("id LIKE ?", search))
 	}
 
 	countError := ListCount(tx, &total)

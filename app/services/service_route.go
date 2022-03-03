@@ -238,9 +238,13 @@ func RouteDelete(routeId string) error {
 }
 
 type routePlugin struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
-	Icon string `json:"icon"`
+	ID            string `json:"id"`
+	Name          string `json:"name"`
+	Icon          string `json:"icon"`
+	Tag           string `json:"tag"`
+	Type          int    `json:"type"`
+	IsEnable      int    `json:"is_enable"`
+	ReleaseStatus int    `json:"release_status"`
 }
 
 type StructRouteList struct {
@@ -276,6 +280,10 @@ func (s *StructRouteList) RouteListPage(serviceId string, param *validators.Vali
 					tmpRoutePluginInfo.ID = routePluginInfo.ID
 					tmpRoutePluginInfo.Name = routePluginInfo.Name
 					tmpRoutePluginInfo.Icon = routePluginInfo.Icon
+					tmpRoutePluginInfo.Tag = routePluginInfo.Tag
+					tmpRoutePluginInfo.Type = routePluginInfo.Type
+					tmpRoutePluginInfo.IsEnable = routePluginInfo.IsEnable
+					tmpRoutePluginInfo.ReleaseStatus = routePluginInfo.ReleaseStatus
 					routePluginInfos = append(routePluginInfos, tmpRoutePluginInfo)
 				}
 			}
@@ -458,6 +466,7 @@ type RoutePluginInfo struct {
 	PluginId      string `json:"plugin_id"`
 	Name          string `json:"name"`
 	Tag           string `json:"tag"`
+	Icon          string `json:"icon"`
 	Type          int    `json:"type"`
 	Description   string `json:"description"`
 	Order         int    `json:"order"`
@@ -478,6 +487,7 @@ func (r *RoutePluginInfo) RoutePluginList(routeId string) []RoutePluginInfo {
 		routePluginInfo.PluginId = routePluginConfigInfo.Plugin.ID
 		routePluginInfo.Name = routePluginConfigInfo.Plugin.Name
 		routePluginInfo.Tag = routePluginConfigInfo.Plugin.Tag
+		routePluginInfo.Icon = routePluginConfigInfo.Plugin.Icon
 		routePluginInfo.Type = routePluginConfigInfo.Plugin.Type
 		routePluginInfo.Description = routePluginConfigInfo.Plugin.Description
 		routePluginInfo.Order = routePluginConfigInfo.Order
