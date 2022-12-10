@@ -8,6 +8,6 @@ type UserRegister struct {
 }
 
 type UserLogin struct {
-	Password   string `json:"password" zh:"密码" en:"Password" binding:"required,min=8"`
-	Email      string `json:"email" zh:"邮箱" en:"Email" binding:"required,email"`
+	Password string `json:"password" zh:"密码" en:"Password" binding:"required,min=8"`
+	Email    string `json:"email" zh:"邮箱" en:"Email" binding:"required,email"`
 }

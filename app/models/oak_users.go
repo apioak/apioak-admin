@@ -8,10 +8,11 @@ import (
 )
 
 type Users struct {
-	ID       string `gorm:"column:id;primary_key"` //User iD
-	Name     string `gorm:"column:name"`           //User name
-	Password string `gorm:"column:password"`       //Password
-	Email    string `gorm:"column:email"`          //Email
+	ID       int    `gorm:"column:id;primary_key"` // primary key
+	ResID    string `gorm:"column:res_id"`         // User iD
+	Name     string `gorm:"column:name"`           // User name
+	Password string `gorm:"column:password"`       // Password
+	Email    string `gorm:"column:email"`          // Email
 	ModelTime
 }
 
@@ -74,7 +75,7 @@ func (u *Users) UserAdd(userData *Users) error {
 	if userIdUniqueErr != nil {
 		return userIdUniqueErr
 	}
-	userData.ID = userId
+	userData.ResID = userId
 	userData.Password = utils.Md5(utils.Md5(userData.Password))
 
 	err := packages.GetDb().

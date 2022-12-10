@@ -9,12 +9,12 @@ import (
 )
 
 type UserTokens struct {
-	ID        string    `gorm:"column:id;primary_key"` //User tokenID
+	ID        int       `gorm:"column:id;primary_key"` //primary key
+	ResID     string    `gorm:"column:res_id"`         //User tokenID
 	Token     string    `gorm:"column:token"`          //Token
 	UserEmail string    `gorm:"column:user_email"`     //Email
-	CreatedAt time.Time `gorm:"column:created_at"`     //Creation time
-	UpdatedAt time.Time `gorm:"column:updated_at"`     //Update time
 	ExpiredAt time.Time `gorm:"column:expired_at"`     //Expired time
+	ModelTime
 }
 
 // TableName sets the insert table name for this struct type
@@ -78,7 +78,7 @@ func (u *UserTokens) SetTokenExpire(email string, token string, expiredTime time
 			return userIdUniqueErr
 		}
 		updateData := &UserTokens{}
-		updateData.ID = userTokenId
+		updateData.ResID = userTokenId
 		updateData.UserEmail = email
 		updateData.Token = token
 		updateData.ExpiredAt = expiredTime

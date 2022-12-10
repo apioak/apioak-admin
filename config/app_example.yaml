@@ -1,21 +1,32 @@
 server:
   host: 0.0.0.0
   port: 3000
-  mode: debug # release or debug
+  mode: release # release or debug
+
 logger:
-  log_path: logs
-  log_level: debug
+  log_path: logs # 日志路径
+  log_file_info: info.log # info日志的文件名称
+  log_file_error: error.log # error日志的文件名称
+  log_reserve: 1 # 日志保留天数
+
 database:
   driver: mysql
-  host: 10.90.100.35
-  port: 8080
-  db_name: gwadmin
+  host: 127.0.0.1
+  port: 3306
+  db_name: apioak
   username: root
-  password: admin123@
-  # 数据库最大空闲连接数
-  max_idel_connections: 10
-  # 数据库最大打开连接数
-  max_open_connections: 100
+  password: root
+  max_idel_connections: 10 # 数据库最大空闲连接数
+  max_open_connections: 100 # 数据库最大打开连接数
   sql_mode: true # true or false sql打印开关
+
+etcd:
+  host_port: localhost:2379 # ETCD配置ip:port，多组数据以英文逗号","隔开
+
 validator:
   locale: zh
+
+token:
+  token_issuer: zanehy # 签发人
+  token_secret: FP_VlWV3ovMv5HsgRBEEr3o80XKm9qenEcsWPXbOAo0= # 认证Secret
+  token_expire: 120 # 过期时间（分钟）
