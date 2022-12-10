@@ -47,7 +47,7 @@ func RegisterCustomizeValidator(validatorEngine *validator.Validate) error {
 	if err := validatorEngine.RegisterValidation("CheckPluginTypeOneOf", validators.CheckPluginTypeOneOf); err != nil {
 		return err
 	}
-	if err := validatorEngine.RegisterValidation("CheckPluginTagOneOf", validators.CheckPluginTagOneOf); err != nil {
+	if err := validatorEngine.RegisterValidation("CheckPluginKeyOneOf", validators.CheckPluginKeyOneOf); err != nil {
 		return err
 	}
 

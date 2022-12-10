@@ -126,9 +126,9 @@ func RoutePluginConfigInfo(id string) (interface{}, error) {
 	routePluginInfo := routePluginModel.RoutePluginInfoById(id, "", "")
 
 	pluginModel := &models.Plugins{}
-	pluginInfo := pluginModel.PluginInfoByIdRouteServiceId(routePluginInfo.PluginID)
+	pluginInfo := pluginModel.PluginInfoByResIdRouteServiceId(routePluginInfo.PluginID)
 
-	newPluginContext, newPluginContextErr := plugins.NewPluginContext(pluginInfo.Tag)
+	newPluginContext, newPluginContextErr := plugins.NewPluginContext(pluginInfo.Key)
 	if newPluginContextErr != nil {
 		return nil, newPluginContextErr
 	}
@@ -208,14 +208,14 @@ func generateRoutePluginConfig(id string) (RoutePluginConfig, error) {
 	}
 
 	pluginModel := models.Plugins{}
-	pluginInfo := pluginModel.PluginInfoById(routePluginInfo.PluginID)
-	if len(pluginInfo.ID) == 0 {
+	pluginInfo := pluginModel.PluginInfoByResId(routePluginInfo.PluginID)
+	if len(pluginInfo.ResID) == 0 {
 		return routePluginConfig, errors.New(enums.CodeMessages(enums.PluginNull))
 	}
 
 	routePluginConfig.ID = routePluginInfo.ID
 	routePluginConfig.RouteID = routePluginInfo.RouteID
-	routePluginConfig.PluginTag = pluginInfo.Tag
+	routePluginConfig.PluginTag = pluginInfo.Key
 	routePluginConfig.Order = routePluginInfo.Order
 	routePluginConfig.IsEnable = routePluginInfo.IsEnable
 	routePluginConfig.Config = routePluginInfo.Config

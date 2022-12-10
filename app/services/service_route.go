@@ -444,13 +444,13 @@ func (r *RouteAddPluginInfo) RouteAddPluginList(filterRouteId string) ([]RouteAd
 	}
 
 	for _, allPluginInfo := range allPluginList {
-		_, routePluginExist := routePluginAllPluginIdsMap[allPluginInfo.ID]
+		_, routePluginExist := routePluginAllPluginIdsMap[allPluginInfo.ResID]
 
 		if !routePluginExist {
 			routeAddPluginInfo := RouteAddPluginInfo{}
-			routeAddPluginInfo.ID = allPluginInfo.ID
+			routeAddPluginInfo.ID = allPluginInfo.ResID
 			routeAddPluginInfo.Name = allPluginInfo.Name
-			routeAddPluginInfo.Tag = allPluginInfo.Tag
+			routeAddPluginInfo.Tag = allPluginInfo.Key
 			routeAddPluginInfo.Type = allPluginInfo.Type
 			routeAddPluginInfo.Description = allPluginInfo.Description
 
@@ -484,9 +484,9 @@ func (r *RoutePluginInfo) RoutePluginList(routeId string) []RoutePluginInfo {
 	for _, routePluginConfigInfo := range routePluginConfigInfos {
 		routePluginInfo := RoutePluginInfo{}
 		routePluginInfo.ID = routePluginConfigInfo.ID
-		routePluginInfo.PluginId = routePluginConfigInfo.Plugin.ID
+		routePluginInfo.PluginId = routePluginConfigInfo.Plugin.ResID
 		routePluginInfo.Name = routePluginConfigInfo.Plugin.Name
-		routePluginInfo.Tag = routePluginConfigInfo.Plugin.Tag
+		routePluginInfo.Tag = routePluginConfigInfo.Plugin.Key
 		routePluginInfo.Icon = routePluginConfigInfo.Plugin.Icon
 		routePluginInfo.Type = routePluginConfigInfo.Plugin.Type
 		routePluginInfo.Description = routePluginConfigInfo.Plugin.Description

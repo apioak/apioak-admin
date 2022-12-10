@@ -1,7 +1,15 @@
 package cores
 
+import (
+	"fmt"
+	"time"
+)
+
 func InitGoroutineFunc() {
-	go ClusterNodeWatch()
+	// go ClusterNodeWatch()
+
+	// go dynamicValidationPluginData()
+
 }
 
 func ClusterNodeWatch() {
@@ -17,4 +25,16 @@ func ClusterNodeWatch() {
 	//		}
 	//	}
 	//}
+}
+
+func dynamicValidationPluginData() {
+
+	timer := time.NewTicker(5 * time.Second)
+	defer timer.Stop()
+
+	for range timer.C {
+
+		fmt.Println("---------", time.Now().Format("2006-01-02 15:04:05"))
+
+	}
 }

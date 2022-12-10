@@ -26,7 +26,7 @@ func PluginAdd(c *gin.Context) {
 	validators.GetPluginAddAttributesDefault(&validatorPluginAdd)
 
 	pluginModel := models.Plugins{}
-	pluginInfos, err := pluginModel.PluginInfosByTags([]string{validatorPluginAdd.Tag}, []string{})
+	pluginInfos, err := pluginModel.PluginInfosByKeys([]string{validatorPluginAdd.Key}, []string{})
 	if err != nil {
 		utils.Error(c, err.Error())
 		return
@@ -47,7 +47,7 @@ func PluginAdd(c *gin.Context) {
 }
 
 func PluginUpdate(c *gin.Context) {
-	pluginId := strings.TrimSpace(c.Param("id"))
+	pluginResId := strings.TrimSpace(c.Param("id"))
 
 	var validatorPluginUpdate = validators.ValidatorPluginUpdate{}
 	if msg, err := packages.ParseRequestParams(c, &validatorPluginUpdate); err != nil {
@@ -57,7 +57,7 @@ func PluginUpdate(c *gin.Context) {
 	validators.GetPluginUpdateAttributesDefault(&validatorPluginUpdate)
 
 	pluginModel := models.Plugins{}
-	pluginInfos, pluginInfosErr := pluginModel.PluginInfosByIds([]string{pluginId})
+	pluginInfos, pluginInfosErr := pluginModel.PluginInfosByResIds([]string{pluginResId})
 	if pluginInfosErr != nil {
 		utils.Error(c, pluginInfosErr.Error())
 		return
@@ -67,7 +67,7 @@ func PluginUpdate(c *gin.Context) {
 		return
 	}
 
-	updateErr := services.PluginUpdate(pluginId, &validatorPluginUpdate)
+	updateErr := services.PluginUpdate(pluginResId, &validatorPluginUpdate)
 	if updateErr != nil {
 		utils.Error(c, updateErr.Error())
 		return
@@ -77,10 +77,10 @@ func PluginUpdate(c *gin.Context) {
 }
 
 func PluginDelete(c *gin.Context) {
-	pluginId := strings.TrimSpace(c.Param("id"))
+	pluginResId := strings.TrimSpace(c.Param("id"))
 
 	pluginModel := models.Plugins{}
-	pluginInfos, pluginInfosErr := pluginModel.PluginInfosByIds([]string{pluginId})
+	pluginInfos, pluginInfosErr := pluginModel.PluginInfosByResIds([]string{pluginResId})
 	if pluginInfosErr != nil {
 		utils.Error(c, pluginInfosErr.Error())
 		return
@@ -92,7 +92,7 @@ func PluginDelete(c *gin.Context) {
 	}
 
 	routePluginModel := models.RoutePlugins{}
-	routePluginInfos, routePluginInfosErr := routePluginModel.RoutePluginInfosByPluginIds([]string{pluginId})
+	routePluginInfos, routePluginInfosErr := routePluginModel.RoutePluginInfosByPluginResIds([]string{pluginResId})
 	if routePluginInfosErr != nil {
 		utils.Error(c, routePluginInfosErr.Error())
 		return
@@ -102,7 +102,7 @@ func PluginDelete(c *gin.Context) {
 		return
 	}
 
-	deleteErr := pluginModel.PluginDelete(pluginId)
+	deleteErr := pluginModel.PluginDelete(pluginResId)
 	if deleteErr != nil {
 		utils.Error(c, deleteErr.Error())
 		return
@@ -136,16 +136,16 @@ func PluginList(c *gin.Context) {
 }
 
 func PluginInfo(c *gin.Context) {
-	pluginId := strings.TrimSpace(c.Param("id"))
+	pluginResId := strings.TrimSpace(c.Param("id"))
 
-	checkPluginExistErr := services.CheckPluginExist(pluginId)
+	checkPluginExistErr := services.CheckPluginExist(pluginResId)
 	if checkPluginExistErr != nil {
 		utils.Error(c, checkPluginExistErr.Error())
 		return
 	}
 
 	pluginInfoService := services.PluginInfoService{}
-	pluginInfo, pluginInfoErr := pluginInfoService.PluginInfoById(pluginId)
+	pluginInfo, pluginInfoErr := pluginInfoService.PluginInfoByResId(pluginResId)
 	if pluginInfoErr != nil {
 		utils.Error(c, pluginInfoErr.Error())
 		return

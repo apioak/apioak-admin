@@ -125,17 +125,25 @@ func PluginAllTypes() []enumInfo {
 	pluginTypeList := []enumInfo{
 		{Id: PluginTypeIdAuth, Name: PluginTypeNameAuth},
 		{Id: PluginTypeIdLimit, Name: PluginTypeNameLimit},
+		{Id: PluginTypeIdSafety, Name: PluginTypeNameSafety},
+		{Id: PluginTypeIdFlowControl, Name: PluginTypeNameFlowControl},
 	}
 
 	return pluginTypeList
 }
 
-func PluginAllTags() []string {
-	pluginTagList := []string{
-		PluginTagNameJwtAuth, PluginTagNameLimitCount,
+func PluginAllKeys() []string {
+	pluginKeysList := []string{
+		PluginKeyNameCors,
+		PluginKeyNameMock,
+		PluginKeyNameKeyAuth,
+		PluginKeyNameJwtAuth,
+		PluginKeyNameLimitReq,
+		PluginKeyNameLimitConn,
+		PluginKeyNameLimitCount,
 	}
 
-	return pluginTagList
+	return pluginKeysList
 }
 
 func AllRequestMethod() []string {

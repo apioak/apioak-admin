@@ -32,8 +32,8 @@ func (m *UserTokens) ModelUniqueId() (string, error) {
 
 	result := packages.GetDb().
 		Table(m.TableName()).
-		Where("id = ?", generateId).
-		Select("id").
+		Where("res_id = ?", generateId).
+		Select("res_id").
 		First(m)
 
 	if result.RowsAffected == 0 {

@@ -5,6 +5,7 @@ import (
 	"apioak-admin/app/packages"
 	"apioak-admin/app/utils"
 	"errors"
+	"gorm.io/gorm"
 )
 
 type RoutePlugins struct {
@@ -58,7 +59,7 @@ func (m *RoutePlugins) ModelUniqueId() (string, error) {
 	}
 }
 
-func (r *RoutePlugins) RoutePluginInfosByPluginIds(pluginIds []string) ([]RoutePlugins, error) {
+func (r *RoutePlugins) RoutePluginInfosByPluginResIds(pluginIds []string) ([]RoutePlugins, error) {
 	routePluginInfos := make([]RoutePlugins, 0)
 	if len(pluginIds) == 0 {
 		return routePluginInfos, nil
@@ -69,6 +70,9 @@ func (r *RoutePlugins) RoutePluginInfosByPluginIds(pluginIds []string) ([]RouteP
 		Where("plugin_id IN ?", pluginIds).
 		Order("created_at DESC").
 		Find(&routePluginInfos).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		err = nil
+	}
 
 	return routePluginInfos, err
 }

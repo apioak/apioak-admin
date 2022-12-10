@@ -9,10 +9,10 @@ import (
 	"strings"
 )
 
-func CheckPluginExist(pluginId string) error {
+func CheckPluginExist(pluginResId string) error {
 	pluginModel := &models.Plugins{}
-	pluginInfo := pluginModel.PluginInfoByIdRouteServiceId(pluginId)
-	if pluginInfo.ID != pluginId {
+	pluginInfo := pluginModel.PluginInfoByResIdRouteServiceId(pluginResId)
+	if pluginInfo.ResID != pluginResId {
 		return errors.New(enums.CodeMessages(enums.PluginNull))
 	}
 
@@ -21,9 +21,9 @@ func CheckPluginExist(pluginId string) error {
 
 func CheckPluginConfig(pluginId string, pluginConfig *validators.RoutePluginAddUpdate) error {
 	pluginModel := &models.Plugins{}
-	pluginInfo := pluginModel.PluginInfoByIdRouteServiceId(pluginId)
+	pluginInfo := pluginModel.PluginInfoByResIdRouteServiceId(pluginId)
 
-	newPluginContext, newPluginContextErr := plugins.NewPluginContext(pluginInfo.Tag)
+	newPluginContext, newPluginContextErr := plugins.NewPluginContext(pluginInfo.Key)
 	if newPluginContextErr != nil {
 		return newPluginContextErr
 	}
@@ -42,7 +42,7 @@ func PluginCreate(pluginData *validators.ValidatorPluginAdd) error {
 
 	createPluginData := &models.Plugins{
 		Name:        pluginData.Name,
-		Tag:         pluginData.Tag,
+		Key:         pluginData.Key,
 		Icon:        pluginData.Icon,
 		Type:        pluginData.Type,
 		Description: pluginData.Description,
@@ -54,8 +54,8 @@ func PluginCreate(pluginData *validators.ValidatorPluginAdd) error {
 	return createErr
 }
 
-func PluginUpdate(id string, pluginUpdate *validators.ValidatorPluginUpdate) error {
-	id = strings.TrimSpace(id)
+func PluginUpdate(resId string, pluginUpdate *validators.ValidatorPluginUpdate) error {
+	resId = strings.TrimSpace(resId)
 
 	updatePluginData := models.Plugins{
 		Name:        pluginUpdate.Name,
@@ -63,7 +63,7 @@ func PluginUpdate(id string, pluginUpdate *validators.ValidatorPluginUpdate) err
 		Description: pluginUpdate.Description,
 	}
 
-	updateErr := updatePluginData.PluginUpdate(id, &updatePluginData)
+	updateErr := updatePluginData.PluginUpdate(resId, &updatePluginData)
 	if updateErr != nil {
 		return updateErr
 	}
@@ -72,9 +72,9 @@ func PluginUpdate(id string, pluginUpdate *validators.ValidatorPluginUpdate) err
 }
 
 type StructPluginInfo struct {
-	ID          string `json:"id"`
+	ResID       string `json:"res_id"`
 	Name        string `json:"name"`
-	Tag         string `json:"tag"`
+	Key         string `json:"key"`
 	Icon        string `json:"icon"`
 	Type        int    `json:"type"`
 	Description string `json:"description"`
@@ -89,9 +89,9 @@ func (s *StructPluginInfo) PluginListPage(param *validators.PluginList) ([]Struc
 	if len(pluginInfos) != 0 {
 		for _, pluginInfo := range pluginInfos {
 			structPluginInfo := StructPluginInfo{}
-			structPluginInfo.ID = pluginInfo.ID
+			structPluginInfo.ResID = pluginInfo.ResID
 			structPluginInfo.Name = pluginInfo.Name
-			structPluginInfo.Tag = pluginInfo.Tag
+			structPluginInfo.Key = pluginInfo.Key
 			structPluginInfo.Icon = pluginInfo.Icon
 			structPluginInfo.Type = pluginInfo.Type
 			structPluginInfo.Description = pluginInfo.Description
@@ -104,34 +104,34 @@ func (s *StructPluginInfo) PluginListPage(param *validators.PluginList) ([]Struc
 }
 
 type PluginInfoService struct {
-	ID          string      `json:"id"`
+	ResID       string 		`json:"res_id"`
 	Name        string      `json:"name"`
-	Tag         string      `json:"tag"`
+	Key         string      `json:"key"`
 	Icon        string      `json:"icon"`
 	Type        int         `json:"type"`
 	Description string      `json:"description"`
 	Config      interface{} `json:"config"`
 }
 
-func (p *PluginInfoService) PluginInfoById(id string) (PluginInfoService, error) {
+func (p *PluginInfoService) PluginInfoByResId(resId string) (PluginInfoService, error) {
 	pluginInfo := PluginInfoService{}
 
 	pluginModel := models.Plugins{}
-	plugin := pluginModel.PluginInfoById(id)
-	if len(plugin.ID) == 0 {
+	plugin := pluginModel.PluginInfoByResId(resId)
+	if len(plugin.ResID) == 0 {
 		return pluginInfo, errors.New(enums.CodeMessages(enums.PluginNull))
 	}
 
-	newPluginContext, newPluginContextErr := plugins.NewPluginContext(plugin.Tag)
+	newPluginContext, newPluginContextErr := plugins.NewPluginContext(plugin.Key)
 	if newPluginContextErr != nil {
 		return pluginInfo, newPluginContextErr
 	}
 
 	pluginConfig := newPluginContext.StrategyPluginFormatDefault()
 
-	pluginInfo.ID = plugin.ID
+	pluginInfo.ResID = plugin.ResID
 	pluginInfo.Name = plugin.Name
-	pluginInfo.Tag = plugin.Tag
+	pluginInfo.Key = plugin.Key
 	pluginInfo.Icon = plugin.Icon
 	pluginInfo.Type = plugin.Type
 	pluginInfo.Description = plugin.Description

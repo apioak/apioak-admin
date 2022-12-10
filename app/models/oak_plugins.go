@@ -6,16 +6,18 @@ import (
 	"apioak-admin/app/utils"
 	"apioak-admin/app/validators"
 	"errors"
+	"gorm.io/gorm"
 	"strings"
 )
 
 type Plugins struct {
-	ID          string `gorm:"column:id;primary_key"` //Plugin id
-	Name        string `gorm:"column:name"`           //Plugin name
-	Tag         string `gorm:"column:tag"`            //Plugin tag
-	Icon        string `gorm:"column:icon"`           //Plugin icon
-	Type        int    `gorm:"column:type"`           //Plugin type
-	Description string `gorm:"column:description"`    //Plugin description
+	ID          int       `gorm:"column:id;primary_key"` //primary key
+	ResID       string    `gorm:"column:res_id"`         //Plugin id
+	Name        string    `gorm:"column:name"`           //Plugin name
+	Key         string    `gorm:"column:key"`            //Plugin key
+	Icon        string    `gorm:"column:icon"`           //Plugin icon
+	Type        int       `gorm:"column:type"`           //Plugin type
+	Description string    `gorm:"column:description"`    //Plugin description
 	ModelTime
 }
 
@@ -34,8 +36,8 @@ func (m *Plugins) ModelUniqueId() (string, error) {
 
 	result := packages.GetDb().
 		Table(m.TableName()).
-		Where("id = ?", generateId).
-		Select("id").
+		Where("res_id = ?", generateId).
+		Select("res_id").
 		First(m)
 
 	if result.RowsAffected == 0 {
@@ -58,27 +60,30 @@ func (m *Plugins) ModelUniqueId() (string, error) {
 	}
 }
 
-func (p *Plugins) PluginInfosByTags(tag []string, filterPluginIds []string) ([]Plugins, error) {
+func (p *Plugins) PluginInfosByKeys(keys []string, filterPluginIds []string) ([]Plugins, error) {
 	pluginInfos := make([]Plugins, 0)
 	db := packages.GetDb().
 		Table(p.TableName()).
-		Where("tag IN ?", tag)
+		Where("key IN ?", keys)
 
 	if len(filterPluginIds) != 0 {
-		db = db.Where("id NOT IN ?", filterPluginIds)
+		db = db.Where("res_id NOT IN ?", filterPluginIds)
 	}
 
 	err := db.Find(&pluginInfos).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		err = nil
+	}
 
 	return pluginInfos, err
 }
 
 func (p *Plugins) PluginAdd(pluginData *Plugins) error {
-	pluginId, pluginIdUniqueErr := p.ModelUniqueId()
+	pluginResId, pluginIdUniqueErr := p.ModelUniqueId()
 	if pluginIdUniqueErr != nil {
 		return pluginIdUniqueErr
 	}
-	pluginData.ID = pluginId
+	pluginData.ResID = pluginResId
 
 	err := packages.GetDb().
 		Table(p.TableName()).
@@ -87,31 +92,34 @@ func (p *Plugins) PluginAdd(pluginData *Plugins) error {
 	return err
 }
 
-func (p *Plugins) PluginInfoById(id string) Plugins {
+func (p *Plugins) PluginInfoByResId(resId string) Plugins {
 	pluginInfo := Plugins{}
 	packages.GetDb().
 		Table(p.TableName()).
-		Where("id = ?", id).
+		Where("res_id = ?", resId).
 		Find(&pluginInfo)
 
 	return pluginInfo
 }
 
-func (p *Plugins) PluginInfosByIds(ids []string) ([]Plugins, error) {
+func (p *Plugins) PluginInfosByResIds(resIds []string) ([]Plugins, error) {
 	pluginInfos := make([]Plugins, 0)
 	err := packages.GetDb().
 		Table(p.TableName()).
-		Where("id IN ?", ids).
+		Where("res_id IN ?", resIds).
 		Find(&pluginInfos).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		err = nil
+	}
 
 	return pluginInfos, err
 }
 
-func (p *Plugins) PluginInfoByIdRouteServiceId(pluginId string) Plugins {
+func (p *Plugins) PluginInfoByResIdRouteServiceId(pluginResId string) Plugins {
 	pluginInfo := Plugins{}
 	packages.GetDb().
 		Table(p.TableName()).
-		Where("id = ?", pluginId).
+		Where("res_id = ?", pluginResId).
 		First(&pluginInfo)
 
 	return pluginInfo
@@ -120,16 +128,16 @@ func (p *Plugins) PluginInfoByIdRouteServiceId(pluginId string) Plugins {
 func (p *Plugins) PluginUpdate(id string, pluginInfo *Plugins) error {
 	updateError := packages.GetDb().
 		Table(p.TableName()).
-		Where("id = ?", id).
+		Where("res_id = ?", id).
 		Updates(pluginInfo).Error
 
 	return updateError
 }
 
-func (p *Plugins) PluginDelete(id string) error {
+func (p *Plugins) PluginDelete(resId string) error {
 	deleteError := packages.GetDb().
 		Table(p.TableName()).
-		Where("id = ?", id).
+		Where("res_id = ?", resId).
 		Delete(p).Error
 
 	return deleteError

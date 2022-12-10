@@ -365,14 +365,14 @@ func (r *Routes) RouteListPage(serviceId string, param *validators.ValidatorRout
 		if len(routesPluginInfo.Plugins) != 0 {
 			for _, pluginInfo := range routesPluginInfo.Plugins {
 				routePluginConfigs := RoutePluginConfigs{
-					ID:   pluginInfo.ID,
+					ID:   pluginInfo.ResID,
 					Name: pluginInfo.Name,
-					Tag:  pluginInfo.Tag,
+					Tag:  pluginInfo.Key,
 					Icon: pluginInfo.Icon,
 					Type: pluginInfo.Type,
 				}
 
-				routePluginConfigInfo, ok := routesPluginConfigMap[routesPluginInfo.ID][pluginInfo.ID]
+				routePluginConfigInfo, ok := routesPluginConfigMap[routesPluginInfo.ID][pluginInfo.ResID]
 				if ok {
 					routePluginConfigs.Config = routePluginConfigInfo.Config
 					routePluginConfigs.IsEnable = routePluginConfigInfo.IsEnable

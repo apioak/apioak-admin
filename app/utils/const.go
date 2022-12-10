@@ -1,16 +1,16 @@
 package utils
 
 const (
-	IdTypeUser          = "u"
+	IdTypeUser          = "us"
 	IdTypeUserToken     = "ut"
-	IdTypeService       = "svc"
-	IdTypeServiceDomain = "sdm"
-	IdTypeServiceNode   = "snd"
+	IdTypeService       = "sv"
+	IdTypeServiceDomain = "sd"
+	IdTypeServiceNode   = "sn"
 	IdTypeRoute         = "rt"
-	IdTypePlugin        = "plu"
-	IdTypeRoutePlugin   = "rpu"
-	IdTypeCertificate   = "cer"
-	IdTypeClusterNode   = "cnd"
+	IdTypePlugin        = "pl"
+	IdTypeRoutePlugin   = "rp"
+	IdTypeCertificate   = "ce"
+	IdTypeClusterNode   = "cn"
 
 	EtcdKeyTypeService     = "service"
 	EtcdKeyTypeRoute       = "route"
@@ -54,8 +54,8 @@ const (
 	LoadBalanceRoundRobin = 1 // 轮询
 	LoadBalanceIPHash     = 2 // ip_hash
 
-	LoadBalanceNameRoundRobin = "加权轮询 (Weighted Round Robin)"
-	LoadBalanceNameIPHash     = "ip_hash"
+	LoadBalanceNameRoundRobin = "加权轮询 (Round Robin)"
+	LoadBalanceNameIPHash     = "一致性Hash（CHash）"
 
 	ProtocolHTTP         = 1
 	ProtocolHTTPS        = 2
@@ -65,7 +65,7 @@ const (
 
 	DefaultRoutePath = "/*"
 
-	RequestMethodALL     = "ALL"
+	RequestMethodALL = "ALL"
 
 	RequestMethodGET     = "GET"
 	RequestMethodPOST    = "POST"
@@ -75,19 +75,44 @@ const (
 
 	// ===================================== plugin =====================================
 
-	PluginTypeIdAuth  = 1
-	PluginTypeIdLimit = 2
+	PluginTypeIdAuth        = 1
+	PluginTypeIdLimit       = 2
+	PluginTypeIdSafety      = 3
+	PluginTypeIdFlowControl = 4
 
-	PluginTypeNameAuth  = "鉴权"
-	PluginTypeNameLimit = "限流"
+	PluginTypeNameAuth        = "鉴权"
+	PluginTypeNameLimit       = "限流"
+	PluginTypeNameSafety      = "安全"
+	PluginTypeNameFlowControl = "流量控制"
 
-	PluginTagNameJwtAuth    = "jwt-auth"
-	PluginTagNameLimitCount = "limit-count"
+	PluginKeyNameCors       = "cors"
+	PluginKeyNameMock       = "mock"
+	PluginKeyNameKeyAuth    = "key-auth"
+	PluginKeyNameJwtAuth    = "jwt-auth"
+	PluginKeyNameLimitReq   = "limit-req"
+	PluginKeyNameLimitConn  = "limit-conn"
+	PluginKeyNameLimitCount = "limit-count"
 
-	// ===================================== cluster node =====================================
+	PluginIconCors       = "icon-cors"
+	PluginIconMock       = "icon-mock"
+	PluginIconKeyAuth    = "icon-key-auth"
+	PluginIconJwtAuth    = "icon-jwt-auth"
+	PluginIconLimitReq   = "icon-limit-req"
+	PluginIconLimitConn  = "icon-limit-conn"
+	PluginIconLimitCount = "icon-limit-count"
 
-	EtcdKeyWatchClusterNode = "/apioak/etcd-key/watch/cluster/node/add"
+	PluginDescCors       = "desc-cors"
+	PluginDescMock       = "default-mock"
+	PluginDescKeyAuth    = "default-key-auth"
+	PluginDescJwtAuth    = "default-jwt-auth"
+	PluginDescLimitReq   = "default-limit-req"
+	PluginDescLimitConn  = "default-limit-conn"
+	PluginDescLimitCount = "default-limit-count"
 
-	ClusterNodeStatusHealth    = 1
-	ClusterNodeStatusUnhealthy = 2
+// ===================================== cluster node =====================================
+
+EtcdKeyWatchClusterNode = "/apioak/etcd-key/watch/cluster/node/add"
+
+ClusterNodeStatusHealth = 1
+ClusterNodeStatusUnhealthy = 2
 )

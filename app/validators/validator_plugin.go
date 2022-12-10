@@ -18,7 +18,7 @@ var (
 
 type ValidatorPluginAdd struct {
 	Name        string `json:"name" zh:"插件名称" en:"Plugin name" binding:"required,min=1,max=30"`
-	Tag         string `json:"tag" zh:"插件标识" en:"Plugin tag" binding:"required,min=1,max=30,CheckPluginTagOneOf"`
+	Key         string `json:"key" zh:"插件标识" en:"Plugin key" binding:"required,min=1,max=30,CheckPluginKeyOneOf"`
 	Icon        string `json:"icon" zh:"插件ICON" en:"Plugin icon" binding:"required,min=1,max=30"`
 	Type        int    `json:"type" zh:"插件类型" en:"Plugin type" binding:"required,CheckPluginTypeOneOf"`
 	Description string `json:"description" zh:"插件描述" en:"Plugin description" binding:"omitempty,max=150"`
@@ -64,26 +64,26 @@ func CheckPluginTypeOneOf(fl validator.FieldLevel) bool {
 	return true
 }
 
-func CheckPluginTagOneOf(fl validator.FieldLevel) bool {
-	pluginTag := fl.Field().String()
-	pluginAllTags := utils.PluginAllTags()
+func CheckPluginKeyOneOf(fl validator.FieldLevel) bool {
+	pluginKey := fl.Field().String()
+	pluginAllKeys := utils.PluginAllKeys()
 
-	pluginTagsMap := make(map[string]byte, 0)
-	if len(pluginAllTags) != 0 {
-		for _, pluginAllTag := range pluginAllTags {
-			if len(pluginAllTag) == 0 {
+	pluginKeysMap := make(map[string]byte, 0)
+	if len(pluginAllKeys) != 0 {
+		for _, pluginAllKey := range pluginAllKeys {
+			if len(pluginAllKey) == 0 {
 				continue
 			}
 
-			pluginTagsMap[pluginAllTag] = 0
+			pluginKeysMap[pluginAllKey] = 0
 		}
 	}
 
-	_, exist := pluginTagsMap[pluginTag]
+	_, exist := pluginKeysMap[pluginKey]
 	if !exist {
 		var errMsg string
-		errMsg = fmt.Sprintf(pluginTypeTagOneOfErrorMessages[strings.ToLower(packages.GetValidatorLocale())], fl.FieldName(), strings.Join(pluginAllTags, " "))
-		packages.SetAllCustomizeValidatorErrMsgs("CheckPluginTagOneOf", errMsg)
+		errMsg = fmt.Sprintf(pluginTypeTagOneOfErrorMessages[strings.ToLower(packages.GetValidatorLocale())], fl.FieldName(), strings.Join(pluginAllKeys, " "))
+		packages.SetAllCustomizeValidatorErrMsgs("CheckPluginKeyOneOf", errMsg)
 		return false
 	}
 
@@ -92,7 +92,7 @@ func CheckPluginTagOneOf(fl validator.FieldLevel) bool {
 
 func GetPluginAddAttributesDefault(pluginAdd *ValidatorPluginAdd) {
 	pluginAdd.Name = strings.TrimSpace(pluginAdd.Name)
-	pluginAdd.Tag = strings.TrimSpace(pluginAdd.Tag)
+	pluginAdd.Key = strings.TrimSpace(pluginAdd.Key)
 	pluginAdd.Icon = strings.TrimSpace(pluginAdd.Icon)
 	pluginAdd.Description = strings.TrimSpace(pluginAdd.Description)
 }
