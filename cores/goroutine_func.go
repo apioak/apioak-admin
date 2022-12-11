@@ -36,6 +36,5 @@ func dynamicValidationPluginData() {
 		services.PluginBasicInfoMaintain()
 
 		<-timer.C
-
 	}
 }

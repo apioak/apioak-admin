@@ -132,7 +132,7 @@ func CertificateAdd(certificateData *validators.CertificateAddUpdate) error {
 		Sni:           certificateInfo.CommonName,
 	}
 
-	if certificateData.IsRelease == utils.IsReleaseY {
+	if certificateData.IsRelease == utils.ReleaseY {
 		certificatesModel.ReleaseStatus = utils.ReleaseStatusY
 	}
 
@@ -141,7 +141,7 @@ func CertificateAdd(certificateData *validators.CertificateAddUpdate) error {
 		return addErr
 	}
 
-	if certificateData.IsRelease == utils.IsReleaseY {
+	if certificateData.IsRelease == utils.ReleaseY {
 		configReleaseErr := CertificateConfigRelease(utils.ReleaseTypePush, certificateId)
 		if configReleaseErr != nil {
 			certificatesModel.ReleaseStatus = utils.ReleaseStatusU
@@ -185,7 +185,7 @@ func CertificateUpdate(id string, certificateData *validators.CertificateAddUpda
 		certificatesModel.ReleaseStatus = utils.ReleaseStatusT
 	}
 
-	if certificateData.IsRelease == utils.IsReleaseY {
+	if certificateData.IsRelease == utils.ReleaseY {
 		certificatesModel.ReleaseStatus = utils.ReleaseStatusY
 	}
 
@@ -194,7 +194,7 @@ func CertificateUpdate(id string, certificateData *validators.CertificateAddUpda
 		return updateErr
 	}
 
-	if certificateData.IsRelease == utils.IsReleaseY {
+	if certificateData.IsRelease == utils.ReleaseY {
 		configReleaseErr := CertificateConfigRelease(utils.ReleaseTypePush, id)
 		if configReleaseErr != nil {
 			if certificateExistInfo.ReleaseStatus != utils.ReleaseStatusU {

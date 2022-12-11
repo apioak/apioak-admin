@@ -14,10 +14,10 @@ import (
 	"time"
 )
 
-func CheckServiceExist(serviceId string) error {
+func CheckServiceExist(serviceResId string) error {
 	serviceModel := &models.Services{}
-	serviceInfo := serviceModel.ServiceInfoById(serviceId)
-	if serviceInfo.ID != serviceId {
+	serviceInfo := serviceModel.ServiceInfoById(serviceResId)
+	if len(serviceInfo.ID) == 0 {
 		return errors.New(enums.CodeMessages(enums.ServiceNull))
 	}
 
@@ -243,7 +243,7 @@ func ServiceCreate(serviceData *validators.ServiceAddUpdate) error {
 		Timeouts:      string(timeOutByte),
 	}
 
-	if serviceData.IsRelease == utils.IsReleaseY {
+	if serviceData.IsRelease == utils.ReleaseY {
 		createServiceData.ReleaseStatus = utils.ReleaseStatusY
 	}
 
@@ -271,7 +271,7 @@ func ServiceCreate(serviceData *validators.ServiceAddUpdate) error {
 
 	serviceId, createErr := serviceModel.ServiceAdd(&createServiceData, &serviceDomainInfos, &serviceNodeInfos)
 
-	if (createErr == nil) && (serviceData.IsRelease == utils.IsReleaseY) {
+	if (createErr == nil) && (serviceData.IsRelease == utils.ReleaseY) {
 		releaseErr := ServiceRelease(serviceId)
 		if releaseErr != nil {
 			createServiceData.ReleaseStatus = utils.ReleaseStatusU
@@ -302,7 +302,7 @@ func ServiceUpdate(serviceId string, serviceData *validators.ServiceAddUpdate) e
 		updateServiceData.ReleaseStatus = utils.ReleaseStatusT
 	}
 
-	if serviceData.IsRelease == utils.IsReleaseY {
+	if serviceData.IsRelease == utils.ReleaseY {
 		updateServiceData.ReleaseStatus = utils.ReleaseStatusY
 	}
 
@@ -320,7 +320,7 @@ func ServiceUpdate(serviceId string, serviceData *validators.ServiceAddUpdate) e
 
 	updateErr := serviceModel.ServiceUpdate(serviceId, &updateServiceData, &addDomains, &addNodes, &updateNodes, deleteDomainIds, deleteNodeIds)
 
-	if (updateErr == nil) && (serviceData.IsRelease == utils.IsReleaseY) {
+	if (updateErr == nil) && (serviceData.IsRelease == utils.ReleaseY) {
 		releaseErr := ServiceRelease(serviceId)
 		if releaseErr != nil {
 			if serviceInfo.ReleaseStatus != utils.ReleaseStatusU {
@@ -348,7 +348,7 @@ func ServiceDelete(serviceId string) error {
 	routeIds := make([]string, 0)
 	if len(releaseRouteInfos) != 0 {
 		for _, releaseRouteInfo := range releaseRouteInfos {
-			routeIds = append(routeIds, releaseRouteInfo.ID)
+			routeIds = append(routeIds, releaseRouteInfo.ResID)
 		}
 	}
 
@@ -357,8 +357,8 @@ func ServiceDelete(serviceId string) error {
 
 	if len(releaseRouteInfos) != 0 {
 		for _, releaseRouteInfo := range releaseRouteInfos {
-			if releaseRouteInfo.ReleaseStatus != utils.ReleaseStatusU {
-				routeDeleteReleaseErr := ServiceRouteConfigRelease(utils.ReleaseTypeDelete, releaseRouteInfo.ID)
+			if releaseRouteInfo.Release != utils.ReleaseStatusU {
+				routeDeleteReleaseErr := ServiceRouteConfigRelease(utils.ReleaseTypeDelete, releaseRouteInfo.ResID)
 				if routeDeleteReleaseErr != nil {
 					return routeDeleteReleaseErr
 				}
@@ -587,14 +587,14 @@ func ServiceRelease(serviceId string) error {
 		}
 		defaultRouteInfo := defaultRouteInfos[0]
 
-		routeReleaseErr := ServiceRouteConfigRelease(utils.ReleaseTypePush, defaultRouteInfo.ID)
+		routeReleaseErr := ServiceRouteConfigRelease(utils.ReleaseTypePush, defaultRouteInfo.ResID)
 		if routeReleaseErr != nil {
 			serviceModel.ServiceSwitchRelease(serviceId, serviceInfo.ReleaseStatus)
 			return routeReleaseErr
 		}
 
-		routeModel.ReleaseStatus = utils.ReleaseStatusY
-		routeModel.RouteUpdate(defaultRouteInfo.ID, routeModel)
+		routeModel.Release = utils.ReleaseStatusY
+		routeModel.RouteUpdate(defaultRouteInfo.ResID, routeModel)
 	}
 
 	return configReleaseErr

@@ -13,7 +13,7 @@ import (
 
 func CertificateAdd(c *gin.Context) {
 	var bindParams = validators.CertificateAddUpdate{
-		IsRelease: utils.IsReleaseN,
+		IsRelease: utils.ReleaseN,
 	}
 	if msg, err := packages.ParseRequestParams(c, &bindParams); err != nil {
 		utils.Error(c, msg)
@@ -39,7 +39,7 @@ func CertificateUpdate(c *gin.Context) {
 	}
 
 	var bindParams = validators.CertificateAddUpdate{
-		IsRelease: utils.IsReleaseN,
+		IsRelease: utils.ReleaseN,
 	}
 	if msg, err := packages.ParseRequestParams(c, &bindParams); err != nil {
 		utils.Error(c, msg)

@@ -39,21 +39,6 @@ func CheckPluginConfig(pluginId string, pluginConfig *validators.RoutePluginAddU
 	return nil
 }
 
-func PluginCreate(pluginData *validators.ValidatorPluginAdd) error {
-
-	createPluginData := &models.Plugins{
-		PluginKey:   pluginData.PluginKey,
-		Icon:        pluginData.Icon,
-		Type:        pluginData.Type,
-		Description: pluginData.Description,
-	}
-
-	pluginModel := models.Plugins{}
-	createErr := pluginModel.PluginAdd(createPluginData)
-
-	return createErr
-}
-
 func PluginUpdate(resId string, pluginUpdate *validators.ValidatorPluginUpdate) error {
 	resId = strings.TrimSpace(resId)
 

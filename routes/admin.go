@@ -46,7 +46,7 @@ func RouteRegister(routeEngine *gin.Engine) {
 		route := adminRoute.Group("route")
 		{
 			// route
-			route.POST("/add/:service_id", admin.RouteAdd)
+			route.POST("/add", admin.RouteAdd)
 			route.GET("/list/:service_id", admin.RouteList)
 			route.GET("/info/:service_id/:route_id", admin.RouteInfo)
 			route.PUT("/update/:service_id/:route_id", admin.RouteUpdate)
@@ -71,7 +71,6 @@ func RouteRegister(routeEngine *gin.Engine) {
 		plugin := adminRoute.Group("plugin")
 		{
 			plugin.GET("/type-list", admin.PluginTypeList)
-			plugin.POST("/add", admin.PluginAdd)
 			plugin.GET("/list", admin.PluginList)
 			plugin.GET("/info/:id", admin.PluginInfo)
 			plugin.PUT("/update/:id", admin.PluginUpdate)

@@ -24,12 +24,14 @@ var (
 )
 
 type ValidatorRouteAddUpdate struct {
-	IsRelease      int    `json:"is_release" zh:"发布开关" en:"Release status enable" binding:"omitempty,oneof=1 2"`
-	IsEnable       int    `json:"is_enable" zh:"路由开关" en:"Routing enable" binding:"required,oneof=1 2"`
+	ServiceResID   string `json:"service_res_id" zh:"所属服务" en:"Belonging service" binding:"omitempty"`
+	UpstreamResID  string `json:"upstream_res_id" zh:"上游服务" en:"Upstream service" binding:"omitempty"`
 	RouteName      string `json:"route_name" zh:"路由名称" en:"Route name" binding:"omitempty"`
 	RequestMethods string `json:"request_methods" zh:"请求方法" en:"Request method" binding:"required,min=3,CheckRouteRequestMethodOneOf"`
 	RoutePath      string `json:"route_path" zh:"路由路径" en:"Routing path" binding:"required,min=2,CheckRoutePathPrefix"`
-	ServiceID      string `json:"service_id" zh:"服务ID" en:"Service id" binding:"omitempty"`
+	Release        int    `json:"release" zh:"发布开关" en:"Release status enable" binding:"omitempty,oneof=1 2"`
+	Enable         int    `json:"enable" zh:"路由开关" en:"Routing enable" binding:"required,oneof=1 2"`
+	UpstreamAddUpdate
 }
 
 type ValidatorRouteList struct {
@@ -114,7 +116,7 @@ func CheckRouteRequestMethodOneOf(fl validator.FieldLevel) bool {
 }
 
 func GetRouteAttributesDefault(routeAddUpdate *ValidatorRouteAddUpdate) {
-	routeAddUpdate.ServiceID = strings.TrimSpace(routeAddUpdate.ServiceID)
+	routeAddUpdate.ServiceResID = strings.TrimSpace(routeAddUpdate.ServiceResID)
 	routeAddUpdate.RoutePath = strings.TrimSpace(routeAddUpdate.RoutePath)
 	routeAddUpdate.RequestMethods = strings.TrimSpace(routeAddUpdate.RequestMethods)
 	routeAddUpdate.RouteName = strings.TrimSpace(routeAddUpdate.RouteName)

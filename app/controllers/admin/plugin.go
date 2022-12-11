@@ -17,38 +17,6 @@ func PluginTypeList(c *gin.Context) {
 	utils.Ok(c, pluginAllTypes)
 }
 
-func PluginAdd(c *gin.Context) {
-	utils.Error(c, "功能暂不可用！")
-	return
-
-	var validatorPluginAdd = validators.ValidatorPluginAdd{}
-	if msg, err := packages.ParseRequestParams(c, &validatorPluginAdd); err != nil {
-		utils.Error(c, msg)
-		return
-	}
-	validators.GetPluginAddAttributesDefault(&validatorPluginAdd)
-
-	pluginModel := models.Plugins{}
-	pluginInfos, err := pluginModel.PluginInfosByKeys([]string{validatorPluginAdd.PluginKey}, []string{})
-	if err != nil {
-		utils.Error(c, err.Error())
-		return
-	}
-
-	if len(pluginInfos) != 0 {
-		utils.Error(c, enums.CodeMessages(enums.PluginTagExist))
-		return
-	}
-
-	addErr := services.PluginCreate(&validatorPluginAdd)
-	if addErr != nil {
-		utils.Error(c, addErr.Error())
-		return
-	}
-
-	utils.Ok(c)
-}
-
 func PluginUpdate(c *gin.Context) {
 	pluginResId := strings.TrimSpace(c.Param("id"))
 

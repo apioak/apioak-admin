@@ -2,38 +2,14 @@ package validators
 
 import (
 	"apioak-admin/app/packages"
-	"apioak-admin/app/utils"
-	"fmt"
 	"github.com/go-playground/validator/v10"
 	"strings"
-)
-
-var (
-	nodeLocalErrorMessages = map[string]map[string]string{
-		utils.LocalEn: {
-			"required": " is a required field",
-			"ip":       " must be a valid IP address",
-			"max":      " must be %d or less",
-			"min":      " must be %d or greater",
-		},
-		utils.LocalZh: {
-			"required": "为必填字段",
-			"ip":       "必须是一个有效的IP地址",
-			"max":      "必须小于或等于%d",
-			"min":      "最小只能为%d",
-		},
-	}
-	defaultNodePort   = 80
-	nodePortMin       = 0
-	nodePortMax       = 65535
-	nodeWeightMin     = 0
-	nodeWeightMax     = 100
 )
 
 type ServiceNodeAddUpdate struct {
 	NodeIp     string `json:"node_ip" zh:"上游节点IP" en:"Node IP" binding:"required,ip"`
 	NodePort   int    `json:"node_port" zh:"端口" en:"Node port" binding:"omitempty,min=1,max=65535"`
-	NodeWeight int    `json:"node_weight" zh:"权重" en:"Node weight" binding:"omitempty,min=0,max=100"`
+	NodeWeight int    `json:"node_weight" zh:"权重" en:"Node weight" binding:"omitempty,min=1,max=100"`
 }
 
 func CheckServiceNode(fl validator.FieldLevel) bool {
@@ -80,33 +56,6 @@ func CheckServiceNode(fl validator.FieldLevel) bool {
 	return true
 }
 
-func nodeIpValidator(tag string, field string) string {
-	return field + nodeLocalErrorMessages[strings.ToLower(packages.GetValidatorLocale())][strings.ToLower(tag)]
-}
-
-func nodePortValidator(tag string, field string) string {
-	var errMsg string
-
-	switch strings.ToLower(tag) {
-	case "min":
-		errMsg = fmt.Sprintf(field+nodeLocalErrorMessages[strings.ToLower(packages.GetValidatorLocale())][strings.ToLower(tag)], nodePortMin)
-	case "max":
-		errMsg = fmt.Sprintf(field+nodeLocalErrorMessages[strings.ToLower(packages.GetValidatorLocale())][strings.ToLower(tag)], nodePortMax)
-	}
-	return errMsg
-}
-
-func nodeWeightValidator(tag string, field string) string {
-	var errMsg string
-
-	switch strings.ToLower(tag) {
-	case "min":
-		errMsg = fmt.Sprintf(field+nodeLocalErrorMessages[strings.ToLower(packages.GetValidatorLocale())][strings.ToLower(tag)], nodeWeightMin)
-	case "max":
-		errMsg = fmt.Sprintf(field+nodeLocalErrorMessages[strings.ToLower(packages.GetValidatorLocale())][strings.ToLower(tag)], nodeWeightMax)
-	}
-	return errMsg
-}
 
 func CorrectServiceAddNodes(serviceNodes *[]ServiceNodeAddUpdate) {
 	tmpNodeIpMap := make(map[string]byte, 0)

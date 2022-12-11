@@ -11,6 +11,8 @@ const (
 	IdTypeRoutePlugin   = "rp"
 	IdTypeCertificate   = "ce"
 	IdTypeClusterNode   = "cn"
+	IdTypeUpstream      = "up"
+	IdTypeUpstreamNode  = "un"
 
 	EtcdKeyTypeService     = "service"
 	EtcdKeyTypeRoute       = "route"
@@ -39,8 +41,8 @@ const (
 
 	EtcdTimeOut = 3
 
-	IsReleaseY = 1 // 是否发布——是
-	IsReleaseN = 2 // 是否发布——否
+	ReleaseY = 1 // 是否发布——是
+	ReleaseN = 2 // 是否发布——否
 
 	ReleaseStatusU = 1 // 发布状态——未发布
 	ReleaseStatusT = 2 // 发布状态——待发布
@@ -49,17 +51,29 @@ const (
 	ReleaseTypePush   = "push"   // 发布类型——发布（新增/修改）
 	ReleaseTypeDelete = "delete" // 发布类型——删除
 
-	// ===================================== service =====================================
+	// ===================================== upstream =====================================
 
-	LoadBalanceRoundRobin = 1 // 轮询
-	LoadBalanceIPHash     = 2 // ip_hash
+	LoadBalanceRoundRobin = 1 // 加权轮询 (Round Robin)
+	LoadBalanceCHash      = 2 // 一致性Hash（CHash）
 
 	LoadBalanceNameRoundRobin = "加权轮询 (Round Robin)"
-	LoadBalanceNameIPHash     = "一致性Hash（CHash）"
+	LoadBalanceNameCHash      = "一致性Hash（CHash）"
 
 	ProtocolHTTP         = 1
 	ProtocolHTTPS        = 2
 	ProtocolHTTPAndHTTPS = 3
+
+	// ===================================== upstream node =====================================
+
+	DefaultNodePort = 80
+
+	HealthNodeWeight = 1  // 节点默认权重
+
+	HealthY = 1 // 健康状态——健康
+	HealthN = 2 // 健康状态——异常
+
+	HealthCheckOn = 1 	// 健康检查——开
+	HealthCheckOff = 2  // 健康检查——关
 
 	// ===================================== route =====================================
 

@@ -59,24 +59,6 @@ func (m *Plugins) ModelUniqueId() (string, error) {
 	}
 }
 
-func (p *Plugins) PluginInfosByKeys(keys []string, filterPluginIds []string) ([]Plugins, error) {
-	pluginInfos := make([]Plugins, 0)
-	db := packages.GetDb().
-		Table(p.TableName()).
-		Where("plugin_key IN ?", keys)
-
-	if len(filterPluginIds) != 0 {
-		db = db.Where("res_id NOT IN ?", filterPluginIds)
-	}
-
-	err := db.Find(&pluginInfos).Error
-	if errors.Is(err, gorm.ErrRecordNotFound) {
-		err = nil
-	}
-
-	return pluginInfos, err
-}
-
 func (p *Plugins) PluginAdd(pluginData *Plugins) error {
 	err := packages.GetDb().
 		Table(p.TableName()).

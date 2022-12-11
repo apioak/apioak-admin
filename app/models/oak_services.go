@@ -141,12 +141,12 @@ func (s *Services) ServiceAdd(
 		return serviceId, routeIdErr
 	}
 
-	serviceRoute.ID = routeId
-	serviceRoute.ServiceID = serviceId
+	serviceRoute.ResID = routeId
+	serviceRoute.ServiceResID = serviceId
 	serviceRoute.RouteName = routeId
 	serviceRoute.RoutePath = utils.DefaultRoutePath
-	serviceRoute.IsEnable = utils.EnableOn
-	serviceRoute.ReleaseStatus = utils.ReleaseStatusU
+	serviceRoute.Enable = utils.EnableOn
+	serviceRoute.Release = utils.ReleaseStatusU
 	serviceRoute.RequestMethods = utils.RequestMethodALL
 
 	routeCreateErr := tx.

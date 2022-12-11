@@ -30,9 +30,15 @@ func RegisterCustomizeValidator(validatorEngine *validator.Validate) error {
 	if err := validatorEngine.RegisterValidation("CheckServiceDomain", validators.CheckServiceDomain); err != nil {
 		return err
 	}
+
 	if err := validatorEngine.RegisterValidation("CheckServiceNode", validators.CheckServiceNode); err != nil {
 		return err
 	}
+
+	if err := validatorEngine.RegisterValidation("CheckUpstreamNode", validators.CheckUpstreamNode); err != nil {
+		return err
+	}
+
 	if err := validatorEngine.RegisterValidation("CheckLoadBalanceOneOf", validators.CheckLoadBalanceOneOf); err != nil {
 		return err
 	}

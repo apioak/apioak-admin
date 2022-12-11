@@ -58,6 +58,10 @@ func IdGenerate(idType string) (string, error) {
 		id = IdTypeCertificate + "-" + randomId
 	case IdTypeClusterNode:
 		id = IdTypeClusterNode + "-" + randomId
+	case IdTypeUpstream:
+		id = IdTypeUpstream + "-" + randomId
+	case IdTypeUpstreamNode:
+		id = IdTypeUpstreamNode + "-" + randomId
 	default:
 		return "", fmt.Errorf("id type error")
 	}
@@ -115,7 +119,7 @@ type enumInfo struct {
 func LoadBalanceList() []enumInfo {
 	loadBalanceList := []enumInfo{
 		{Id: LoadBalanceRoundRobin, Name: LoadBalanceNameRoundRobin},
-		{Id: LoadBalanceIPHash, Name: LoadBalanceNameIPHash},
+		{Id: LoadBalanceCHash, Name: LoadBalanceNameCHash},
 	}
 
 	return loadBalanceList

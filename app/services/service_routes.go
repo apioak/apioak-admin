@@ -17,7 +17,7 @@ import (
 func CheckRouteExist(routeId string, serviceId string) error {
 	routeModel := &models.Routes{}
 	routeInfo := routeModel.RouteInfoByIdServiceId(routeId, serviceId)
-	if routeInfo.ID != routeId {
+	if routeInfo.ResID != routeId {
 		return errors.New(enums.CodeMessages(enums.RouteNull))
 	}
 
@@ -27,7 +27,7 @@ func CheckRouteExist(routeId string, serviceId string) error {
 func CheckRouteEnableChange(routeId string, enable int) error {
 	routeModel := &models.Routes{}
 	routeInfo := routeModel.RouteInfoByIdServiceId(routeId, "")
-	if routeInfo.IsEnable == enable {
+	if routeInfo.Enable == enable {
 		return errors.New(enums.CodeMessages(enums.SwitchNoChange))
 	}
 
@@ -38,11 +38,11 @@ func CheckRouteDelete(routeId string) error {
 	routeModel := &models.Routes{}
 	routeInfo := routeModel.RouteInfoByIdServiceId(routeId, "")
 
-	if routeInfo.ReleaseStatus == utils.ReleaseStatusY {
-		if routeInfo.IsEnable == utils.EnableOn {
+	if routeInfo.Release == utils.ReleaseStatusY {
+		if routeInfo.Enable == utils.EnableOn {
 			return errors.New(enums.CodeMessages(enums.SwitchONProhibitsOp))
 		}
-	} else if routeInfo.ReleaseStatus == utils.ReleaseStatusT {
+	} else if routeInfo.Release == utils.ReleaseStatusT {
 		return errors.New(enums.CodeMessages(enums.ToReleaseProhibitsOp))
 	}
 
@@ -52,7 +52,7 @@ func CheckRouteDelete(routeId string) error {
 func CheckRouteRelease(routeId string) error {
 	routeModel := &models.Routes{}
 	routeInfo := routeModel.RouteInfoByIdServiceId(routeId, "")
-	if routeInfo.ReleaseStatus == utils.ReleaseStatusY {
+	if routeInfo.Release == utils.ReleaseStatusY {
 		return errors.New(enums.CodeMessages(enums.SwitchPublished))
 	}
 
@@ -81,9 +81,9 @@ func CheckEditDefaultPathRoute(routeId string) error {
 	return nil
 }
 
-func CheckExistServiceRoutePath(serviceId string, path string, filterRouteIds []string) error {
+func CheckExistServiceRoutePath(serviceResId string, path string, filterRouteResIds []string) error {
 	routeModel := models.Routes{}
-	routePaths, err := routeModel.RouteInfosByServiceRoutePath(serviceId, []string{path}, filterRouteIds)
+	routePaths, err := routeModel.RouteInfosByServiceRoutePath(serviceResId, []string{path}, filterRouteResIds)
 	if err != nil {
 		return err
 	}
@@ -113,30 +113,53 @@ func CheckExistServiceRoutePath(serviceId string, path string, filterRouteIds []
 
 func RouteCreate(routeData *validators.ValidatorRouteAddUpdate) error {
 	createRouteData := models.Routes{
-		ServiceID:      routeData.ServiceID,
+		ServiceResID:   routeData.ServiceResID,
+		UpstreamResID:  routeData.UpstreamResID,
+		RouteName:      routeData.RouteName,
 		RequestMethods: routeData.RequestMethods,
 		RoutePath:      routeData.RoutePath,
-		IsEnable:       routeData.IsEnable,
-		ReleaseStatus:  utils.ReleaseStatusU,
+		Enable:         routeData.Enable,
+		Release:        utils.ReleaseStatusU,
 	}
 
-	if routeData.IsRelease == utils.IsReleaseY {
-		createRouteData.ReleaseStatus = utils.ReleaseStatusY
+	if routeData.Release == utils.ReleaseY {
+		createRouteData.Release = utils.ReleaseStatusY
 	}
 
-	routeId, err := createRouteData.RouteAdd(createRouteData)
+	createUpstreamData := models.Upstreams{
+		Algorithm:      routeData.LoadBalance,
+		ConnectTimeout: routeData.ConnectTimeout,
+		WriteTimeout:   routeData.WriteTimeout,
+		ReadTimeout:    routeData.ReadTimeout,
+	}
+
+	createUpstreamNodes := make([]models.UpstreamNodes, 0)
+	if len(routeData.UpstreamNodes) > 0 {
+		for _, upstreamNode := range routeData.UpstreamNodes {
+			ipType, err := utils.DiscernIP(upstreamNode.NodeIp)
+			if err != nil {
+				return err
+			}
+			ipTypeMap := models.IPTypeMap()
+
+			createUpstreamNodes = append(createUpstreamNodes, models.UpstreamNodes{
+				NodeIP:     upstreamNode.NodeIp,
+				IPType:     ipTypeMap[ipType],
+				NodePort:   upstreamNode.NodePort,
+				NodeWeight: upstreamNode.NodeWeight,
+			})
+		}
+	}
+
+	_, err := createRouteData.RouteAdd(createRouteData, createUpstreamData, createUpstreamNodes)
+
 	if err != nil {
 		return err
 	}
 
-	if routeData.IsRelease == utils.IsReleaseY {
-		configReleaseErr := ServiceRouteConfigRelease(utils.ReleaseTypePush, routeId)
-		if configReleaseErr != nil {
-			createRouteData.ReleaseStatus = utils.ReleaseStatusU
-			createRouteData.RouteUpdate(routeId, createRouteData)
+	// @todo如果设置了发布，则这里需要发布 routeResId
+	if routeData.Release == utils.ReleaseY {
 
-			return configReleaseErr
-		}
 	}
 
 	return nil
@@ -147,14 +170,14 @@ func RouteCopy(routeData *validators.ValidatorRouteAddUpdate, sourceRouteId stri
 	routePluginInfos := routePluginModel.RoutePluginInfosByRouteId(sourceRouteId)
 
 	createRouteData := models.Routes{
-		ServiceID:      routeData.ServiceID,
+		ServiceResID:   routeData.ServiceResID,
 		RequestMethods: routeData.RequestMethods,
 		RoutePath:      routeData.RoutePath,
-		IsEnable:       routeData.IsEnable,
-		ReleaseStatus:  utils.ReleaseStatusU,
+		Enable:         routeData.Enable,
+		Release:        utils.ReleaseStatusU,
 	}
-	if routeData.IsRelease == utils.IsReleaseY {
-		createRouteData.ReleaseStatus = utils.ReleaseStatusY
+	if routeData.Release == utils.ReleaseY {
+		createRouteData.Release = utils.ReleaseStatusY
 	}
 
 	routeId, err := createRouteData.RouteCopy(createRouteData, routePluginInfos)
@@ -162,11 +185,11 @@ func RouteCopy(routeData *validators.ValidatorRouteAddUpdate, sourceRouteId stri
 		return err
 	}
 
-	if routeData.IsRelease == utils.IsReleaseY {
+	if routeData.Release == utils.ReleaseY {
 		routeReleaseErr := ServiceRouteConfigRelease(utils.ReleaseTypePush, routeId)
 		if routeReleaseErr != nil {
 			routeModel := models.Routes{}
-			routeModel.ReleaseStatus = utils.ReleaseStatusU
+			routeModel.Release = utils.ReleaseStatusU
 			routeUpdateErr := routeModel.RouteUpdate(routeId, routeModel)
 			if routeUpdateErr != nil {
 				return routeUpdateErr
@@ -188,17 +211,17 @@ func RouteUpdate(routeId string, routeData *validators.ValidatorRouteAddUpdate) 
 	updateRouteData := models.Routes{
 		RequestMethods: routeData.RequestMethods,
 		RoutePath:      routeData.RoutePath,
-		IsEnable:       routeData.IsEnable,
+		Enable:         routeData.Enable,
 	}
 	if len(routeData.RouteName) != 0 {
 		updateRouteData.RouteName = routeData.RouteName
 	}
-	if routeInfo.ReleaseStatus == utils.ReleaseStatusY {
-		updateRouteData.ReleaseStatus = utils.ReleaseStatusT
+	if routeInfo.Release == utils.ReleaseStatusY {
+		updateRouteData.Release = utils.ReleaseStatusT
 	}
 
-	if routeData.IsRelease == utils.IsReleaseY {
-		updateRouteData.ReleaseStatus = utils.ReleaseStatusY
+	if routeData.Release == utils.ReleaseY {
+		updateRouteData.Release = utils.ReleaseStatusY
 	}
 
 	err := routeModel.RouteUpdate(routeId, updateRouteData)
@@ -206,11 +229,11 @@ func RouteUpdate(routeId string, routeData *validators.ValidatorRouteAddUpdate) 
 		return err
 	}
 
-	if routeData.IsRelease == utils.IsReleaseY {
+	if routeData.Release == utils.ReleaseY {
 		configReleaseErr := ServiceRouteConfigRelease(utils.ReleaseTypePush, routeId)
 		if configReleaseErr != nil {
-			if routeInfo.ReleaseStatus != utils.ReleaseStatusU {
-				updateRouteData.ReleaseStatus = utils.ReleaseStatusT
+			if routeInfo.Release != utils.ReleaseStatusU {
+				updateRouteData.Release = utils.ReleaseStatusT
 			}
 			routeModel.RouteUpdate(routeId, updateRouteData)
 
@@ -314,13 +337,13 @@ func (s *StructRouteInfo) RouteInfoByServiceRouteId(serviceId string, routeId st
 		return routeInfo, routeModelInfoErr
 	}
 
-	routeInfo.ID = routeModelInfo.ID
-	routeInfo.ServiceID = routeModelInfo.ServiceID
+	routeInfo.ID = routeModelInfo.ResID
+	routeInfo.ServiceID = routeModelInfo.ServiceResID
 	routeInfo.RouteName = routeModelInfo.RouteName
 	routeInfo.RequestMethods = strings.Split(routeModelInfo.RequestMethods, ",")
 	routeInfo.RoutePath = routeModelInfo.RoutePath
-	routeInfo.IsEnable = routeModelInfo.IsEnable
-	routeInfo.ReleaseStatus = routeModelInfo.ReleaseStatus
+	routeInfo.IsEnable = routeModelInfo.Enable
+	routeInfo.ReleaseStatus = routeModelInfo.Release
 
 	return routeInfo, nil
 }
@@ -335,7 +358,7 @@ func ServiceRouteRelease(id string) error {
 
 	configReleaseErr := ServiceRouteConfigRelease(utils.ReleaseTypePush, id)
 	if configReleaseErr != nil {
-		routeModel.RouteSwitchRelease(id, routeInfo.ReleaseStatus)
+		routeModel.RouteSwitchRelease(id, routeInfo.Release)
 		return configReleaseErr
 	}
 
@@ -409,10 +432,10 @@ func generateRouteConfig(id string) (RouteConfig, error) {
 		methods = utils.ConfigAllRequestMethod()
 	}
 
-	routeConfig.ID = routeInfo.ID
-	routeConfig.ServiceID = routeInfo.ServiceID
+	routeConfig.ID = routeInfo.ResID
+	routeConfig.ServiceID = routeInfo.ServiceResID
 	routeConfig.Path = routeInfo.RoutePath
-	routeConfig.IsEnable = routeInfo.IsEnable
+	routeConfig.IsEnable = routeInfo.Enable
 	routeConfig.Methods = methods
 
 	return routeConfig, nil
