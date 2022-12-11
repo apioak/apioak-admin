@@ -134,16 +134,60 @@ func PluginAllTypes() []enumInfo {
 
 func PluginAllKeys() []string {
 	pluginKeysList := []string{
-		PluginKeyNameCors,
-		PluginKeyNameMock,
-		PluginKeyNameKeyAuth,
-		PluginKeyNameJwtAuth,
-		PluginKeyNameLimitReq,
-		PluginKeyNameLimitConn,
-		PluginKeyNameLimitCount,
+		PluginKeyCors,
+		PluginKeyMock,
+		PluginKeyKeyAuth,
+		PluginKeyJwtAuth,
+		PluginKeyLimitReq,
+		PluginKeyLimitConn,
+		PluginKeyLimitCount,
 	}
 
 	return pluginKeysList
+}
+
+type ConfigPluginData struct {
+	ResID       string
+	PluginKey   string
+	Icon        string
+	Type        int
+	Description string
+}
+
+func AllConfigPluginData() []ConfigPluginData {
+
+	allConfigPluginData := []ConfigPluginData{
+		{
+			ResID: PluginIdCors, PluginKey: PluginKeyCors,
+			Icon: PluginIconCors, Type: PluginTypeIdSafety,
+		},
+		{
+			ResID: PluginIdMock, PluginKey: PluginKeyMock,
+			Icon: PluginIconMock, Type: PluginTypeIdOther,
+		},
+		{
+			ResID: PluginIdKeyAuth, PluginKey: PluginKeyKeyAuth,
+			Icon: PluginIconKeyAuth, Type: PluginTypeIdAuth,
+		},
+		{
+			ResID: PluginIdJwtAuth, PluginKey: PluginKeyJwtAuth,
+			Icon: PluginIconJwtAuth, Type: PluginTypeIdAuth,
+		},
+		{
+			ResID: PluginIdLimitReq, PluginKey: PluginKeyLimitReq,
+			Icon: PluginIconLimitReq, Type: PluginTypeIdLimit,
+		},
+		{
+			ResID: PluginIdLimitConn, PluginKey: PluginKeyLimitConn,
+			Icon: PluginIconLimitConn, Type: PluginTypeIdLimit,
+		},
+		{
+			ResID: PluginIdLimitCount, PluginKey: PluginKeyLimitCount,
+			Icon: PluginIconLimitCount, Type: PluginTypeIdLimit,
+		},
+	}
+
+	return allConfigPluginData
 }
 
 func AllRequestMethod() []string {

@@ -21,9 +21,9 @@ func NewPluginContext(pluginTag string) (PluginContext, error) {
 	pluginContext := PluginContext{}
 
 	switch strings.ToLower(pluginTag) {
-	case utils.PluginKeyNameJwtAuth:
+	case utils.PluginKeyJwtAuth:
 		pluginContext.Strategy = NewJwtAuth()
-	case utils.PluginKeyNameLimitCount:
+	case utils.PluginKeyLimitCount:
 		pluginContext.Strategy = NewLimitCount()
 	default:
 		return pluginContext, errors.New(enums.CodeMessages(enums.PluginTagNull))

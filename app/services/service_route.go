@@ -449,8 +449,7 @@ func (r *RouteAddPluginInfo) RouteAddPluginList(filterRouteId string) ([]RouteAd
 		if !routePluginExist {
 			routeAddPluginInfo := RouteAddPluginInfo{}
 			routeAddPluginInfo.ID = allPluginInfo.ResID
-			routeAddPluginInfo.Name = allPluginInfo.Name
-			routeAddPluginInfo.Tag = allPluginInfo.Key
+			routeAddPluginInfo.Tag = allPluginInfo.PluginKey
 			routeAddPluginInfo.Type = allPluginInfo.Type
 			routeAddPluginInfo.Description = allPluginInfo.Description
 
@@ -485,8 +484,7 @@ func (r *RoutePluginInfo) RoutePluginList(routeId string) []RoutePluginInfo {
 		routePluginInfo := RoutePluginInfo{}
 		routePluginInfo.ID = routePluginConfigInfo.ID
 		routePluginInfo.PluginId = routePluginConfigInfo.Plugin.ResID
-		routePluginInfo.Name = routePluginConfigInfo.Plugin.Name
-		routePluginInfo.Tag = routePluginConfigInfo.Plugin.Key
+		routePluginInfo.Tag = routePluginConfigInfo.Plugin.PluginKey
 		routePluginInfo.Icon = routePluginConfigInfo.Plugin.Icon
 		routePluginInfo.Type = routePluginConfigInfo.Plugin.Type
 		routePluginInfo.Description = routePluginConfigInfo.Plugin.Description

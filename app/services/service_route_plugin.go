@@ -128,7 +128,7 @@ func RoutePluginConfigInfo(id string) (interface{}, error) {
 	pluginModel := &models.Plugins{}
 	pluginInfo := pluginModel.PluginInfoByResIdRouteServiceId(routePluginInfo.PluginID)
 
-	newPluginContext, newPluginContextErr := plugins.NewPluginContext(pluginInfo.Key)
+	newPluginContext, newPluginContextErr := plugins.NewPluginContext(pluginInfo.PluginKey)
 	if newPluginContextErr != nil {
 		return nil, newPluginContextErr
 	}
@@ -215,7 +215,7 @@ func generateRoutePluginConfig(id string) (RoutePluginConfig, error) {
 
 	routePluginConfig.ID = routePluginInfo.ID
 	routePluginConfig.RouteID = routePluginInfo.RouteID
-	routePluginConfig.PluginTag = pluginInfo.Key
+	routePluginConfig.PluginTag = pluginInfo.PluginKey
 	routePluginConfig.Order = routePluginInfo.Order
 	routePluginConfig.IsEnable = routePluginInfo.IsEnable
 	routePluginConfig.Config = routePluginInfo.Config

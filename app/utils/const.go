@@ -79,19 +79,29 @@ const (
 	PluginTypeIdLimit       = 2
 	PluginTypeIdSafety      = 3
 	PluginTypeIdFlowControl = 4
+	PluginTypeIdOther 		= 99
 
 	PluginTypeNameAuth        = "鉴权"
 	PluginTypeNameLimit       = "限流"
 	PluginTypeNameSafety      = "安全"
 	PluginTypeNameFlowControl = "流量控制"
+	PluginTypeNameOther       = "其他"
 
-	PluginKeyNameCors       = "cors"
-	PluginKeyNameMock       = "mock"
-	PluginKeyNameKeyAuth    = "key-auth"
-	PluginKeyNameJwtAuth    = "jwt-auth"
-	PluginKeyNameLimitReq   = "limit-req"
-	PluginKeyNameLimitConn  = "limit-conn"
-	PluginKeyNameLimitCount = "limit-count"
+	PluginIdCors       = "pl-dIhZpgqcCHQzNgT"
+	PluginIdMock       = "pl-5xO9hzfcHJtpcQT"
+	PluginIdKeyAuth    = "pl-xZjvnLQfq2i5GTS"
+	PluginIdJwtAuth    = "pl-0FnmajmiO7C8PtX"
+	PluginIdLimitReq   = "pl-m5BzSXbCQfGzoQi"
+	PluginIdLimitConn  = "pl-rLYsoeNVfPUMUAA"
+	PluginIdLimitCount = "pl-XZxaqOgRZsBKpoE"
+
+	PluginKeyCors       = "cors"
+	PluginKeyMock       = "mock"
+	PluginKeyKeyAuth    = "key-auth"
+	PluginKeyJwtAuth    = "jwt-auth"
+	PluginKeyLimitReq   = "limit-req"
+	PluginKeyLimitConn  = "limit-conn"
+	PluginKeyLimitCount = "limit-count"
 
 	PluginIconCors       = "icon-cors"
 	PluginIconMock       = "icon-mock"
@@ -100,14 +110,6 @@ const (
 	PluginIconLimitReq   = "icon-limit-req"
 	PluginIconLimitConn  = "icon-limit-conn"
 	PluginIconLimitCount = "icon-limit-count"
-
-	PluginDescCors       = "desc-cors"
-	PluginDescMock       = "default-mock"
-	PluginDescKeyAuth    = "default-key-auth"
-	PluginDescJwtAuth    = "default-jwt-auth"
-	PluginDescLimitReq   = "default-limit-req"
-	PluginDescLimitConn  = "default-limit-conn"
-	PluginDescLimitCount = "default-limit-count"
 
 // ===================================== cluster node =====================================
 

@@ -13,8 +13,7 @@ import (
 type Plugins struct {
 	ID          int       `gorm:"column:id;primary_key"` //primary key
 	ResID       string    `gorm:"column:res_id"`         //Plugin id
-	Name        string    `gorm:"column:name"`           //Plugin name
-	Key         string    `gorm:"column:key"`            //Plugin key
+	PluginKey   string    `gorm:"column:plugin_key"`     //Plugin key
 	Icon        string    `gorm:"column:icon"`           //Plugin icon
 	Type        int       `gorm:"column:type"`           //Plugin type
 	Description string    `gorm:"column:description"`    //Plugin description
@@ -64,7 +63,7 @@ func (p *Plugins) PluginInfosByKeys(keys []string, filterPluginIds []string) ([]
 	pluginInfos := make([]Plugins, 0)
 	db := packages.GetDb().
 		Table(p.TableName()).
-		Where("key IN ?", keys)
+		Where("plugin_key IN ?", keys)
 
 	if len(filterPluginIds) != 0 {
 		db = db.Where("res_id NOT IN ?", filterPluginIds)
@@ -79,12 +78,6 @@ func (p *Plugins) PluginInfosByKeys(keys []string, filterPluginIds []string) ([]
 }
 
 func (p *Plugins) PluginAdd(pluginData *Plugins) error {
-	pluginResId, pluginIdUniqueErr := p.ModelUniqueId()
-	if pluginIdUniqueErr != nil {
-		return pluginIdUniqueErr
-	}
-	pluginData.ResID = pluginResId
-
 	err := packages.GetDb().
 		Table(p.TableName()).
 		Create(pluginData).Error
@@ -125,10 +118,10 @@ func (p *Plugins) PluginInfoByResIdRouteServiceId(pluginResId string) Plugins {
 	return pluginInfo
 }
 
-func (p *Plugins) PluginUpdate(id string, pluginInfo *Plugins) error {
+func (p *Plugins) PluginUpdate(resId string, pluginInfo *Plugins) error {
 	updateError := packages.GetDb().
 		Table(p.TableName()).
-		Where("res_id = ?", id).
+		Where("res_id = ?", resId).
 		Updates(pluginInfo).Error
 
 	return updateError
@@ -156,7 +149,7 @@ func (p *Plugins) PluginListPage(param *validators.PluginList) (list []Plugins, 
 		search := "%" + param.Search + "%"
 		orWhere := packages.GetDb().
 			Where("name LIKE ?", search).
-			Or("Tag LIKE ?", search).
+			Or("plugin_key LIKE ?", search).
 			Or("description LIKE ?", search)
 		tx = tx.Where(orWhere)
 	}
@@ -179,4 +172,22 @@ func (p *Plugins) PluginAllList() []Plugins {
 		Find(&pluginAllList)
 
 	return pluginAllList
+}
+
+func (p *Plugins) PluginDelByPluginKeys(pluginKeys []string, filterResIds []string) (err error) {
+	if len(pluginKeys) == 0 {
+		return
+	}
+
+	dbObj := packages.GetDb().
+		Table(p.TableName())
+	if len(pluginKeys) != 0 {
+		dbObj = dbObj.Where("plugin_key in ?", pluginKeys)
+	}
+	if len(filterResIds) != 0 {
+		dbObj = dbObj.Where("res_id not in ?", filterResIds)
+	}
+	err = dbObj.Delete(p).Error
+
+	return
 }

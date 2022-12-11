@@ -366,8 +366,7 @@ func (r *Routes) RouteListPage(serviceId string, param *validators.ValidatorRout
 			for _, pluginInfo := range routesPluginInfo.Plugins {
 				routePluginConfigs := RoutePluginConfigs{
 					ID:   pluginInfo.ResID,
-					Name: pluginInfo.Name,
-					Tag:  pluginInfo.Key,
+					Tag:  pluginInfo.PluginKey,
 					Icon: pluginInfo.Icon,
 					Type: pluginInfo.Type,
 				}

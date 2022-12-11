@@ -18,6 +18,9 @@ func PluginTypeList(c *gin.Context) {
 }
 
 func PluginAdd(c *gin.Context) {
+	utils.Error(c, "功能暂不可用！")
+	return
+
 	var validatorPluginAdd = validators.ValidatorPluginAdd{}
 	if msg, err := packages.ParseRequestParams(c, &validatorPluginAdd); err != nil {
 		utils.Error(c, msg)
@@ -26,7 +29,7 @@ func PluginAdd(c *gin.Context) {
 	validators.GetPluginAddAttributesDefault(&validatorPluginAdd)
 
 	pluginModel := models.Plugins{}
-	pluginInfos, err := pluginModel.PluginInfosByKeys([]string{validatorPluginAdd.Key}, []string{})
+	pluginInfos, err := pluginModel.PluginInfosByKeys([]string{validatorPluginAdd.PluginKey}, []string{})
 	if err != nil {
 		utils.Error(c, err.Error())
 		return

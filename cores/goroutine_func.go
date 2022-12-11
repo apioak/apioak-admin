@@ -1,14 +1,14 @@
 package cores
 
 import (
-	"fmt"
+	"apioak-admin/app/services"
 	"time"
 )
 
 func InitGoroutineFunc() {
 	// go ClusterNodeWatch()
 
-	// go dynamicValidationPluginData()
+	go dynamicValidationPluginData()
 
 }
 
@@ -29,12 +29,13 @@ func ClusterNodeWatch() {
 
 func dynamicValidationPluginData() {
 
-	timer := time.NewTicker(5 * time.Second)
+	timer := time.NewTicker(10 * time.Second)
 	defer timer.Stop()
 
-	for range timer.C {
+	for {
+		services.PluginBasicInfoMaintain()
 
-		fmt.Println("---------", time.Now().Format("2006-01-02 15:04:05"))
+		<-timer.C
 
 	}
 }

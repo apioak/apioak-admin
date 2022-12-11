@@ -17,15 +17,13 @@ var (
 )
 
 type ValidatorPluginAdd struct {
-	Name        string `json:"name" zh:"插件名称" en:"Plugin name" binding:"required,min=1,max=30"`
-	Key         string `json:"key" zh:"插件标识" en:"Plugin key" binding:"required,min=1,max=30,CheckPluginKeyOneOf"`
+	PluginKey   string `json:"plugin_key" zh:"插件标识" en:"Plugin key" binding:"required,min=1,max=30,CheckPluginKeyOneOf"`
 	Icon        string `json:"icon" zh:"插件ICON" en:"Plugin icon" binding:"required,min=1,max=30"`
 	Type        int    `json:"type" zh:"插件类型" en:"Plugin type" binding:"required,CheckPluginTypeOneOf"`
 	Description string `json:"description" zh:"插件描述" en:"Plugin description" binding:"omitempty,max=150"`
 }
 
 type ValidatorPluginUpdate struct {
-	Name        string `json:"name" zh:"插件名称" en:"Plugin name" binding:"required,min=1,max=30"`
 	Icon        string `json:"icon" zh:"插件ICON" en:"Plugin icon" binding:"required,min=1,max=30"`
 	Description string `json:"description" zh:"插件描述" en:"Plugin description" binding:"omitempty,max=150"`
 }
@@ -91,14 +89,12 @@ func CheckPluginKeyOneOf(fl validator.FieldLevel) bool {
 }
 
 func GetPluginAddAttributesDefault(pluginAdd *ValidatorPluginAdd) {
-	pluginAdd.Name = strings.TrimSpace(pluginAdd.Name)
-	pluginAdd.Key = strings.TrimSpace(pluginAdd.Key)
+	pluginAdd.PluginKey = strings.TrimSpace(pluginAdd.PluginKey)
 	pluginAdd.Icon = strings.TrimSpace(pluginAdd.Icon)
 	pluginAdd.Description = strings.TrimSpace(pluginAdd.Description)
 }
 
 func GetPluginUpdateAttributesDefault(pluginUpdate *ValidatorPluginUpdate) {
-	pluginUpdate.Name = strings.TrimSpace(pluginUpdate.Name)
 	pluginUpdate.Icon = strings.TrimSpace(pluginUpdate.Icon)
 	pluginUpdate.Description = strings.TrimSpace(pluginUpdate.Description)
 }

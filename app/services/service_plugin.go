@@ -4,6 +4,7 @@ import (
 	"apioak-admin/app/enums"
 	"apioak-admin/app/models"
 	"apioak-admin/app/services/plugins"
+	"apioak-admin/app/utils"
 	"apioak-admin/app/validators"
 	"errors"
 	"strings"
@@ -23,7 +24,7 @@ func CheckPluginConfig(pluginId string, pluginConfig *validators.RoutePluginAddU
 	pluginModel := &models.Plugins{}
 	pluginInfo := pluginModel.PluginInfoByResIdRouteServiceId(pluginId)
 
-	newPluginContext, newPluginContextErr := plugins.NewPluginContext(pluginInfo.Key)
+	newPluginContext, newPluginContextErr := plugins.NewPluginContext(pluginInfo.PluginKey)
 	if newPluginContextErr != nil {
 		return newPluginContextErr
 	}
@@ -41,8 +42,7 @@ func CheckPluginConfig(pluginId string, pluginConfig *validators.RoutePluginAddU
 func PluginCreate(pluginData *validators.ValidatorPluginAdd) error {
 
 	createPluginData := &models.Plugins{
-		Name:        pluginData.Name,
-		Key:         pluginData.Key,
+		PluginKey:   pluginData.PluginKey,
 		Icon:        pluginData.Icon,
 		Type:        pluginData.Type,
 		Description: pluginData.Description,
@@ -58,7 +58,6 @@ func PluginUpdate(resId string, pluginUpdate *validators.ValidatorPluginUpdate) 
 	resId = strings.TrimSpace(resId)
 
 	updatePluginData := models.Plugins{
-		Name:        pluginUpdate.Name,
 		Icon:        pluginUpdate.Icon,
 		Description: pluginUpdate.Description,
 	}
@@ -90,8 +89,7 @@ func (s *StructPluginInfo) PluginListPage(param *validators.PluginList) ([]Struc
 		for _, pluginInfo := range pluginInfos {
 			structPluginInfo := StructPluginInfo{}
 			structPluginInfo.ResID = pluginInfo.ResID
-			structPluginInfo.Name = pluginInfo.Name
-			structPluginInfo.Key = pluginInfo.Key
+			structPluginInfo.Key = pluginInfo.PluginKey
 			structPluginInfo.Icon = pluginInfo.Icon
 			structPluginInfo.Type = pluginInfo.Type
 			structPluginInfo.Description = pluginInfo.Description
@@ -104,7 +102,7 @@ func (s *StructPluginInfo) PluginListPage(param *validators.PluginList) ([]Struc
 }
 
 type PluginInfoService struct {
-	ResID       string 		`json:"res_id"`
+	ResID       string      `json:"res_id"`
 	Name        string      `json:"name"`
 	Key         string      `json:"key"`
 	Icon        string      `json:"icon"`
@@ -122,7 +120,7 @@ func (p *PluginInfoService) PluginInfoByResId(resId string) (PluginInfoService, 
 		return pluginInfo, errors.New(enums.CodeMessages(enums.PluginNull))
 	}
 
-	newPluginContext, newPluginContextErr := plugins.NewPluginContext(plugin.Key)
+	newPluginContext, newPluginContextErr := plugins.NewPluginContext(plugin.PluginKey)
 	if newPluginContextErr != nil {
 		return pluginInfo, newPluginContextErr
 	}
@@ -130,12 +128,52 @@ func (p *PluginInfoService) PluginInfoByResId(resId string) (PluginInfoService, 
 	pluginConfig := newPluginContext.StrategyPluginFormatDefault()
 
 	pluginInfo.ResID = plugin.ResID
-	pluginInfo.Name = plugin.Name
-	pluginInfo.Key = plugin.Key
+	pluginInfo.Key = plugin.PluginKey
 	pluginInfo.Icon = plugin.Icon
 	pluginInfo.Type = plugin.Type
 	pluginInfo.Description = plugin.Description
 	pluginInfo.Config = pluginConfig
 
 	return pluginInfo, nil
+}
+
+func PluginBasicInfoMaintain() {
+
+	pluginModel := models.Plugins{}
+	dbPluginList := pluginModel.PluginAllList()
+
+	dbPluginMapResId := make(map[string]models.Plugins)
+
+	for _, dbPluginInfo := range dbPluginList {
+		dbPluginMapResId[dbPluginInfo.ResID] = dbPluginInfo
+	}
+
+	configPluginList := utils.AllConfigPluginData()
+
+	for _, configPluginInfo := range configPluginList {
+
+		dbPluginMapInfo, ok := dbPluginMapResId[configPluginInfo.ResID]
+
+		if ok {
+			if (configPluginInfo.PluginKey != dbPluginMapInfo.PluginKey) ||
+				(configPluginInfo.Type != dbPluginMapInfo.Type) {
+
+				dbPluginMapInfo.PluginKey = configPluginInfo.PluginKey
+				dbPluginMapInfo.Type = configPluginInfo.Type
+				pluginModel.PluginUpdate(configPluginInfo.ResID, &dbPluginMapInfo)
+			}
+
+		} else {
+
+			pluginModel.PluginDelByPluginKeys([]string{configPluginInfo.PluginKey}, []string{})
+
+			newPluginData := pluginModel
+			newPluginData.ResID = configPluginInfo.ResID
+			newPluginData.Type = configPluginInfo.Type
+			newPluginData.PluginKey = configPluginInfo.PluginKey
+			newPluginData.Icon = configPluginInfo.Icon
+
+			pluginModel.PluginAdd(&newPluginData)
+		}
+	}
 }
