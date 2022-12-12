@@ -59,6 +59,9 @@ const (
 	LoadBalanceNameRoundRobin = "加权轮询 (Round Robin)"
 	LoadBalanceNameCHash      = "一致性Hash（CHash）"
 
+	ConfigBalanceNameRoundRobin = "ROUNDROBIN"
+	ConfigBalanceNameCHash      = "CHASH"
+
 	ProtocolHTTP         = 1
 	ProtocolHTTPS        = 2
 	ProtocolHTTPAndHTTPS = 3
@@ -67,13 +70,16 @@ const (
 
 	DefaultNodePort = 80
 
-	HealthNodeWeight = 1  // 节点默认权重
+	HealthNodeWeight = 1 // 节点默认权重
 
 	HealthY = 1 // 健康状态——健康
 	HealthN = 2 // 健康状态——异常
 
-	HealthCheckOn = 1 	// 健康检查——开
-	HealthCheckOff = 2  // 健康检查——关
+	ConfigHealthY = "HEALTH"	// 健康
+	ConfigHealthN = "UNHEALTH"	// 异常
+
+	HealthCheckOn  = 1 // 健康检查——开
+	HealthCheckOff = 2 // 健康检查——关
 
 	// ===================================== route =====================================
 
@@ -82,8 +88,9 @@ const (
 	RequestMethodALL = "ALL"
 
 	RequestMethodGET     = "GET"
-	RequestMethodPOST    = "POST"
 	RequestMethodPUT     = "PUT"
+	RequestMethodPOST    = "POST"
+	RequestMethodPATH    = "PATH"
 	RequestMethodDELETE  = "DELETE"
 	RequestMethodOPTIONS = "OPTIONS"
 
@@ -93,7 +100,7 @@ const (
 	PluginTypeIdLimit       = 2
 	PluginTypeIdSafety      = 3
 	PluginTypeIdFlowControl = 4
-	PluginTypeIdOther 		= 99
+	PluginTypeIdOther       = 99
 
 	PluginTypeNameAuth        = "鉴权"
 	PluginTypeNameLimit       = "限流"
@@ -125,10 +132,10 @@ const (
 	PluginIconLimitConn  = "icon-limit-conn"
 	PluginIconLimitCount = "icon-limit-count"
 
-// ===================================== cluster node =====================================
+	// ===================================== cluster node =====================================
 
-EtcdKeyWatchClusterNode = "/apioak/etcd-key/watch/cluster/node/add"
+	EtcdKeyWatchClusterNode = "/apioak/etcd-key/watch/cluster/node/add"
 
-ClusterNodeStatusHealth = 1
-ClusterNodeStatusUnhealthy = 2
+	ClusterNodeStatusHealth    = 1
+	ClusterNodeStatusUnhealthy = 2
 )

@@ -125,6 +125,24 @@ func LoadBalanceList() []enumInfo {
 	return loadBalanceList
 }
 
+func ConfigBalanceList() []enumInfo {
+	configBalanceList := []enumInfo{
+		{Id: LoadBalanceRoundRobin, Name: ConfigBalanceNameRoundRobin},
+		{Id: LoadBalanceCHash, Name: ConfigBalanceNameCHash},
+	}
+
+	return configBalanceList
+}
+
+func ConfigUpstreamNodeHealthList() []enumInfo {
+	configHealthList := []enumInfo{
+		{Id: HealthY, Name: ConfigHealthY},
+		{Id: HealthN, Name: ConfigHealthN},
+	}
+
+	return configHealthList
+}
+
 func PluginAllTypes() []enumInfo {
 	pluginTypeList := []enumInfo{
 		{Id: PluginTypeIdAuth, Name: PluginTypeNameAuth},
@@ -200,6 +218,7 @@ func AllRequestMethod() []string {
 		RequestMethodGET,
 		RequestMethodPOST,
 		RequestMethodPUT,
+		RequestMethodPATH,
 		RequestMethodDELETE,
 		RequestMethodOPTIONS,
 	}
@@ -210,6 +229,7 @@ func ConfigAllRequestMethod() []string {
 		RequestMethodGET,
 		RequestMethodPOST,
 		RequestMethodPUT,
+		RequestMethodPATH,
 		RequestMethodDELETE,
 		RequestMethodOPTIONS,
 	}

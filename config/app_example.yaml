@@ -20,6 +20,12 @@ database:
   max_open_connections: 100 # 数据库最大打开连接数
   sql_mode: true # true or false sql打印开关
 
+apioak: # 数据面admin-api接口连接信息配置
+  ip: 127.0.0.1
+  port: 80
+  domain: www.apioak.com
+  secret: 800fd72f920239b686a5606a7a647e49
+
 etcd:
   host_port: localhost:2379 # ETCD配置ip:port，多组数据以英文逗号","隔开
 

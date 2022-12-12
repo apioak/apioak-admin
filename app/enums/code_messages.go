@@ -18,9 +18,10 @@ const (
 	SwitchONProhibitsOp  = 102 // 开关打开状态禁止该操作
 	ParamsError          = 103 // 参数异常
 	EnablePublishedONOp  = 104 // 开关关闭状态并且已发布才允许该操作
-	SwitchPublished      = 105 // 已发布
+	SwitchPublished      = 105 // 配置已发布
 	IdConflict           = 106 // ID冲突
 	ToReleaseProhibitsOp = 107 // 待发布状态禁止该操作
+	ReleaseTypeError     = 108 // 发布类型错误
 
 	ServiceNull       = 10001 // 服务不存在
 	ServiceParamsNull = 10002 // 服务参数缺失
@@ -75,9 +76,10 @@ var ZhMapMessages = map[int]string{
 	SwitchONProhibitsOp:  "开关打开状态禁止该操作",
 	ParamsError:          "参数异常",
 	EnablePublishedONOp:  "开关关闭状态并且已发布才允许该操作",
-	SwitchPublished:      "已发布",
+	SwitchPublished:      "配置已发布",
 	IdConflict:           "ID冲突",
 	ToReleaseProhibitsOp: "待发布状态禁止该操作",
+	ReleaseTypeError:     "发布类型错误",
 
 	ServiceNull:       "服务不存在",
 	ServiceParamsNull: "服务参数缺失",
@@ -132,9 +134,10 @@ var EnMapMessages = map[int]string{
 	SwitchONProhibitsOp:  "This operation is prohibited when the switch is open",
 	ParamsError:          "Parameter abnormal",
 	EnablePublishedONOp:  "The operation is only allowed when the switch is off and has been released",
-	SwitchPublished:      "Published",
+	SwitchPublished:      "Configuration published",
 	IdConflict:           "ID conflict",
 	ToReleaseProhibitsOp: "Pending status prohibits this operation",
+	ReleaseTypeError:     "Release type error",
 
 	ServiceNull:       "Service does not exist",
 	ServiceParamsNull: "Missing service parameters",

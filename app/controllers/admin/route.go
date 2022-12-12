@@ -318,28 +318,30 @@ func RouteSwitchEnable(c *gin.Context) {
 }
 
 func RouteSwitchRelease(c *gin.Context) {
-	serviceId := strings.TrimSpace(c.Param("service_id"))
-	routeId := strings.TrimSpace(c.Param("route_id"))
+	serviceResId := strings.TrimSpace(c.Param("service_res_id"))
+	routeResId := strings.TrimSpace(c.Param("route_res_id"))
 
-	checkServiceExistErr := services.CheckServiceExist(serviceId)
-	if checkServiceExistErr != nil {
-		utils.Error(c, checkServiceExistErr.Error())
-		return
-	}
+	// checkServiceExistErr := services.CheckServiceExist(serviceResId)
+	// if checkServiceExistErr != nil {
+	// 	utils.Error(c, checkServiceExistErr.Error())
+	// 	return
+	// }
 
-	checkExistRouteErr := services.CheckRouteExist(routeId, serviceId)
+	// @todo 检测服务是否已发布
+
+	checkExistRouteErr := services.CheckRouteExist(routeResId, serviceResId)
 	if checkExistRouteErr != nil {
 		utils.Error(c, checkExistRouteErr.Error())
 		return
 	}
 
-	checkRouteReleaseErr := services.CheckRouteRelease(routeId)
+	checkRouteReleaseErr := services.CheckRouteRelease(routeResId)
 	if checkRouteReleaseErr != nil {
 		utils.Error(c, checkRouteReleaseErr.Error())
 		return
 	}
 
-	serviceRouteReleaseErr := services.ServiceRouteRelease(routeId)
+	serviceRouteReleaseErr := services.ServiceRouteRelease([]string{routeResId}, utils.ReleaseTypePush)
 	if serviceRouteReleaseErr != nil {
 		utils.Error(c, serviceRouteReleaseErr.Error())
 		return

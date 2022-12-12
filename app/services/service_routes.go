@@ -4,6 +4,7 @@ import (
 	"apioak-admin/app/enums"
 	"apioak-admin/app/models"
 	"apioak-admin/app/packages"
+	"apioak-admin/app/rpc"
 	"apioak-admin/app/utils"
 	"apioak-admin/app/validators"
 	"context"
@@ -14,10 +15,11 @@ import (
 	"time"
 )
 
-func CheckRouteExist(routeId string, serviceId string) error {
+func CheckRouteExist(routeResId string, serviceResId string) error {
 	routeModel := &models.Routes{}
-	routeInfo := routeModel.RouteInfoByIdServiceId(routeId, serviceId)
-	if routeInfo.ResID != routeId {
+	routeInfo := routeModel.RouteInfoByResIdServiceResId(routeResId, serviceResId)
+
+	if len(routeInfo.ResID) == 0 {
 		return errors.New(enums.CodeMessages(enums.RouteNull))
 	}
 
@@ -26,7 +28,8 @@ func CheckRouteExist(routeId string, serviceId string) error {
 
 func CheckRouteEnableChange(routeId string, enable int) error {
 	routeModel := &models.Routes{}
-	routeInfo := routeModel.RouteInfoByIdServiceId(routeId, "")
+	routeInfo := routeModel.RouteInfoByResIdServiceResId(routeId, "")
+
 	if routeInfo.Enable == enable {
 		return errors.New(enums.CodeMessages(enums.SwitchNoChange))
 	}
@@ -36,7 +39,7 @@ func CheckRouteEnableChange(routeId string, enable int) error {
 
 func CheckRouteDelete(routeId string) error {
 	routeModel := &models.Routes{}
-	routeInfo := routeModel.RouteInfoByIdServiceId(routeId, "")
+	routeInfo := routeModel.RouteInfoByResIdServiceResId(routeId, "")
 
 	if routeInfo.Release == utils.ReleaseStatusY {
 		if routeInfo.Enable == utils.EnableOn {
@@ -49,9 +52,14 @@ func CheckRouteDelete(routeId string) error {
 	return nil
 }
 
-func CheckRouteRelease(routeId string) error {
+func CheckRouteRelease(routeResId string) error {
 	routeModel := &models.Routes{}
-	routeInfo := routeModel.RouteInfoByIdServiceId(routeId, "")
+	routeInfo := routeModel.RouteInfoByResIdServiceResId(routeResId, "")
+
+	if len(routeInfo.ResID) == 0 {
+		return errors.New(enums.CodeMessages(enums.RouteNull))
+	}
+
 	if routeInfo.Release == utils.ReleaseStatusY {
 		return errors.New(enums.CodeMessages(enums.SwitchPublished))
 	}
@@ -73,7 +81,7 @@ func CheckServiceRoutePath(path string) error {
 
 func CheckEditDefaultPathRoute(routeId string) error {
 	routeModel := models.Routes{}
-	routeInfo := routeModel.RouteInfoByIdServiceId(routeId, "")
+	routeInfo := routeModel.RouteInfoByResIdServiceResId(routeId, "")
 	if routeInfo.RoutePath == utils.DefaultRoutePath {
 		return errors.New(enums.CodeMessages(enums.RouteDefaultPathNoPermission))
 	}
@@ -348,28 +356,111 @@ func (s *StructRouteInfo) RouteInfoByServiceRouteId(serviceId string, routeId st
 	return routeInfo, nil
 }
 
-func ServiceRouteRelease(id string) error {
+func ServiceRouteRelease(routeResIds []string, releaseType string) error {
+	releaseType = strings.ToLower(releaseType)
+
+	if (releaseType != utils.ReleaseTypePush) && (releaseType != utils.ReleaseTypeDelete) {
+		return errors.New(enums.CodeMessages(enums.ReleaseTypeError))
+	}
+
 	routeModel := models.Routes{}
-	routeInfo := routeModel.RouteInfoByIdServiceId(id, "")
-	err := routeModel.RouteSwitchRelease(id, utils.ReleaseStatusY)
+	routeList, err := routeModel.RouteListByRouteResIds(routeResIds)
 	if err != nil {
 		return err
 	}
 
-	configReleaseErr := ServiceRouteConfigRelease(utils.ReleaseTypePush, id)
-	if configReleaseErr != nil {
-		routeModel.RouteSwitchRelease(id, routeInfo.Release)
-		return configReleaseErr
+	if len(routeList) == 0 {
+		return nil
+	}
+
+	serviceResIds := make([]string, 0)
+
+	for _, routeInfo := range routeList {
+		if len(routeInfo.ServiceResID) > 0 {
+			serviceResIds = append(serviceResIds, routeInfo.ServiceResID)
+		}
+	}
+
+	publishedServiceResIdsMap := make(map[string]byte)
+	// @todo 根据服务ID获取已经发布的服务数据（如果没有已经发布的数据，则本次发布不允许，直接返回错误信息即可）
+
+
+	toBeOpUpstreamResIds := make([]string, 0)
+	toBeOpRouteList := make([]models.Routes, 0)
+	for _, routeInfo := range routeList {
+
+		_, ok := publishedServiceResIdsMap[routeInfo.ServiceResID]
+		if !ok {
+			continue
+		}
+
+		toBeOpRouteList = append(toBeOpRouteList, routeInfo)
+
+		if len(routeInfo.UpstreamResID) > 0 {
+			toBeOpUpstreamResIds = append(toBeOpUpstreamResIds, routeInfo.UpstreamResID)
+		}
+	}
+
+	if len(toBeOpRouteList) == 0 {
+		return nil
+	}
+
+	routeConfigList := make([]rpc.RouteConfig, 0)
+	for _, toBeOpRouteInfo := range toBeOpRouteList {
+		routeConfig, routeConfigErr := generateRouteConfig(toBeOpRouteInfo)
+		if routeConfigErr != nil {
+			return routeConfigErr
+		}
+
+		if len(routeConfig.Name) == 0 {
+			continue
+		}
+
+		routeConfigList = append(routeConfigList, routeConfig)
+	}
+
+	newApiOak := rpc.NewApiOak()
+
+	if releaseType == utils.ReleaseTypePush {
+		releaseUpstreamErr := RouteUpstreamRelease(toBeOpUpstreamResIds, releaseType)
+		if releaseUpstreamErr != nil {
+			return releaseUpstreamErr
+		}
+
+		routePutErr := newApiOak.RoutePut(routeConfigList)
+		if routePutErr != nil {
+			return routePutErr
+		}
+
+		for _, toBeOpRouteInfo := range toBeOpRouteList {
+			switchReleaseErr := routeModel.RouteSwitchRelease(toBeOpRouteInfo.ResID, utils.ReleaseStatusY)
+			if switchReleaseErr != nil {
+				return switchReleaseErr
+			}
+		}
+
+	} else {
+		routeDeleteErr := newApiOak.RouteDelete(routeConfigList)
+		if routeDeleteErr != nil {
+			return routeDeleteErr
+		}
+
+		releaseUpstreamErr := RouteUpstreamRelease(toBeOpUpstreamResIds, releaseType)
+		if releaseUpstreamErr != nil {
+			return releaseUpstreamErr
+		}
 	}
 
 	return nil
 }
 
 func ServiceRouteConfigRelease(releaseType string, id string) error {
-	routeConfig, routeConfigErr := generateRouteConfig(id)
-	if routeConfigErr != nil {
-		return routeConfigErr
-	}
+
+	// routeConfig, routeConfigErr := generateRouteConfig(id)
+	// if routeConfigErr != nil {
+	// 	return routeConfigErr
+	// }
+	routeConfig := rpc.RouteConfig{}
 
 	routeConfigJson, routeConfigJsonErr := json.Marshal(routeConfig)
 	if routeConfigJsonErr != nil {
@@ -400,43 +491,22 @@ func ServiceRouteConfigRelease(releaseType string, id string) error {
 	return nil
 }
 
-type RouteConfig struct {
-	ID        string   `json:"id"`
-	ServiceID string   `json:"service_id"`
-	Path      string   `json:"path"`
-	IsEnable  int      `json:"is_enable"`
-	Methods   []string `json:"methods"`
-}
+func generateRouteConfig(routeInfo models.Routes) (rpc.RouteConfig, error) {
+	routeConfig := rpc.RouteConfig{}
 
-func generateRouteConfig(id string) (RouteConfig, error) {
-	routeConfig := RouteConfig{}
-	routeModel := models.Routes{}
-	routeInfo, routeInfoErr := routeModel.RouteInfoById(id)
-	if routeInfoErr != nil {
-		return routeConfig, routeInfoErr
+	routeConfig.Name = routeInfo.ResID
+	routeConfig.Methods = strings.Split(routeInfo.RequestMethods, ",")
+	routeConfig.Paths = append(routeConfig.Paths, routeInfo.RoutePath)
+	routeConfig.Enabled = false
+	if routeInfo.Enable == utils.EnableOn {
+		routeConfig.Enabled = true
 	}
+	routeConfig.Headers = make(map[string]string)
+	routeConfig.Service.Name = routeInfo.ServiceResID
+	routeConfig.Upstream.Name = routeInfo.UpstreamResID
 
-	methods := strings.Split(routeInfo.RequestMethods, ",")
-
-	var allMethod bool
-	if len(methods) != 0 {
-		for _, method := range methods {
-			if method == utils.RequestMethodALL {
-				allMethod = true
-				break
-			}
-		}
-	}
-
-	if allMethod == true {
-		methods = utils.ConfigAllRequestMethod()
-	}
-
-	routeConfig.ID = routeInfo.ResID
-	routeConfig.ServiceID = routeInfo.ServiceResID
-	routeConfig.Path = routeInfo.RoutePath
-	routeConfig.IsEnable = routeInfo.Enable
-	routeConfig.Methods = methods
+	// @todo 根据路由res_id获取插件列表数据进行补充插件数据
+	routeConfig.Plugins = make([]rpc.ConfigObjectName, 0)
 
 	return routeConfig, nil
 }

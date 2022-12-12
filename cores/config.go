@@ -1,6 +1,7 @@
 package cores
 
 import (
+	"apioak-admin/app/packages"
 	"fmt"
 	"github.com/fsnotify/fsnotify"
 	"github.com/gin-gonic/gin"
@@ -48,6 +49,17 @@ type ConfigValidator struct {
 	Locale string `yaml:"locale" mapstructure:"locale"`
 }
 
+type ConfigApiOakApi struct {
+
+}
+
+type ConfigApiOak struct {
+	Ip     string `yaml:"ip" mapstructure:"ip"`
+	Port   int    `yaml:"port" mapstructure:"port"`
+	Domain string `yaml:"domain" mapstructure:"domain"`
+	Secret string `yaml:"secret" mapstructure:"secret"`
+}
+
 type ConfigRuntime struct {
 	DB  *gorm.DB
 	Gin *gin.Engine
@@ -60,6 +72,7 @@ type ConfigGlobal struct {
 	Etcd      ConfigEtcd      `yaml:"etcd" mapstructure:"etcd"`
 	Validator ConfigValidator `yaml:"validator" mapstructure:"validator"`
 	Token     ConfigToken     `yaml:"token"`
+	Apioak    ConfigApiOak    `yaml:"apioak" mapstructure:"apioak"`
 	Runtime   ConfigRuntime
 }
 
@@ -90,6 +103,8 @@ func InitConfig(conf *ConfigGlobal) error {
 	if err := v.Unmarshal(conf); err != nil {
 		fmt.Println(err)
 	}
+
+	packages.SetConfigApiOak(conf.Apioak.Ip, conf.Apioak.Port, conf.Apioak.Domain, conf.Apioak.Secret)
 
 	return nil
 }

@@ -5,6 +5,7 @@ import (
 	"apioak-admin/app/packages"
 	"apioak-admin/app/utils"
 	"errors"
+	"gorm.io/gorm"
 )
 
 type Upstreams struct {
@@ -53,4 +54,19 @@ func (m *Upstreams) ModelUniqueId() (string, error) {
 
 		return id, nil
 	}
+}
+
+func (m *Upstreams) UpstreamListByResIds(upstreamResIds []string) ([]Upstreams, error) {
+	upstreamList := make([]Upstreams, 0)
+
+	err := packages.GetDb().
+		Table(m.TableName()).
+		Where("res_id in ?", upstreamResIds).
+		Find(&upstreamList).Error
+
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return upstreamList, nil
+	}
+
+	return upstreamList, err
 }

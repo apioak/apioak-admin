@@ -6,6 +6,7 @@ import (
 	"apioak-admin/app/utils"
 	"apioak-admin/app/validators"
 	"errors"
+	"gorm.io/gorm"
 	"strings"
 	"time"
 )
@@ -96,19 +97,35 @@ func (r *Routes) RouteInfoById(routeId string) (Routes, error) {
 	return routeInfo, err
 }
 
-func (r *Routes) RouteInfoByIdServiceId(routeId string, serviceId string) Routes {
+func (r *Routes) RouteInfoByResIdServiceResId(routeResId string, serviceResId string) Routes {
 	routeInfo := Routes{}
 	db := packages.GetDb().
 		Table(r.TableName()).
-		Where("id = ?", routeId)
+		Where("res_id = ?", routeResId)
 
-	if len(serviceId) != 0 {
-		db = db.Where("service_id = ?", serviceId)
+	if len(serviceResId) != 0 {
+		db = db.Where("service_res_id = ?", serviceResId)
 	}
 
 	db.First(&routeInfo)
 
 	return routeInfo
+}
+
+func (r *Routes) RouteListByRouteResIds(routeResIds []string) ([]Routes, error) {
+
+	routeList := make([]Routes, 0)
+
+	err := packages.GetDb().
+		Table(r.TableName()).
+		Where("res_id in ?", routeResIds).
+		Find(&routeList).Error
+
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return routeList, nil
+	}
+
+	return routeList, err
 }
 
 func (r *Routes) RouteInfosByServiceRouteId(serviceId string, routeId string) (Routes, error) {
@@ -489,15 +506,15 @@ func (r *Routes) RouteSwitchEnable(id string, enable int) error {
 	return nil
 }
 
-func (r *Routes) RouteSwitchRelease(id string, releaseStatus int) error {
-	id = strings.TrimSpace(id)
-	if len(id) == 0 {
+func (r *Routes) RouteSwitchRelease(resId string, releaseStatus int) error {
+	resId = strings.TrimSpace(resId)
+	if len(resId) == 0 {
 		return errors.New(enums.CodeMessages(enums.ServiceParamsNull))
 	}
 
 	updateErr := packages.GetDb().
 		Table(r.TableName()).
-		Where("id = ?", id).
+		Where("res_id = ?", resId).
 		Update("release_status", releaseStatus).Error
 
 	if updateErr != nil {
