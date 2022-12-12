@@ -10,15 +10,15 @@ import (
 	"strings"
 )
 
-func ServiceLoadBalanceList(c *gin.Context) {
-	loadBalanceList := utils.LoadBalanceList()
-	utils.Ok(c, loadBalanceList)
-}
+//func ServiceLoadBalanceList(c *gin.Context) {
+//	loadBalanceList := utils.LoadBalanceList()
+//	utils.Ok(c, loadBalanceList)
+//}
 
 func ServiceAdd(c *gin.Context) {
 
 	var bindParams = validators.ServiceAddUpdate{
-		IsRelease: utils.ReleaseN,
+		Release: utils.ReleaseN,
 	}
 	if msg, err := packages.ParseRequestParams(c, &bindParams); err != nil {
 		utils.Error(c, msg)
@@ -27,7 +27,6 @@ func ServiceAdd(c *gin.Context) {
 
 	validators.CorrectServiceAttributesDefault(&bindParams)
 	validators.CorrectServiceDomains(&bindParams.ServiceDomains)
-	validators.CorrectServiceAddNodes(&bindParams.ServiceNodes)
 
 	checkExistDomainErr := services.CheckExistDomain(bindParams.ServiceDomains, []string{})
 	if checkExistDomainErr != nil {
@@ -35,11 +34,11 @@ func ServiceAdd(c *gin.Context) {
 		return
 	}
 
-	checkDomainCertificateErr := services.CheckDomainCertificate(bindParams.Protocol, bindParams.ServiceDomains)
-	if checkDomainCertificateErr != nil {
-		utils.Error(c, checkDomainCertificateErr.Error())
-		return
-	}
+	//checkDomainCertificateErr := services.CheckDomainCertificate(bindParams.Protocol, bindParams.ServiceDomains)
+	//if checkDomainCertificateErr != nil {
+	//	utils.Error(c, checkDomainCertificateErr.Error())
+	//	return
+	//}
 
 	createErr := services.ServiceCreate(&bindParams)
 	if createErr != nil {
@@ -54,7 +53,7 @@ func ServiceUpdate(c *gin.Context) {
 	serviceId := strings.TrimSpace(c.Param("id"))
 
 	var bindParams = validators.ServiceAddUpdate{
-		IsRelease: utils.ReleaseN,
+		Release: utils.ReleaseN,
 	}
 	if msg, err := packages.ParseRequestParams(c, &bindParams); err != nil {
 		utils.Error(c, msg)
@@ -62,7 +61,6 @@ func ServiceUpdate(c *gin.Context) {
 	}
 
 	validators.CorrectServiceDomains(&bindParams.ServiceDomains)
-	validators.CorrectServiceAddNodes(&bindParams.ServiceNodes)
 
 	checkServiceExistErr := services.CheckServiceExist(serviceId)
 	if checkServiceExistErr != nil {
@@ -238,64 +236,64 @@ func ServiceSwitchRelease(c *gin.Context) {
 	utils.Ok(c)
 }
 
-func ServiceSwitchWebsocket(c *gin.Context) {
-	serviceId := strings.TrimSpace(c.Param("id"))
-
-	var bindParams = validators.ServiceSwitchWebsocket{}
-	if msg, err := packages.ParseRequestParams(c, &bindParams); err != nil {
-		utils.Error(c, msg)
-		return
-	}
-
-	checkServiceExistErr := services.CheckServiceExist(serviceId)
-	if checkServiceExistErr != nil {
-		utils.Error(c, checkServiceExistErr.Error())
-		return
-	}
-
-	checkServiceWebsocketChangeErr := services.CheckServiceWebsocketChange(serviceId, bindParams.WebSocket)
-	if checkServiceWebsocketChangeErr != nil {
-		utils.Error(c, checkServiceWebsocketChangeErr.Error())
-		return
-	}
-
-	serviceModel := &models.Services{}
-	updateErr := serviceModel.ServiceSwitchWebsocket(serviceId, bindParams.WebSocket)
-	if updateErr != nil {
-		utils.Error(c, updateErr.Error())
-		return
-	}
-
-	utils.Ok(c)
-}
-
-func ServiceSwitchHealthCheck(c *gin.Context) {
-	serviceId := strings.TrimSpace(c.Param("id"))
-
-	var bindParams = validators.ServiceSwitchHealthCheck{}
-	if msg, err := packages.ParseRequestParams(c, &bindParams); err != nil {
-		utils.Error(c, msg)
-		return
-	}
-
-	checkServiceExistErr := services.CheckServiceExist(serviceId)
-	if checkServiceExistErr != nil {
-		utils.Error(c, checkServiceExistErr.Error())
-		return
-	}
-
-	checkServiceHealthCheckChangeErr := services.CheckServiceHealthCheckChange(serviceId, bindParams.HealthCheck)
-	if checkServiceHealthCheckChangeErr != nil {
-		utils.Error(c, checkServiceHealthCheckChangeErr.Error())
-		return
-	}
-
-	serviceModel := &models.Services{}
-	updateErr := serviceModel.ServiceSwitchHealthCheck(serviceId, bindParams.HealthCheck)
-	if updateErr != nil {
-		utils.Error(c, updateErr.Error())
-		return
-	}
-
-	utils.Ok(c)
-}
+//func ServiceSwitchWebsocket(c *gin.Context) {
+//	serviceId := strings.TrimSpace(c.Param("id"))
+//
+//	var bindParams = validators.ServiceSwitchWebsocket{}
+//	if msg, err := packages.ParseRequestParams(c, &bindParams); err != nil {
+//		utils.Error(c, msg)
+//		return
+//	}
+//
+//	checkServiceExistErr := services.CheckServiceExist(serviceId)
+//	if checkServiceExistErr != nil {
+//		utils.Error(c, checkServiceExistErr.Error())
+//		return
+//	}
+//
+//	checkServiceWebsocketChangeErr := services.CheckServiceWebsocketChange(serviceId, bindParams.WebSocket)
+//	if checkServiceWebsocketChangeErr != nil {
+//		utils.Error(c, checkServiceWebsocketChangeErr.Error())
+//		return
+//	}
+//
+//	serviceModel := &models.Services{}
+//	updateErr := serviceModel.ServiceSwitchWebsocket(serviceId, bindParams.WebSocket)
+//	if updateErr != nil {
+//		utils.Error(c, updateErr.Error())
+//		return
+//	}
+//
+//	utils.Ok(c)
+//}
+//
+//func ServiceSwitchHealthCheck(c *gin.Context) {
+//	serviceId := strings.TrimSpace(c.Param("id"))
+//
+//	var bindParams = validators.ServiceSwitchHealthCheck{}
+//	if msg, err := packages.ParseRequestParams(c, &bindParams); err != nil {
+//		utils.Error(c, msg)
+//		return
+//	}
+//
+//	checkServiceExistErr := services.CheckServiceExist(serviceId)
+//	if checkServiceExistErr != nil {
+//		utils.Error(c, checkServiceExistErr.Error())
+//		return
+//	}
+//
+//	checkServiceHealthCheckChangeErr := services.CheckServiceHealthCheckChange(serviceId, bindParams.HealthCheck)
+//	if checkServiceHealthCheckChangeErr != nil {
+//		utils.Error(c, checkServiceHealthCheckChangeErr.Error())
+//		return
+//	}
+//
+//	serviceModel := &models.Services{}
+//	updateErr := serviceModel.ServiceSwitchHealthCheck(serviceId, bindParams.HealthCheck)
+//	if updateErr != nil {
+//		utils.Error(c, updateErr.Error())
+//		return
+//	}
+//
+//	utils.Ok(c)
+//}

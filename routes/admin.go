@@ -28,7 +28,7 @@ func RouteRegister(routeEngine *gin.Engine) {
 		// service
 		service := adminRoute.Group("service")
 		{
-			service.GET("/common/load-balance/list", admin.ServiceLoadBalanceList)
+			//service.GET("/common/load-balance/list", admin.ServiceLoadBalanceList)
 
 			service.POST("/add", admin.ServiceAdd)
 			service.GET("/list", admin.ServiceList)
@@ -38,8 +38,8 @@ func RouteRegister(routeEngine *gin.Engine) {
 			service.PUT("/update/name/:id", admin.ServiceUpdateName)
 			service.PUT("/switch/enable/:id", admin.ServiceSwitchEnable)
 			service.PUT("/switch/release/:id", admin.ServiceSwitchRelease)
-			service.PUT("/switch/websocket/:id", admin.ServiceSwitchWebsocket)
-			service.PUT("/switch/health-check/:id", admin.ServiceSwitchHealthCheck)
+			//service.PUT("/switch/websocket/:id", admin.ServiceSwitchWebsocket)
+			//service.PUT("/switch/health-check/:id", admin.ServiceSwitchHealthCheck)
 		}
 
 		// route

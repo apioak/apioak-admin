@@ -29,12 +29,12 @@ func main() {
 		panic(err)
 	}
 
-	// 初始化ETCD
+	//初始化ETCD
 	if err := cores.InitEtcd(&conf); err != nil {
 		panic(err)
 	}
 
-	// 初始化Token
+	//初始化Token
 	if err := cores.InitToken(&conf); err != nil {
 		panic(err)
 	}

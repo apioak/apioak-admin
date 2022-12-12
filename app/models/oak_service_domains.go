@@ -9,7 +9,8 @@ import (
 )
 
 type ServiceDomains struct {
-	ID        string `gorm:"column:id;primary_key"` //Domain id
+	ID        int64  `gorm:"column:id;primary_key"` //Domain id
+	ResID     string `gorm:"column:res_id"`         //ResID
 	ServiceID string `gorm:"column:service_id"`     //Service id
 	Domain    string `gorm:"column:domain"`         //Domain name
 	ModelTime
@@ -30,7 +31,7 @@ func (m *ServiceDomains) ModelUniqueId() (string, error) {
 
 	result := packages.GetDb().
 		Table(m.TableName()).
-		Where("id = ?", generateId).
+		Where("res_id = ?", generateId).
 		Select("id").
 		First(m)
 

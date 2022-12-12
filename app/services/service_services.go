@@ -17,7 +17,7 @@ import (
 func CheckServiceExist(serviceResId string) error {
 	serviceModel := &models.Services{}
 	serviceInfo := serviceModel.ServiceInfoById(serviceResId)
-	if len(serviceInfo.ID) == 0 {
+	if len(serviceInfo.ResID) == 0 {
 		return errors.New(enums.CodeMessages(enums.ServiceNull))
 	}
 
@@ -27,50 +27,50 @@ func CheckServiceExist(serviceResId string) error {
 func CheckServiceEnableChange(serviceId string, enable int) error {
 	serviceModel := &models.Services{}
 	serviceInfo := serviceModel.ServiceInfoById(serviceId)
-	if serviceInfo.ID != serviceId {
+	if serviceInfo.ResID != serviceId {
 		return errors.New(enums.CodeMessages(enums.ServiceNull))
 	}
 
-	if serviceInfo.IsEnable == enable {
+	if serviceInfo.Enable == enable {
 		return errors.New(enums.CodeMessages(enums.SwitchNoChange))
 	}
 
 	return nil
 }
 
-func CheckServiceWebsocketChange(serviceId string, webSocket int) error {
-	serviceModel := &models.Services{}
-	serviceInfo := serviceModel.ServiceInfoById(serviceId)
-	if serviceInfo.ID != serviceId {
-		return errors.New(enums.CodeMessages(enums.ServiceNull))
-	}
-
-	if serviceInfo.WebSocket == webSocket {
-		return errors.New(enums.CodeMessages(enums.SwitchNoChange))
-	}
-
-	return nil
-}
-
-func CheckServiceHealthCheckChange(serviceId string, healthCheck int) error {
-	serviceModel := &models.Services{}
-	serviceInfo := serviceModel.ServiceInfoById(serviceId)
-	if serviceInfo.ID != serviceId {
-		return errors.New(enums.CodeMessages(enums.ServiceNull))
-	}
-
-	if serviceInfo.HealthCheck == healthCheck {
-		return errors.New(enums.CodeMessages(enums.SwitchNoChange))
-	}
-
-	return nil
-}
+//func CheckServiceWebsocketChange(serviceId string, webSocket int) error {
+//	serviceModel := &models.Services{}
+//	serviceInfo := serviceModel.ServiceInfoById(serviceId)
+//	if serviceInfo.ID != serviceId {
+//		return errors.New(enums.CodeMessages(enums.ServiceNull))
+//	}
+//
+//	if serviceInfo.WebSocket == webSocket {
+//		return errors.New(enums.CodeMessages(enums.SwitchNoChange))
+//	}
+//
+//	return nil
+//}
+//
+//func CheckServiceHealthCheckChange(serviceId string, healthCheck int) error {
+//	serviceModel := &models.Services{}
+//	serviceInfo := serviceModel.ServiceInfoById(serviceId)
+//	if serviceInfo.ID != serviceId {
+//		return errors.New(enums.CodeMessages(enums.ServiceNull))
+//	}
+//
+//	if serviceInfo.HealthCheck == healthCheck {
+//		return errors.New(enums.CodeMessages(enums.SwitchNoChange))
+//	}
+//
+//	return nil
+//}
 
 func CheckServiceRelease(serviceId string) error {
 	serviceModel := &models.Services{}
 	serviceInfo := serviceModel.ServiceInfoById(serviceId)
 
-	if serviceInfo.ReleaseStatus == utils.ReleaseStatusY {
+	if serviceInfo.Release == utils.ReleaseStatusY {
 		return errors.New(enums.CodeMessages(enums.SwitchPublished))
 	}
 
@@ -147,11 +147,11 @@ func CheckServiceDelete(serviceId string) error {
 	serviceModel := &models.Services{}
 	serviceInfo := serviceModel.ServiceInfoById(serviceId)
 
-	if serviceInfo.ReleaseStatus == utils.ReleaseStatusY {
-		if serviceInfo.IsEnable == utils.EnableOn {
+	if serviceInfo.Release == utils.ReleaseStatusY {
+		if serviceInfo.Enable == utils.EnableOn {
 			return errors.New(enums.CodeMessages(enums.SwitchONProhibitsOp))
 		}
-	} else if serviceInfo.ReleaseStatus == utils.ReleaseStatusT {
+	} else if serviceInfo.Release == utils.ReleaseStatusT {
 		return errors.New(enums.CodeMessages(enums.ToReleaseProhibitsOp))
 	}
 
@@ -227,83 +227,40 @@ func CheckDomainCertificate(protocol int, domains []string) error {
 	return nil
 }
 
-func ServiceCreate(serviceData *validators.ServiceAddUpdate) error {
+func ServiceCreate(request *validators.ServiceAddUpdate) error {
 	serviceModel := &models.Services{}
-	serviceDomainInfos := make([]models.ServiceDomains, 0)
-	serviceNodeInfos := make([]models.ServiceNodes, 0)
 
-	timeOutByte, _ := json.Marshal(serviceData.Timeouts)
 	createServiceData := models.Services{
-		Protocol:      serviceData.Protocol,
-		HealthCheck:   serviceData.HealthCheck,
-		WebSocket:     serviceData.WebSocket,
-		IsEnable:      serviceData.IsEnable,
-		ReleaseStatus: utils.ReleaseStatusU,
-		LoadBalance:   serviceData.LoadBalance,
-		Timeouts:      string(timeOutByte),
+		Name:     request.Name,
+		Protocol: request.Protocol,
+		Enable:   request.Enable,
+		Release:  utils.ReleaseStatusU,
 	}
 
-	if serviceData.IsRelease == utils.ReleaseY {
-		createServiceData.ReleaseStatus = utils.ReleaseStatusY
+	_, err := serviceModel.ServiceAdd(&createServiceData, request.ServiceDomains)
+
+	if err != nil {
+		return err
 	}
 
-	for _, domainInfo := range serviceData.ServiceDomains {
-		domain := models.ServiceDomains{
-			Domain: domainInfo,
-		}
-		serviceDomainInfos = append(serviceDomainInfos, domain)
-	}
-
-	for _, nodeInfo := range serviceData.ServiceNodes {
-		ipType, err := utils.DiscernIP(nodeInfo.NodeIp)
-		if err != nil {
-			return err
-		}
-		ipTypeMap := models.IPTypeMap()
-		nodeIPInfo := models.ServiceNodes{
-			NodeIP:     nodeInfo.NodeIp,
-			IPType:     ipTypeMap[ipType],
-			NodePort:   nodeInfo.NodePort,
-			NodeWeight: nodeInfo.NodeWeight,
-		}
-		serviceNodeInfos = append(serviceNodeInfos, nodeIPInfo)
-	}
-
-	serviceId, createErr := serviceModel.ServiceAdd(&createServiceData, &serviceDomainInfos, &serviceNodeInfos)
-
-	if (createErr == nil) && (serviceData.IsRelease == utils.ReleaseY) {
-		releaseErr := ServiceRelease(serviceId)
-		if releaseErr != nil {
-			createServiceData.ReleaseStatus = utils.ReleaseStatusU
-			serviceModel.ServiceUpdateColumnsById(serviceId, &createServiceData)
-
-			return releaseErr
-		}
-	}
-
-	return createErr
+	return nil
 }
 
 func ServiceUpdate(serviceId string, serviceData *validators.ServiceAddUpdate) error {
 	serviceModel := models.Services{}
-	timeOutByte, _ := json.Marshal(serviceData.Timeouts)
 	serviceInfo := serviceModel.ServiceInfoById(serviceId)
 
 	updateServiceData := models.Services{
-		Protocol:      serviceData.Protocol,
-		HealthCheck:   serviceData.HealthCheck,
-		WebSocket:     serviceData.WebSocket,
-		IsEnable:      serviceData.IsEnable,
-		ReleaseStatus: serviceInfo.ReleaseStatus,
-		LoadBalance:   serviceData.LoadBalance,
-		Timeouts:      string(timeOutByte),
+		Protocol: serviceData.Protocol,
+		Enable:   serviceData.Enable,
+		Release:  serviceInfo.Release,
 	}
-	if serviceInfo.ReleaseStatus == utils.ReleaseStatusY {
-		updateServiceData.ReleaseStatus = utils.ReleaseStatusT
+	if serviceInfo.Release == utils.ReleaseStatusY {
+		updateServiceData.Release = utils.ReleaseStatusT
 	}
 
-	if serviceData.IsRelease == utils.ReleaseY {
-		updateServiceData.ReleaseStatus = utils.ReleaseStatusY
+	if serviceData.Release == utils.ReleaseY {
+		updateServiceData.Release = utils.ReleaseStatusY
 	}
 
 	serviceDomains := make([]validators.ServiceDomainAddUpdate, 0)
@@ -315,16 +272,15 @@ func ServiceUpdate(serviceId string, serviceData *validators.ServiceAddUpdate) e
 		serviceDomains = append(serviceDomains, serviceDomain)
 	}
 
-	addDomains, deleteDomainIds := GetToOperateDomains(serviceId, &serviceDomains)
-	addNodes, updateNodes, deleteNodeIds := GetToOperateNodes(serviceId, &serviceData.ServiceNodes)
+	addDomains, _ := GetToOperateDomains(serviceId, &serviceDomains)
 
-	updateErr := serviceModel.ServiceUpdate(serviceId, &updateServiceData, &addDomains, &addNodes, &updateNodes, deleteDomainIds, deleteNodeIds)
+	updateErr := serviceModel.ServiceUpdate(serviceId, &updateServiceData, &addDomains)
 
-	if (updateErr == nil) && (serviceData.IsRelease == utils.ReleaseY) {
+	if (updateErr == nil) && (serviceData.Release == utils.ReleaseY) {
 		releaseErr := ServiceRelease(serviceId)
 		if releaseErr != nil {
-			if serviceInfo.ReleaseStatus != utils.ReleaseStatusU {
-				updateServiceData.ReleaseStatus = utils.ReleaseStatusT
+			if serviceInfo.Release != utils.ReleaseStatusU {
+				updateServiceData.Release = utils.ReleaseStatusT
 			}
 			serviceModel.ServiceUpdateColumnsById(serviceId, &updateServiceData)
 
@@ -353,7 +309,7 @@ func ServiceDelete(serviceId string) error {
 	}
 
 	routePluginModel := models.RoutePlugins{}
-	routePluginInfos :=routePluginModel.RoutePluginInfosByRouteIdRelease(routeIds, []int{utils.ReleaseStatusT, utils.ReleaseStatusY})
+	routePluginInfos := routePluginModel.RoutePluginInfosByRouteIdRelease(routeIds, []int{utils.ReleaseStatusT, utils.ReleaseStatusY})
 
 	if len(releaseRouteInfos) != 0 {
 		for _, releaseRouteInfo := range releaseRouteInfos {
@@ -392,16 +348,12 @@ type structTimeouts struct {
 }
 
 type StructServiceList struct {
-	ID             string         `json:"id"`              //Service id
-	Name           string         `json:"name"`            //Service name
-	Protocol       int            `json:"protocol"`        //Protocol  1:HTTP  2:HTTPS  3:HTTP&HTTPS
-	HealthCheck    int            `json:"health_check"`    //Health check switch  1:on  2:off
-	WebSocket      int            `json:"web_socket"`      //WebSocket  1:on  2:off
-	IsEnable       int            `json:"is_enable"`       //Service enable  1:on  2:off
-	ReleaseStatus  int            `json:"release_status"`  //Service release status 1:unpublished  2:to be published  3:published
-	LoadBalance    int            `json:"load_balance"`    //Load balancing algorithm
-	Timeouts       structTimeouts `json:"timeouts"`        //Time out
-	ServiceDomains []string       `json:"service_domains"` //Domain name
+	ID             string   `json:"id"`              //Service id
+	Name           string   `json:"name"`            //Service name
+	Protocol       int      `json:"protocol"`        //Protocol  1:HTTP  2:HTTPS  3:HTTP&HTTPS
+	Enable         int      `json:"enable"`          //Service enable  1:on  2:off
+	Release        int      `json:"release"`         //Service release status 1:unpublished  2:to be published  3:published
+	ServiceDomains []string `json:"service_domains"` //Domain name
 }
 
 func (structServiceList *StructServiceList) ServiceListPage(param *validators.ServiceList) ([]StructServiceList, int, error) {
@@ -425,9 +377,9 @@ func (structServiceList *StructServiceList) ServiceListPage(param *validators.Se
 		tpmServiceIds := map[string]string{}
 		if len(serviceInfos) != 0 {
 			for _, serviceInfo := range serviceInfos {
-				_, serviceExist := tpmServiceIds[serviceInfo.ID]
+				_, serviceExist := tpmServiceIds[serviceInfo.ResID]
 				if !serviceExist {
-					tpmServiceIds[serviceInfo.ID] = serviceInfo.ID
+					tpmServiceIds[serviceInfo.ResID] = serviceInfo.ResID
 				}
 			}
 		}
@@ -456,23 +408,11 @@ func (structServiceList *StructServiceList) ServiceListPage(param *validators.Se
 	if len(list) != 0 {
 		for _, serviceInfo := range list {
 			tmpServiceInfo := StructServiceList{}
-			tmpServiceInfo.ID = serviceInfo.ID
+			tmpServiceInfo.ID = serviceInfo.ResID
 			tmpServiceInfo.Name = serviceInfo.Name
 			tmpServiceInfo.Protocol = serviceInfo.Protocol
-			tmpServiceInfo.HealthCheck = serviceInfo.HealthCheck
-			tmpServiceInfo.WebSocket = serviceInfo.WebSocket
-			tmpServiceInfo.IsEnable = serviceInfo.IsEnable
-			tmpServiceInfo.ReleaseStatus = serviceInfo.ReleaseStatus
-			tmpServiceInfo.LoadBalance = serviceInfo.LoadBalance
-
-			tmpTimeOuts := structTimeouts{}
-			tmpServiceInfo.Timeouts = tmpTimeOuts
-			if len(serviceInfo.Timeouts) != 0 {
-				tmpTimeOutsErr := json.Unmarshal([]byte(serviceInfo.Timeouts), &tmpTimeOuts)
-				if tmpTimeOutsErr == nil {
-					tmpServiceInfo.Timeouts = tmpTimeOuts
-				}
-			}
+			tmpServiceInfo.Enable = serviceInfo.Enable
+			tmpServiceInfo.Release = serviceInfo.Release
 
 			tmpServiceInfo.ServiceDomains = make([]string, 0)
 			if len(serviceInfo.Domains) != 0 {
@@ -495,17 +435,12 @@ type structServiceNode struct {
 }
 
 type StructServiceInfo struct {
-	ID             string              `json:"id"`              //Service id
-	Name           string              `json:"name"`            //Service name
-	Protocol       int                 `json:"protocol"`        //Protocol  1:HTTP  2:HTTPS  3:HTTP&HTTPS
-	HealthCheck    int                 `json:"health_check"`    //Health check switch  1:on  2:off
-	WebSocket      int                 `json:"web_socket"`      //WebSocket  1:on  2:off
-	IsEnable       int                 `json:"is_enable"`       //Service enable  1:on  2:off
-	ReleaseStatus  int                 `json:"release_status"`  //Service release status 1:unpublished  2:to be published  3:published
-	LoadBalance    int                 `json:"load_balance"`    //Load balancing algorithm
-	Timeouts       structTimeouts      `json:"timeouts"`        //Time out
-	ServiceDomains []string            `json:"service_domains"` //Service Domains
-	ServiceNodes   []structServiceNode `json:"service_nodes"`   //Service Nodes
+	ID             string   `json:"id"`              //Service id
+	Name           string   `json:"name"`            //Service name
+	Protocol       int      `json:"protocol"`        //Protocol  1:HTTP  2:HTTPS  3:HTTP&HTTPS
+	Enable         int      `json:"enable"`          //Service enable  1:on  2:off
+	Release        int      `json:"release"`         //Service release status 1:unpublished  2:to be published  3:published
+	ServiceDomains []string `json:"service_domains"` //Service Domains
 }
 
 func (s *StructServiceInfo) ServiceInfoById(serviceId string) (StructServiceInfo, error) {
@@ -523,40 +458,16 @@ func (s *StructServiceInfo) ServiceInfoById(serviceId string) (StructServiceInfo
 	}
 
 	serviceListInfo := serviceList[0]
-	serviceInfo.ID = serviceListInfo.ID
+	serviceInfo.ID = serviceListInfo.ResID
 	serviceInfo.Name = serviceListInfo.Name
 	serviceInfo.Protocol = serviceListInfo.Protocol
-	serviceInfo.HealthCheck = serviceListInfo.HealthCheck
-	serviceInfo.WebSocket = serviceListInfo.WebSocket
-	serviceInfo.IsEnable = serviceListInfo.IsEnable
-	serviceInfo.ReleaseStatus = serviceListInfo.ReleaseStatus
-	serviceInfo.LoadBalance = serviceListInfo.LoadBalance
-
-	tmpTimeOuts := structTimeouts{}
-	serviceInfo.Timeouts = tmpTimeOuts
-	if len(serviceListInfo.Timeouts) != 0 {
-		tmpTimeOutsErr := json.Unmarshal([]byte(serviceListInfo.Timeouts), &tmpTimeOuts)
-		if tmpTimeOutsErr == nil {
-			serviceInfo.Timeouts = tmpTimeOuts
-		}
-	}
+	serviceInfo.Enable = serviceListInfo.Enable
+	serviceInfo.Release = serviceListInfo.Release
 
 	serviceInfo.ServiceDomains = make([]string, 0)
 	if len(serviceListInfo.Domains) != 0 {
 		for _, domainInfo := range serviceListInfo.Domains {
 			serviceInfo.ServiceDomains = append(serviceInfo.ServiceDomains, domainInfo.Domain)
-		}
-	}
-
-	serviceInfo.ServiceNodes = make([]structServiceNode, 0)
-	if len(serviceListInfo.Nodes) != 0 {
-		for _, nodeInfo := range serviceListInfo.Nodes {
-			tmpNodeInfo := structServiceNode{}
-			tmpNodeInfo.NodeIP = nodeInfo.NodeIP
-			tmpNodeInfo.NodePort = nodeInfo.NodePort
-			tmpNodeInfo.NodeWeight = nodeInfo.NodeWeight
-
-			serviceInfo.ServiceNodes = append(serviceInfo.ServiceNodes, tmpNodeInfo)
 		}
 	}
 
@@ -577,19 +488,19 @@ func ServiceRelease(serviceId string) error {
 		routeModel := models.Routes{}
 		defaultRouteInfos, defaultRouteInfoErr := routeModel.RouteInfosByServiceRoutePath(serviceId, []string{utils.DefaultRoutePath}, []string{})
 		if len(defaultRouteInfos) == 0 {
-			serviceModel.ServiceSwitchRelease(serviceId, serviceInfo.ReleaseStatus)
+			serviceModel.ServiceSwitchRelease(serviceId, serviceInfo.Release)
 			return errors.New(enums.CodeMessages(enums.RouteDefaultPathNull))
 		}
 
 		if defaultRouteInfoErr != nil {
-			serviceModel.ServiceSwitchRelease(serviceId, serviceInfo.ReleaseStatus)
+			serviceModel.ServiceSwitchRelease(serviceId, serviceInfo.Release)
 			return defaultRouteInfoErr
 		}
 		defaultRouteInfo := defaultRouteInfos[0]
 
 		routeReleaseErr := ServiceRouteConfigRelease(utils.ReleaseTypePush, defaultRouteInfo.ResID)
 		if routeReleaseErr != nil {
-			serviceModel.ServiceSwitchRelease(serviceId, serviceInfo.ReleaseStatus)
+			serviceModel.ServiceSwitchRelease(serviceId, serviceInfo.Release)
 			return routeReleaseErr
 		}
 
@@ -649,16 +560,11 @@ type ServiceTimeOutConfig struct {
 }
 
 type ServiceConfig struct {
-	ID          string                  `json:"id"`
-	Protocol    int                     `json:"protocol"`
-	HealthCheck int                     `json:"health_check"`
-	WebSocket   int                     `json:"web_socket"`
-	IsEnable    int                     `json:"is_enable"`
-	LoadBalance int                     `json:"load_balance"`
-	TimeOut     ServiceTimeOutConfig    `json:"time_out"`
-	Domains     []string                `json:"domains"`
-	DomainSnis  map[string]string       `json:"domain_snis"`
-	Upstreams   []ServiceUpstreamConfig `json:"upstreams"`
+	ID         string            `json:"id"`
+	Protocol   int               `json:"protocol"`
+	Enable     int               `json:"enable"`
+	Domains    []string          `json:"domains"`
+	DomainSnis map[string]string `json:"domain_snis"`
 }
 
 func generateServicesConfig(id string) (ServiceConfig, error) {
@@ -667,12 +573,6 @@ func generateServicesConfig(id string) (ServiceConfig, error) {
 	serviceInfo, serviceInfoErr := serviceModel.ServiceDomainNodeById(id)
 	if serviceInfoErr != nil {
 		return serviceConfig, serviceInfoErr
-	}
-
-	serviceTimeOutConfig := ServiceTimeOutConfig{}
-	timeOutInfoErr := json.Unmarshal([]byte(serviceInfo.Timeouts), &serviceTimeOutConfig)
-	if timeOutInfoErr != nil {
-		return serviceConfig, timeOutInfoErr
 	}
 
 	domains := make([]string, 0)
@@ -701,16 +601,11 @@ func generateServicesConfig(id string) (ServiceConfig, error) {
 		}
 	}
 
-	serviceConfig.ID = serviceInfo.ID
+	serviceConfig.ID = serviceInfo.ResID
 	serviceConfig.Protocol = serviceInfo.Protocol
-	serviceConfig.HealthCheck = serviceInfo.HealthCheck
-	serviceConfig.WebSocket = serviceInfo.WebSocket
-	serviceConfig.IsEnable = serviceInfo.IsEnable
-	serviceConfig.LoadBalance = serviceInfo.LoadBalance
-	serviceConfig.TimeOut = serviceTimeOutConfig
+	serviceConfig.Enable = serviceInfo.Enable
 	serviceConfig.Domains = domains
 	serviceConfig.DomainSnis = domainSnis
-	serviceConfig.Upstreams = upstreams
 
 	return serviceConfig, nil
 }

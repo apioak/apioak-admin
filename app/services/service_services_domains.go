@@ -39,7 +39,7 @@ func GetToOperateDomains(serviceId string, updateDomains *[]validators.ServiceDo
 	for _, existDomain := range serviceExistDomains {
 		_, exist := updateDomainsMap[existDomain.Domain]
 		if !exist {
-			deleteDomainIds = append(deleteDomainIds, existDomain.ID)
+			deleteDomainIds = append(deleteDomainIds, existDomain.ResID)
 		}
 	}
 

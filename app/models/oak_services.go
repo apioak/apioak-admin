@@ -6,19 +6,18 @@ import (
 	"apioak-admin/app/utils"
 	"apioak-admin/app/validators"
 	"errors"
+	"fmt"
+	"gorm.io/gorm"
 	"strings"
 )
 
 type Services struct {
-	ID            string `gorm:"column:id;primary_key"` //Service id
-	Name          string `gorm:"column:name"`           //Service name
-	Protocol      int    `gorm:"column:protocol"`       //Protocol  1:HTTP  2:HTTPS  3:HTTP&HTTPS
-	HealthCheck   int    `gorm:"column:health_check"`   //Health check switch  1:on  2:off
-	WebSocket     int    `gorm:"column:web_socket"`     //WebSocket  1:on  2:off
-	IsEnable      int    `gorm:"column:is_enable"`      //Service enable  1:on  2:off
-	ReleaseStatus int    `gorm:"column:release_status"` //Service release status 1:unpublished  2:to be published  3:published
-	LoadBalance   int    `gorm:"column:load_balance"`   //Load balancing algorithm
-	Timeouts      string `gorm:"column:timeouts"`       //Time out
+	ID       int    `gorm:"column:id;primary_key"` //Service id
+	ResID    string `gorm:"column:res_id"`         //ServiceResID
+	Name     string `gorm:"column:name"`           //Service name
+	Protocol int    `gorm:"column:protocol"`       //Protocol  1:HTTP  2:HTTPS  3:HTTP&HTTPS
+	Enable   int    `gorm:"column:enable"`         //Service enable  1:on  2:off
+	Release  int    `gorm:"column:release"`        //Service release status 1:unpublished  2:to be published  3:published
 	ModelTime
 }
 
@@ -43,8 +42,8 @@ func (m *Services) ModelUniqueId() (string, error) {
 
 	result := packages.GetDb().
 		Table(m.TableName()).
-		Where("id = ?", generateId).
-		Select("id").
+		Where("res_id = ?", generateId).
+		Select("res_id").
 		First(m)
 
 	if result.RowsAffected == 0 {
@@ -67,97 +66,53 @@ func (m *Services) ModelUniqueId() (string, error) {
 	}
 }
 
-func (s *Services) ServiceAdd(
-	serviceInfo *Services,
-	serviceDomains *[]ServiceDomains,
-	serviceNodes *[]ServiceNodes) (string, error) {
+func (s *Services) ServiceAdd(serviceInfo *Services, serviceDomains []string) (string, error) {
 
-	tpmIds := map[string]string{}
-	serviceId, serviceIdUniqueErr := s.ModelUniqueId()
-	if serviceIdUniqueErr != nil {
-		return serviceId, serviceIdUniqueErr
-	}
-
-	tx := packages.GetDb().Begin()
-
-	defer func() {
-		if r := recover(); r != nil {
-			tx.Rollback()
-		}
-	}()
-
-	if err := tx.Error; err != nil {
+	serviceId, err := s.ModelUniqueId()
+	if err != nil {
 		return serviceId, err
 	}
 
-	serviceInfo.ID = serviceId
-	serviceInfo.Name = serviceId
-	createServiceErr := tx.
-		Create(&serviceInfo).Error
-
-	if createServiceErr != nil {
-		tx.Rollback()
-		return serviceId, createServiceErr
-	}
-
-	for _, serviceDomain := range *serviceDomains {
-		domainId, domainIdErr := serviceDomain.ModelUniqueId()
-		if domainIdErr != nil {
-			return serviceId, domainIdErr
+	err = packages.GetDb().Transaction(func(tx *gorm.DB) error {
+		serviceInfo.ResID = serviceId
+		if serviceInfo.Name == "" {
+			serviceInfo.Name = serviceId
 		}
 
-		serviceDomain.ID = domainId
-		serviceDomain.ServiceID = serviceId
-		domainErr := tx.
-			Create(&serviceDomain).Error
+		err := tx.Create(&serviceInfo).Error
 
-		if domainErr != nil {
-			tx.Rollback()
-			return serviceId, domainErr
-		}
-	}
-
-	for _, serviceNode := range *serviceNodes {
-		nodeId, nodeIdErr := serviceNode.ServiceNodeIdUnique(tpmIds)
-		if nodeIdErr != nil {
-			return serviceId, nodeIdErr
+		if err != nil {
+			packages.GetLogger().Error("create services error")
+			return err
 		}
 
-		serviceNode.ID = nodeId
-		serviceNode.ServiceID = serviceId
-		nodeErr := tx.
-			Create(&serviceNode).Error
+		serviceDomainsParam := []ServiceDomains{}
+		for _, serviceDomain := range serviceDomains {
+			domainId, err := (&ServiceDomains{}).ModelUniqueId()
+			if err != nil {
+				return err
+			}
 
-		if nodeErr != nil {
-			tx.Rollback()
-			return serviceId, nodeErr
+			serviceDomainsParam = append(serviceDomainsParam, ServiceDomains{
+				Domain:    serviceDomain,
+				ResID:     domainId,
+				ServiceID: serviceId,
+			})
 		}
-	}
 
-	serviceRoute := Routes{}
-	routeId, routeIdErr := serviceRoute.ModelUniqueId()
-	if routeIdErr != nil {
-		tx.Rollback()
-		return serviceId, routeIdErr
-	}
+		err = tx.Create(&serviceDomainsParam).Error
 
-	serviceRoute.ResID = routeId
-	serviceRoute.ServiceResID = serviceId
-	serviceRoute.RouteName = routeId
-	serviceRoute.RoutePath = utils.DefaultRoutePath
-	serviceRoute.Enable = utils.EnableOn
-	serviceRoute.Release = utils.ReleaseStatusU
-	serviceRoute.RequestMethods = utils.RequestMethodALL
+		if err != nil {
+			packages.GetLogger().Error("create services domain error")
+			return err
+		}
 
-	routeCreateErr := tx.
-		Create(&serviceRoute).Error
+		return nil
+	})
 
-	if routeCreateErr != nil {
-		tx.Rollback()
-		return serviceId, routeCreateErr
-	}
+	fmt.Println(err)
 
-	return serviceId, tx.Commit().Error
+	return serviceId, err
 }
 
 func (s *Services) ServiceUpdateColumnsById(id string, serviceInfo *Services) error {
@@ -181,10 +136,7 @@ func (s *Services) ServiceUpdate(
 	id string,
 	serviceInfo *Services,
 	serviceDomains *[]ServiceDomains,
-	serviceNodes *[]ServiceNodes,
-	updateNodes *[]ServiceNodes,
-	deleteDomainIds []string,
-	deleteNodeIds []string) error {
+) error {
 
 	tx := packages.GetDb().Begin()
 	defer func() {
@@ -207,32 +159,6 @@ func (s *Services) ServiceUpdate(
 		return updateError
 	}
 
-	if len(deleteDomainIds) != 0 {
-		serviceDomainsModel := ServiceDomains{}
-		domainDeleteError := tx.
-			Table(serviceDomainsModel.TableName()).
-			Where("id IN ?", deleteDomainIds).
-			Delete(&serviceDomainsModel).Error
-
-		if domainDeleteError != nil {
-			tx.Rollback()
-			return domainDeleteError
-		}
-	}
-
-	if len(deleteNodeIds) != 0 {
-		serviceNodesModel := ServiceNodes{}
-		nodeDeleteError := tx.
-			Table(serviceNodesModel.TableName()).
-			Where("id IN ?", deleteNodeIds).
-			Delete(&serviceNodesModel).Error
-
-		if nodeDeleteError != nil {
-			tx.Rollback()
-			return nodeDeleteError
-		}
-	}
-
 	if len(*serviceDomains) > 0 {
 		for _, serviceDomain := range *serviceDomains {
 			domainId, domainIdErr := serviceDomain.ModelUniqueId()
@@ -240,7 +166,7 @@ func (s *Services) ServiceUpdate(
 				return domainIdErr
 			}
 
-			serviceDomain.ID = domainId
+			serviceDomain.ResID = domainId
 			serviceDomain.ServiceID = id
 			domainErr := tx.
 				Create(&serviceDomain).Error
@@ -251,41 +177,6 @@ func (s *Services) ServiceUpdate(
 			}
 		}
 	}
-
-	if len(*updateNodes) > 0 {
-		for _, updateNode := range *updateNodes {
-			updateNodeError := tx.
-				Table(updateNode.TableName()).
-				Where("id = ?", updateNode.ID).
-				Updates(ServiceNodes{NodeWeight: updateNode.NodeWeight}).Error
-
-			if updateNodeError != nil {
-				tx.Rollback()
-				return updateNodeError
-			}
-		}
-	}
-
-	if len(*serviceNodes) > 0 {
-		tpmIds := map[string]string{}
-		for _, serviceNode := range *serviceNodes {
-			nodeId, nodeIdErr := serviceNode.ServiceNodeIdUnique(tpmIds)
-			if nodeIdErr != nil {
-				return nodeIdErr
-			}
-
-			serviceNode.ID = nodeId
-			serviceNode.ServiceID = id
-			nodeErr := tx.
-				Create(&serviceNode).Error
-
-			if nodeErr != nil {
-				tx.Rollback()
-				return nodeErr
-			}
-		}
-	}
-
 	return tx.Commit().Error
 }
 
@@ -304,7 +195,7 @@ func (s *Services) ServiceDomainNodeById(serviceId string) (ServiceDomainNode, e
 		Order("updated_at desc").
 		First(&serviceDomainNode)
 
-	if serviceDomainNode.ID != serviceId {
+	if serviceDomainNode.ResID != serviceId {
 		err = errors.New(enums.CodeMessages(enums.ServiceNull))
 	} else {
 		err = nil
@@ -430,11 +321,11 @@ func (s *Services) ServiceAllInfosListPage(
 	if param.Protocol != 0 {
 		tx = tx.Where("protocol = ?", param.Protocol)
 	}
-	if param.IsEnable != 0 {
-		tx = tx.Where("is_enable = ?", param.IsEnable)
+	if param.Enable != 0 {
+		tx = tx.Where("is_enable = ?", param.Enable)
 	}
-	if param.ReleaseStatus != 0 {
-		tx = tx.Where("release_status = ?", param.ReleaseStatus)
+	if param.Release != 0 {
+		tx = tx.Where("release_status = ?", param.Release)
 	}
 
 	countError := ListCount(tx, &total)
@@ -498,8 +389,8 @@ func (s *Services) ServiceSwitchEnable(id string, enable int) error {
 	}
 
 	serviceInfo := s.ServiceInfoById(id)
-	releaseStatus := serviceInfo.ReleaseStatus
-	if serviceInfo.ReleaseStatus == utils.ReleaseStatusY {
+	releaseStatus := serviceInfo.Release
+	if serviceInfo.Release == utils.ReleaseStatusY {
 		releaseStatus = utils.ReleaseStatusT
 	}
 
@@ -507,8 +398,8 @@ func (s *Services) ServiceSwitchEnable(id string, enable int) error {
 		Table(s.TableName()).
 		Where("id = ?", id).
 		Updates(Services{
-			IsEnable:      enable,
-			ReleaseStatus: releaseStatus}).Error
+			Enable:  enable,
+			Release: releaseStatus}).Error
 
 	if updateErr != nil {
 		return updateErr
@@ -517,57 +408,57 @@ func (s *Services) ServiceSwitchEnable(id string, enable int) error {
 	return nil
 }
 
-func (s *Services) ServiceSwitchWebsocket(id string, webSocket int) error {
-	id = strings.TrimSpace(id)
-	if len(id) == 0 {
-		return errors.New(enums.CodeMessages(enums.ServiceParamsNull))
-	}
-
-	serviceInfo := s.ServiceInfoById(id)
-	releaseStatus := serviceInfo.ReleaseStatus
-	if serviceInfo.ReleaseStatus == utils.ReleaseStatusY {
-		releaseStatus = utils.ReleaseStatusT
-	}
-
-	updateErr := packages.GetDb().
-		Table(s.TableName()).
-		Where("id = ?", id).
-		Updates(Services{
-			WebSocket:     webSocket,
-			ReleaseStatus: releaseStatus}).Error
-
-	if updateErr != nil {
-		return updateErr
-	}
-
-	return nil
-}
-
-func (s *Services) ServiceSwitchHealthCheck(id string, healthCheck int) error {
-	id = strings.TrimSpace(id)
-	if len(id) == 0 {
-		return errors.New(enums.CodeMessages(enums.ServiceParamsNull))
-	}
-
-	serviceInfo := s.ServiceInfoById(id)
-	releaseStatus := serviceInfo.ReleaseStatus
-	if serviceInfo.ReleaseStatus == utils.ReleaseStatusY {
-		releaseStatus = utils.ReleaseStatusT
-	}
-
-	updateErr := packages.GetDb().
-		Table(s.TableName()).
-		Where("id = ?", id).
-		Updates(Services{
-			HealthCheck:   healthCheck,
-			ReleaseStatus: releaseStatus}).Error
-
-	if updateErr != nil {
-		return updateErr
-	}
-
-	return nil
-}
+//func (s *Services) ServiceSwitchWebsocket(id string, webSocket int) error {
+//	id = strings.TrimSpace(id)
+//	if len(id) == 0 {
+//		return errors.New(enums.CodeMessages(enums.ServiceParamsNull))
+//	}
+//
+//	serviceInfo := s.ServiceInfoById(id)
+//	releaseStatus := serviceInfo.Release
+//	if serviceInfo.ReleaseStatus == utils.ReleaseStatusY {
+//		releaseStatus = utils.ReleaseStatusT
+//	}
+//
+//	updateErr := packages.GetDb().
+//		Table(s.TableName()).
+//		Where("id = ?", id).
+//		Updates(Services{
+//			WebSocket:     webSocket,
+//			ReleaseStatus: releaseStatus}).Error
+//
+//	if updateErr != nil {
+//		return updateErr
+//	}
+//
+//	return nil
+//}
+//
+//func (s *Services) ServiceSwitchHealthCheck(id string, healthCheck int) error {
+//	id = strings.TrimSpace(id)
+//	if len(id) == 0 {
+//		return errors.New(enums.CodeMessages(enums.ServiceParamsNull))
+//	}
+//
+//	serviceInfo := s.ServiceInfoById(id)
+//	releaseStatus := serviceInfo.ReleaseStatus
+//	if serviceInfo.ReleaseStatus == utils.ReleaseStatusY {
+//		releaseStatus = utils.ReleaseStatusT
+//	}
+//
+//	updateErr := packages.GetDb().
+//		Table(s.TableName()).
+//		Where("id = ?", id).
+//		Updates(Services{
+//			HealthCheck:   healthCheck,
+//			ReleaseStatus: releaseStatus}).Error
+//
+//	if updateErr != nil {
+//		return updateErr
+//	}
+//
+//	return nil
+//}
 
 func (s *Services) ServiceSwitchRelease(id string, release int) error {
 	if len(id) == 0 {
