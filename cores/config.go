@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/viper"
 	"gorm.io/gorm"
+	"strings"
 )
 
 type ConfigServer struct {
@@ -49,15 +50,12 @@ type ConfigValidator struct {
 	Locale string `yaml:"locale" mapstructure:"locale"`
 }
 
-type ConfigApiOakApi struct {
-
-}
-
 type ConfigApiOak struct {
-	Ip     string `yaml:"ip" mapstructure:"ip"`
-	Port   int    `yaml:"port" mapstructure:"port"`
-	Domain string `yaml:"domain" mapstructure:"domain"`
-	Secret string `yaml:"secret" mapstructure:"secret"`
+	Protocol string `yaml:"protocol" mapstructure:"protocol"`
+	Ip       string `yaml:"ip" mapstructure:"ip"`
+	Port     int    `yaml:"port" mapstructure:"port"`
+	Domain   string `yaml:"domain" mapstructure:"domain"`
+	Secret   string `yaml:"secret" mapstructure:"secret"`
 }
 
 type ConfigRuntime struct {
@@ -104,7 +102,12 @@ func InitConfig(conf *ConfigGlobal) error {
 		fmt.Println(err)
 	}
 
-	packages.SetConfigApiOak(conf.Apioak.Ip, conf.Apioak.Port, conf.Apioak.Domain, conf.Apioak.Secret)
+	protocol := strings.ToLower(conf.Apioak.Protocol)
+	if (protocol != "http") && (protocol != "https") {
+		protocol = "http"
+	}
+
+	packages.SetConfigApiOak(protocol, conf.Apioak.Ip, conf.Apioak.Port, conf.Apioak.Domain, conf.Apioak.Secret)
 
 	return nil
 }

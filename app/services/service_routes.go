@@ -151,10 +151,12 @@ func RouteCreate(routeData *validators.ValidatorRouteAddUpdate) error {
 			ipTypeMap := models.IPTypeMap()
 
 			createUpstreamNodes = append(createUpstreamNodes, models.UpstreamNodes{
-				NodeIP:     upstreamNode.NodeIp,
-				IPType:     ipTypeMap[ipType],
-				NodePort:   upstreamNode.NodePort,
-				NodeWeight: upstreamNode.NodeWeight,
+				NodeIP:      upstreamNode.NodeIp,
+				IPType:      ipTypeMap[ipType],
+				NodePort:    upstreamNode.NodePort,
+				NodeWeight:  upstreamNode.NodeWeight,
+				Health:      upstreamNode.Health,
+				HealthCheck: upstreamNode.HealthCheck,
 			})
 		}
 	}
@@ -163,11 +165,6 @@ func RouteCreate(routeData *validators.ValidatorRouteAddUpdate) error {
 
 	if err != nil {
 		return err
-	}
-
-	// @todo如果设置了发布，则这里需要发布 routeResId
-	if routeData.Release == utils.ReleaseY {
-
 	}
 
 	return nil
@@ -383,7 +380,6 @@ func ServiceRouteRelease(routeResIds []string, releaseType string) error {
 
 	publishedServiceResIdsMap := make(map[string]byte)
 	// @todo 根据服务ID获取已经发布的服务数据（如果没有已经发布的数据，则本次发布不允许，直接返回错误信息即可）
-
 
 	toBeOpUpstreamResIds := make([]string, 0)
 	toBeOpRouteList := make([]models.Routes, 0)

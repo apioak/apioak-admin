@@ -22,6 +22,7 @@ const (
 	IdConflict           = 106 // ID冲突
 	ToReleaseProhibitsOp = 107 // 待发布状态禁止该操作
 	ReleaseTypeError     = 108 // 发布类型错误
+	PublishError         = 109 // 发布失败
 
 	ServiceNull       = 10001 // 服务不存在
 	ServiceParamsNull = 10002 // 服务参数缺失
@@ -80,6 +81,7 @@ var ZhMapMessages = map[int]string{
 	IdConflict:           "ID冲突",
 	ToReleaseProhibitsOp: "待发布状态禁止该操作",
 	ReleaseTypeError:     "发布类型错误",
+	PublishError:         "发布失败",
 
 	ServiceNull:       "服务不存在",
 	ServiceParamsNull: "服务参数缺失",
@@ -138,6 +140,7 @@ var EnMapMessages = map[int]string{
 	IdConflict:           "ID conflict",
 	ToReleaseProhibitsOp: "Pending status prohibits this operation",
 	ReleaseTypeError:     "Release type error",
+	PublishError:         "Publish error",
 
 	ServiceNull:       "Service does not exist",
 	ServiceParamsNull: "Missing service parameters",

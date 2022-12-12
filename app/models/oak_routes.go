@@ -515,7 +515,7 @@ func (r *Routes) RouteSwitchRelease(resId string, releaseStatus int) error {
 	updateErr := packages.GetDb().
 		Table(r.TableName()).
 		Where("res_id = ?", resId).
-		Update("release_status", releaseStatus).Error
+		Update("release", releaseStatus).Error
 
 	if updateErr != nil {
 		return updateErr

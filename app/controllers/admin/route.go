@@ -321,13 +321,16 @@ func RouteSwitchRelease(c *gin.Context) {
 	serviceResId := strings.TrimSpace(c.Param("service_res_id"))
 	routeResId := strings.TrimSpace(c.Param("route_res_id"))
 
+	// @todo 检测服务是否存在，牵扯到服务，后续需要进行改动
 	// checkServiceExistErr := services.CheckServiceExist(serviceResId)
 	// if checkServiceExistErr != nil {
 	// 	utils.Error(c, checkServiceExistErr.Error())
 	// 	return
 	// }
 
-	// @todo 检测服务是否已发布
+	// @todo 这里增加检测服务是否已发布，只要不是未发布都可以通过，请优先发布服务
+
+
 
 	checkExistRouteErr := services.CheckRouteExist(routeResId, serviceResId)
 	if checkExistRouteErr != nil {
