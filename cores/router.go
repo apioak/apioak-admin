@@ -1,8 +1,8 @@
 package cores
 
-import "apioak-admin/routes"
+import "apioak-admin/routers"
 
-func InitRoute(conf *ConfigGlobal) error {
-	routes.RouteRegister(conf.Runtime.Gin)
+func InitRouter(conf *ConfigGlobal) error {
+	routers.RouterRegister(conf.Runtime.Gin)
 	return nil
 }

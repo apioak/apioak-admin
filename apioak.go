@@ -45,7 +45,7 @@ func main() {
 	}
 
 	// 初始化路由
-	if err := cores.InitRoute(&conf); err != nil {
+	if err := cores.InitRouter(&conf); err != nil {
 		panic(err)
 	}
 

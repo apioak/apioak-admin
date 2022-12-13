@@ -31,19 +31,19 @@ const (
 	ServiceDomainFormatError = 10102 // 服务域名格式错误
 	ServiceDomainSslNull     = 10104 // [%s]服务域名证书缺失
 
-	RouteDefaultPathNoPermission    = 10201 // [/*]默认路径暂无权限操作
-	RoutePathExist                  = 10202 // 路由路径已存在
-	RouteNull                       = 10203 // 路由不存在
-	RouteServiceNoMatch             = 10204 // 路由不在指定服务下
-	RoutePluginExist                = 10205 // 路由插件已存在
-	RoutePluginNull                 = 10206 // 路由插件不存在
-	RoutePluginFormatError          = 10207 // 路由插件配置参数格式有误或参数错误
-	RouteDefaultPathForbiddenPrefix = 10208 // [/*]默认路径暂不能作为路由开头
-	RouteDefaultPathNull            = 10209 // [/*]默认路径路由不存在
+	RouterDefaultPathNoPermission    = 10201 // [/*]默认路径暂无权限操作
+	RouterPathExist                  = 10202 // 路由路径已存在
+	RouterNull                       = 10203 // 路由不存在
+	RouterServiceNoMatch             = 10204 // 路由不在指定服务下
+	RouterPluginExist                = 10205 // 路由插件已存在
+	RouterPluginNull                 = 10206 // 路由插件不存在
+	RouterPluginFormatError          = 10207 // 路由插件配置参数格式有误或参数错误
+	RouterDefaultPathForbiddenPrefix = 10208 // [/*]默认路径暂不能作为路由开头
+	RouterDefaultPathNull            = 10209 // [/*]默认路径路由不存在
 
 	PluginTagExist   = 10301 // 插件标识已存在
 	PluginNull       = 10302 // 插件不存在
-	PluginRouteExist = 10303 // 插件已被路由绑定，暂不允许该操作
+	PluginRouterExist = 10303 // 插件已被路由绑定，暂不允许该操作
 	PluginTagNull    = 10304 // 插件标识不存在，请检查[插件信息 - 插件标识]
 
 	CertificateFormatError = 10401 // 证书格式错误
@@ -90,19 +90,19 @@ var ZhMapMessages = map[int]string{
 	ServiceDomainFormatError: "服务域名格式错误",
 	ServiceDomainSslNull:     "[%s]服务域名证书缺失",
 
-	RouteDefaultPathNoPermission:    "[/*]默认路径暂无权限操作",
-	RoutePathExist:                  "[%s]路由路径已存在",
-	RouteNull:                       "路由不存在",
-	RouteServiceNoMatch:             "路由不在指定服务下",
-	RoutePluginExist:                "路由插件已存在",
-	RoutePluginNull:                 "路由插件不存在",
-	RoutePluginFormatError:          "路由插件配置参数格式有误或参数错误",
-	RouteDefaultPathForbiddenPrefix: "[/*]默认路径暂不能作为路由开头",
-	RouteDefaultPathNull:            "[/*]默认路径路由不存在",
+	RouterDefaultPathNoPermission:    "[/*]默认路径暂无权限操作",
+	RouterPathExist:                  "[%s]路由路径已存在",
+	RouterNull:                       "路由不存在",
+	RouterServiceNoMatch:             "路由不在指定服务下",
+	RouterPluginExist:                "路由插件已存在",
+	RouterPluginNull:                 "路由插件不存在",
+	RouterPluginFormatError:          "路由插件配置参数格式有误或参数错误",
+	RouterDefaultPathForbiddenPrefix: "[/*]默认路径暂不能作为路由开头",
+	RouterDefaultPathNull:            "[/*]默认路径路由不存在",
 
 	PluginTagExist:   "插件标识已存在",
 	PluginNull:       "插件不存在",
-	PluginRouteExist: "插件已被路由绑定，暂不允许该操作",
+	PluginRouterExist: "插件已被路由绑定，暂不允许该操作",
 	PluginTagNull:    "插件标识不存在，请检查[插件信息 - 插件标识]",
 
 	CertificateFormatError: "证书格式错误",
@@ -149,19 +149,19 @@ var EnMapMessages = map[int]string{
 	ServiceDomainFormatError: "Service domain name format error",
 	ServiceDomainSslNull:     "[%s]Service domain name certificate is missing",
 
-	RouteDefaultPathNoPermission:    "[/*]The default path does not have permission to operate temporarily",
-	RoutePathExist:                  "[%s]Routing path already exists",
-	RouteNull:                       "Route does not exist",
-	RouteServiceNoMatch:             "The route is not under the specified service",
-	RoutePluginExist:                "Routing plugin already exists",
-	RoutePluginNull:                 "The routing plugin does not exist",
-	RoutePluginFormatError:          "The routing plugin configuration parameter format is incorrect or the parameter is wrong",
-	RouteDefaultPathForbiddenPrefix: "[/*]The default path cannot be used as the beginning of the route",
-	RouteDefaultPathNull:            "[/*]The default route route does not exist",
+	RouterDefaultPathNoPermission:    "[/*]The default path does not have permission to operate temporarily",
+	RouterPathExist:                  "[%s]Routing path already exists",
+	RouterNull:                       "Router does not exist",
+	RouterServiceNoMatch:             "The router is not under the specified service",
+	RouterPluginExist:                "Routing plugin already exists",
+	RouterPluginNull:                 "The routing plugin does not exist",
+	RouterPluginFormatError:          "The routing plugin configuration parameter format is incorrect or the parameter is wrong",
+	RouterDefaultPathForbiddenPrefix: "[/*]The default path cannot be used as the beginning of the router",
+	RouterDefaultPathNull:            "[/*]The default router router does not exist",
 
 	PluginTagExist:   "Plugin tag already exists",
 	PluginNull:       "Plugin does not exist",
-	PluginRouteExist: "Plugin routing binding, operation is not allowed",
+	PluginRouterExist: "Plugin routing binding, operation is not allowed",
 	PluginTagNull:    "The plugin tag does not exist, please check [plugin information - plugin tag]",
 
 	CertificateFormatError: "Incorrect certificate format",

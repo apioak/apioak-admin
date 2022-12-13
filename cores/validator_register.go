@@ -43,10 +43,10 @@ func RegisterCustomizeValidator(validatorEngine *validator.Validate) error {
 		return err
 	}
 
-	if err := validatorEngine.RegisterValidation("CheckRoutePathPrefix", validators.CheckRoutePathPrefix); err != nil {
+	if err := validatorEngine.RegisterValidation("CheckRouterPathPrefix", validators.CheckRouterPathPrefix); err != nil {
 		return err
 	}
-	if err := validatorEngine.RegisterValidation("CheckRouteRequestMethodOneOf", validators.CheckRouteRequestMethodOneOf); err != nil {
+	if err := validatorEngine.RegisterValidation("CheckRouterRequestMethodOneOf", validators.CheckRouterRequestMethodOneOf); err != nil {
 		return err
 	}
 

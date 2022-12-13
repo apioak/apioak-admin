@@ -9,32 +9,32 @@ import (
 )
 
 var (
-	routePathPrefixMessages = map[string]string{
+	routerPathPrefixMessages = map[string]string{
 		utils.LocalEn: "%s must start with [/]",
 		utils.LocalZh: "%s必须以[/]开始",
 	}
-	routePathDefaultPathPrefixMessages = map[string]string{
+	routerPathDefaultPathPrefixMessages = map[string]string{
 		utils.LocalEn: "%s It is temporarily not allowed to start with the default routing path[/*]",
 		utils.LocalZh: "%s暂不允许以默认路由路径[/*]开头",
 	}
-	routeRequestMethodOneOfMessages = map[string]string{
+	routerRequestMethodOneOfMessages = map[string]string{
 		utils.LocalEn: "%s must be one of [%s]",
 		utils.LocalZh: "%s必须是[%s]中的一个",
 	}
 )
 
-type ValidatorRouteAddUpdate struct {
+type ValidatorRouterAddUpdate struct {
 	ServiceResID   string `json:"service_res_id" zh:"所属服务" en:"Belonging service" binding:"omitempty"`
 	UpstreamResID  string `json:"upstream_res_id" zh:"上游服务" en:"Upstream service" binding:"omitempty"`
-	RouteName      string `json:"route_name" zh:"路由名称" en:"Route name" binding:"omitempty"`
-	RequestMethods string `json:"request_methods" zh:"请求方法" en:"Request method" binding:"required,min=3,CheckRouteRequestMethodOneOf"`
-	RoutePath      string `json:"route_path" zh:"路由路径" en:"Routing path" binding:"required,min=2,CheckRoutePathPrefix"`
+	RouterName      string `json:"router_name" zh:"路由名称" en:"Router name" binding:"omitempty"`
+	RequestMethods string `json:"request_methods" zh:"请求方法" en:"Request method" binding:"required,min=3,CheckRouterRequestMethodOneOf"`
+	RouterPath      string `json:"router_path" zh:"路由路径" en:"Routing path" binding:"required,min=2,CheckRouterPathPrefix"`
 	Release        int    `json:"release" zh:"发布开关" en:"Release status enable" binding:"omitempty,oneof=1 2"`
 	Enable         int    `json:"enable" zh:"路由开关" en:"Routing enable" binding:"required,oneof=1 2"`
 	UpstreamAddUpdate
 }
 
-type ValidatorRouteList struct {
+type ValidatorRouterList struct {
 	ServiceResID string `json:"service_res_id" zh:"所属服务" en:"Belonging service" binding:"omitempty"`
 	Search       string `form:"search" json:"search" zh:"搜索内容" en:"Search content" binding:"omitempty"`
 	Enable       int    `form:"enable" json:"enable" zh:"路由开关" en:"Routing enable" binding:"omitempty,oneof=1 2"`
@@ -42,41 +42,41 @@ type ValidatorRouteList struct {
 	BaseListPage
 }
 
-type RouteUpdateName struct {
-	Name string `json:"name" zh:"路由名称" en:"Route name" binding:"required,min=1,max=30"`
+type RouterUpdateName struct {
+	Name string `json:"name" zh:"路由名称" en:"Router name" binding:"required,min=1,max=30"`
 }
 
-type RouteSwitchEnable struct {
-	IsEnable int `json:"is_enable" zh:"路由开关" en:"Route enable" binding:"required,oneof=1 2"`
+type RouterSwitchEnable struct {
+	IsEnable int `json:"is_enable" zh:"路由开关" en:"Router enable" binding:"required,oneof=1 2"`
 }
 
-type RouteSwitchRelease struct {
+type RouterSwitchRelease struct {
 	IsRelease int `json:"is_release" zh:"路由发布" en:"Route enable" binding:"required,oneof=1"`
 }
 
-func CheckRoutePathPrefix(fl validator.FieldLevel) bool {
+func CheckRouterPathPrefix(fl validator.FieldLevel) bool {
 	routePath := strings.TrimSpace(fl.Field().String())
 
 	match := strings.Index(routePath, "/")
 	if match != 0 {
 		var errMsg string
-		errMsg = fmt.Sprintf(routePathPrefixMessages[strings.ToLower(packages.GetValidatorLocale())], fl.FieldName())
-		packages.SetAllCustomizeValidatorErrMsgs("CheckRoutePathPrefix", errMsg)
+		errMsg = fmt.Sprintf(routerPathPrefixMessages[strings.ToLower(packages.GetValidatorLocale())], fl.FieldName())
+		packages.SetAllCustomizeValidatorErrMsgs("CheckRouterPathPrefix", errMsg)
 		return false
 	}
 
 	matchDefaultPath := strings.Index(routePath, "/*")
 	if matchDefaultPath == 0 {
 		var errMsg string
-		errMsg = fmt.Sprintf(routePathDefaultPathPrefixMessages[strings.ToLower(packages.GetValidatorLocale())], fl.FieldName())
-		packages.SetAllCustomizeValidatorErrMsgs("CheckRoutePathPrefix", errMsg)
+		errMsg = fmt.Sprintf(routerPathDefaultPathPrefixMessages[strings.ToLower(packages.GetValidatorLocale())], fl.FieldName())
+		packages.SetAllCustomizeValidatorErrMsgs("CheckRouterPathPrefix", errMsg)
 		return false
 	}
 
 	return true
 }
 
-func CheckRouteRequestMethodOneOf(fl validator.FieldLevel) bool {
+func CheckRouterRequestMethodOneOf(fl validator.FieldLevel) bool {
 	requestMethods := strings.TrimSpace(fl.Field().String())
 
 	requestMethodsSlice := strings.Split(requestMethods, ",")
@@ -108,21 +108,21 @@ func CheckRouteRequestMethodOneOf(fl validator.FieldLevel) bool {
 	if len(filterAfterRequestMethods) == 0 {
 
 		var errMsg string
-		errMsg = fmt.Sprintf(routeRequestMethodOneOfMessages[strings.ToLower(packages.GetValidatorLocale())], fl.FieldName(), strings.Join(allRequestMethods, " "))
-		packages.SetAllCustomizeValidatorErrMsgs("CheckRouteRequestMethodOneOf", errMsg)
+		errMsg = fmt.Sprintf(routerRequestMethodOneOfMessages[strings.ToLower(packages.GetValidatorLocale())], fl.FieldName(), strings.Join(allRequestMethods, " "))
+		packages.SetAllCustomizeValidatorErrMsgs("CheckRouterRequestMethodOneOf", errMsg)
 		return false
 	}
 
 	return true
 }
 
-func GetRouteAttributesDefault(routeAddUpdate *ValidatorRouteAddUpdate) {
-	routeAddUpdate.ServiceResID = strings.TrimSpace(routeAddUpdate.ServiceResID)
-	routeAddUpdate.RoutePath = strings.TrimSpace(routeAddUpdate.RoutePath)
-	routeAddUpdate.RequestMethods = strings.TrimSpace(routeAddUpdate.RequestMethods)
-	routeAddUpdate.RouteName = strings.TrimSpace(routeAddUpdate.RouteName)
+func GetRouterAttributesDefault(routerAddUpdate *ValidatorRouterAddUpdate) {
+	routerAddUpdate.ServiceResID = strings.TrimSpace(routerAddUpdate.ServiceResID)
+	routerAddUpdate.RouterPath = strings.TrimSpace(routerAddUpdate.RouterPath)
+	routerAddUpdate.RequestMethods = strings.TrimSpace(routerAddUpdate.RequestMethods)
+	routerAddUpdate.RouterName = strings.TrimSpace(routerAddUpdate.RouterName)
 
-	requestMethodsSlice := strings.Split(routeAddUpdate.RequestMethods, ",")
+	requestMethodsSlice := strings.Split(routerAddUpdate.RequestMethods, ",")
 	allRequestMethods := utils.AllRequestMethod()
 
 	tmpRequestMethodsMap := make(map[string]byte)
@@ -161,5 +161,5 @@ func GetRouteAttributesDefault(routeAddUpdate *ValidatorRouteAddUpdate) {
 		filterAfterRequestMethods = []string{utils.RequestMethodALL}
 	}
 
-	routeAddUpdate.RequestMethods = strings.Join(filterAfterRequestMethods, ",")
+	routerAddUpdate.RequestMethods = strings.Join(filterAfterRequestMethods, ",")
 }

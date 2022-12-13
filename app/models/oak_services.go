@@ -134,27 +134,27 @@ func (s *Services) ServiceAdd(
 		}
 	}
 
-	serviceRoute := Routes{}
-	routeId, routeIdErr := serviceRoute.ModelUniqueId()
-	if routeIdErr != nil {
+	serviceRouter := Routers{}
+	routerId, routerIdErr := serviceRouter.ModelUniqueId()
+	if routerIdErr != nil {
 		tx.Rollback()
-		return serviceId, routeIdErr
+		return serviceId, routerIdErr
 	}
 
-	serviceRoute.ResID = routeId
-	serviceRoute.ServiceResID = serviceId
-	serviceRoute.RouteName = routeId
-	serviceRoute.RoutePath = utils.DefaultRoutePath
-	serviceRoute.Enable = utils.EnableOn
-	serviceRoute.Release = utils.ReleaseStatusU
-	serviceRoute.RequestMethods = utils.RequestMethodALL
+	serviceRouter.ResID = routerId
+	serviceRouter.ServiceResID = serviceId
+	serviceRouter.RouterName = routerId
+	serviceRouter.RouterPath = utils.DefaultRouterPath
+	serviceRouter.Enable = utils.EnableOn
+	serviceRouter.Release = utils.ReleaseStatusU
+	serviceRouter.RequestMethods = utils.RequestMethodALL
 
-	routeCreateErr := tx.
-		Create(&serviceRoute).Error
+	routerCreateErr := tx.
+		Create(&serviceRouter).Error
 
-	if routeCreateErr != nil {
+	if routerCreateErr != nil {
 		tx.Rollback()
-		return serviceId, routeCreateErr
+		return serviceId, routerCreateErr
 	}
 
 	return serviceId, tx.Commit().Error
@@ -383,33 +383,22 @@ func (s *Services) ServiceDelete(id string) error {
 		return deleteNodeError
 	}
 
-	serviceRouteIds := make([]string, 0)
-	routeModel := Routes{}
+	serviceRouterIds := make([]string, 0)
+	routerModel := Routers{}
 	tx.
-		Table(routeModel.TableName()).
+		Table(routerModel.TableName()).
 		Where("service_id = ?", id).
-		Pluck("id", &serviceRouteIds)
+		Pluck("id", &serviceRouterIds)
 
-	if len(serviceRouteIds) > 0 {
-		deleteRouteError := tx.
-			Table(routeModel.TableName()).
-			Where("id IN ?", serviceRouteIds).
-			Delete(routeModel).Error
+	if len(serviceRouterIds) > 0 {
+		deleteRouterError := tx.
+			Table(routerModel.TableName()).
+			Where("id IN ?", serviceRouterIds).
+			Delete(routerModel).Error
 
-		if deleteRouteError != nil {
+		if deleteRouterError != nil {
 			tx.Rollback()
-			return deleteRouteError
-		}
-
-		routePluginModel := RoutePlugins{}
-		deleteRoutePluginError := tx.
-			Table(routePluginModel.TableName()).
-			Where("route_id IN ?", serviceRouteIds).
-			Delete(routePluginModel).Error
-
-		if deleteRoutePluginError != nil {
-			tx.Rollback()
-			return deleteRoutePluginError
+			return deleteRouterError
 		}
 	}
 

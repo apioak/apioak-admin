@@ -12,7 +12,7 @@ import (
 
 func CheckPluginExist(pluginResId string) error {
 	pluginModel := &models.Plugins{}
-	pluginInfo := pluginModel.PluginInfoByResIdRouteServiceId(pluginResId)
+	pluginInfo := pluginModel.PluginInfoByResIdRouterServiceId(pluginResId)
 	if pluginInfo.ResID != pluginResId {
 		return errors.New(enums.CodeMessages(enums.PluginNull))
 	}
@@ -20,9 +20,9 @@ func CheckPluginExist(pluginResId string) error {
 	return nil
 }
 
-func CheckPluginConfig(pluginId string, pluginConfig *validators.RoutePluginAddUpdate) error {
+func CheckPluginConfig(pluginId string, pluginConfig *validators.RouterPluginAddUpdate) error {
 	pluginModel := &models.Plugins{}
-	pluginInfo := pluginModel.PluginInfoByResIdRouteServiceId(pluginId)
+	pluginInfo := pluginModel.PluginInfoByResIdRouterServiceId(pluginId)
 
 	newPluginContext, newPluginContextErr := plugins.NewPluginContext(pluginInfo.PluginKey)
 	if newPluginContextErr != nil {

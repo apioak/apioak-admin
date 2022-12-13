@@ -14,7 +14,10 @@ import (
 	"time"
 )
 
+// @todo 这里检测方法内需要改动，牵扯到服务的插件与校验
 func CheckServiceExist(serviceResId string) error {
+	return nil
+
 	serviceModel := &models.Services{}
 	serviceInfo := serviceModel.ServiceInfoById(serviceResId)
 	if len(serviceInfo.ID) == 0 {
@@ -342,38 +345,38 @@ func ServiceDelete(serviceId string) error {
 	}
 
 	// 获取该服务下所有的已发布和待发布的路由和路由插件
-	routeModel := models.Routes{}
-	releaseRouteInfos := routeModel.RouteInfosByServiceIdReleaseStatus(serviceId, []int{})
+	routerModel := models.Routers{}
+	releaseRouterInfos := routerModel.RouterInfosByServiceIdReleaseStatus(serviceId, []int{})
 
-	routeIds := make([]string, 0)
-	if len(releaseRouteInfos) != 0 {
-		for _, releaseRouteInfo := range releaseRouteInfos {
-			routeIds = append(routeIds, releaseRouteInfo.ResID)
+	routerIds := make([]string, 0)
+	if len(releaseRouterInfos) != 0 {
+		for _, releaseRouterInfo := range releaseRouterInfos {
+			routerIds = append(routerIds, releaseRouterInfo.ResID)
 		}
 	}
 
-	routePluginModel := models.RoutePlugins{}
-	routePluginInfos :=routePluginModel.RoutePluginInfosByRouteIdRelease(routeIds, []int{utils.ReleaseStatusT, utils.ReleaseStatusY})
-
-	if len(releaseRouteInfos) != 0 {
-		for _, releaseRouteInfo := range releaseRouteInfos {
-			if releaseRouteInfo.Release != utils.ReleaseStatusU {
-				routeDeleteReleaseErr := ServiceRouteConfigRelease(utils.ReleaseTypeDelete, releaseRouteInfo.ResID)
-				if routeDeleteReleaseErr != nil {
-					return routeDeleteReleaseErr
-				}
-			}
-		}
-	}
-
-	if len(routePluginInfos) != 0 {
-		for _, routePluginInfo := range routePluginInfos {
-			routePluginDeleteReleaseErr := ServiceRoutePluginConfigRelease(utils.ReleaseTypeDelete, routePluginInfo.ID)
-			if routePluginDeleteReleaseErr != nil {
-				return routePluginDeleteReleaseErr
-			}
-		}
-	}
+	// routerPluginModel := models.RouterPlugins{}
+	// routerPluginInfos :=routerPluginModel.RouterPluginInfosByRouterIdRelease(routerIds, []int{utils.ReleaseStatusT, utils.ReleaseStatusY})
+	//
+	// if len(releaseRouterInfos) != 0 {
+	// 	for _, releaseRouterInfo := range releaseRouterInfos {
+	// 		if releaseRouterInfo.Release != utils.ReleaseStatusU {
+	// 			routerDeleteReleaseErr := ServiceRouterConfigRelease(utils.ReleaseTypeDelete, releaseRouterInfo.ResID)
+	// 			if routerDeleteReleaseErr != nil {
+	// 				return routerDeleteReleaseErr
+	// 			}
+	// 		}
+	// 	}
+	// }
+	//
+	// if len(routerPluginInfos) != 0 {
+	// 	for _, routerPluginInfo := range routerPluginInfos {
+	// 		routerPluginDeleteReleaseErr := ServiceRouterPluginConfigRelease(utils.ReleaseTypeDelete, routerPluginInfo.ID)
+	// 		if routerPluginDeleteReleaseErr != nil {
+	// 			return routerPluginDeleteReleaseErr
+	// 		}
+	// 	}
+	// }
 
 	serviceModel := &models.Services{}
 	deleteErr := serviceModel.ServiceDelete(serviceId)
@@ -574,27 +577,27 @@ func ServiceRelease(serviceId string) error {
 
 	configReleaseErr := ServiceConfigRelease(utils.ReleaseTypePush, serviceId)
 	if configReleaseErr == nil {
-		routeModel := models.Routes{}
-		defaultRouteInfos, defaultRouteInfoErr := routeModel.RouteInfosByServiceRoutePath(serviceId, []string{utils.DefaultRoutePath}, []string{})
-		if len(defaultRouteInfos) == 0 {
+		routerModel := models.Routers{}
+		defaultRouterInfos, defaultRouterInfoErr := routerModel.RouterInfosByServiceRouterPath(serviceId, []string{utils.DefaultRouterPath}, []string{})
+		if len(defaultRouterInfos) == 0 {
 			serviceModel.ServiceSwitchRelease(serviceId, serviceInfo.ReleaseStatus)
-			return errors.New(enums.CodeMessages(enums.RouteDefaultPathNull))
+			return errors.New(enums.CodeMessages(enums.RouterDefaultPathNull))
 		}
 
-		if defaultRouteInfoErr != nil {
+		if defaultRouterInfoErr != nil {
 			serviceModel.ServiceSwitchRelease(serviceId, serviceInfo.ReleaseStatus)
-			return defaultRouteInfoErr
+			return defaultRouterInfoErr
 		}
-		defaultRouteInfo := defaultRouteInfos[0]
+		defaultRouterInfo := defaultRouterInfos[0]
 
-		routeReleaseErr := ServiceRouteConfigRelease(utils.ReleaseTypePush, defaultRouteInfo.ResID)
-		if routeReleaseErr != nil {
+		routerReleaseErr := ServiceRouterConfigRelease(utils.ReleaseTypePush, defaultRouterInfo.ResID)
+		if routerReleaseErr != nil {
 			serviceModel.ServiceSwitchRelease(serviceId, serviceInfo.ReleaseStatus)
-			return routeReleaseErr
+			return routerReleaseErr
 		}
 
-		routeModel.Release = utils.ReleaseStatusY
-		routeModel.RouteUpdate(defaultRouteInfo.ResID, routeModel)
+		routerModel.Release = utils.ReleaseStatusY
+		routerModel.RouterUpdate(defaultRouterInfo.ResID, routerModel)
 	}
 
 	return configReleaseErr

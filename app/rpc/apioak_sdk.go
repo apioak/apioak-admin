@@ -171,7 +171,7 @@ func (m *ApiOak) UpstreamDelete(upstreamConfigList []UpstreamConfig) (err error)
 	return
 }
 
-type RouteConfig struct {
+type RouterConfig struct {
 	Name     string             `json:"name"`
 	Methods  []string           `json:"methods"`
 	Paths    []string           `json:"paths"`
@@ -182,14 +182,14 @@ type RouteConfig struct {
 	Plugins  []ConfigObjectName `json:"plugins"`
 }
 
-func (m *ApiOak) RoutePut(routeConfigList []RouteConfig) (err error) {
-	if len(routeConfigList) == 0 {
+func (m *ApiOak) RouterPut(routerConfigList []RouterConfig) (err error) {
+	if len(routerConfigList) == 0 {
 		return
 	}
 
 	uri := m.Protocol + "://" + m.Ip + ":" + strconv.Itoa(m.Port) + routerUri
 
-	for _, routeConfigInfo := range routeConfigList {
+	for _, routerConfigInfo := range routerConfigList {
 
 		var param = url.Values{}
 		var header = http.Header{}
@@ -197,8 +197,8 @@ func (m *ApiOak) RoutePut(routeConfigList []RouteConfig) (err error) {
 			header.Set("Host", m.Domain)
 		}
 
-		resName := routeConfigInfo.Name
-		err = m.commonPut(resName, uri, routeConfigInfo, param, header)
+		resName := routerConfigInfo.Name
+		err = m.commonPut(resName, uri, routerConfigInfo, param, header)
 		if err != nil {
 			return
 		}
@@ -207,7 +207,7 @@ func (m *ApiOak) RoutePut(routeConfigList []RouteConfig) (err error) {
 	return
 }
 
-func (m *ApiOak) RouteDelete(routeConfigList []RouteConfig) (err error) {
+func (m *ApiOak) RouterDelete(routerConfigList []RouterConfig) (err error) {
 	// @todo 删除逻辑，先检测远程是否存在，存在的直接删除，不存在忽略
 	return
 }

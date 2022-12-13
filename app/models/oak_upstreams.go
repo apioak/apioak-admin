@@ -70,3 +70,16 @@ func (m *Upstreams) UpstreamListByResIds(upstreamResIds []string) ([]Upstreams, 
 
 	return upstreamList, err
 }
+
+func (m *Upstreams) UpstreamDetailByResId(resIds string) (detail Upstreams, err error) {
+	err = packages.GetDb().
+		Table(m.TableName()).
+		Where("res_id = ?", resIds).
+		First(&detail).Error
+
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		err = nil
+	}
+
+	return
+}

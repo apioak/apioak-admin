@@ -48,8 +48,8 @@ func IdGenerate(idType string) (string, error) {
 		id = IdTypeServiceDomain + "-" + randomId
 	case IdTypeServiceNode:
 		id = IdTypeServiceNode + "-" + randomId
-	case IdTypeRoute:
-		id = IdTypeRoute + "-" + randomId
+	case IdTypeRouter:
+		id = IdTypeRouter + "-" + randomId
 	case IdTypePlugin:
 		id = IdTypePlugin + "-" + randomId
 	case IdTypeRoutePlugin:
@@ -314,6 +314,58 @@ func IPNameToType(ipName string) (int, error) {
 	return ipType, nil
 }
 
+func IpTypeNameList() (list []enumInfo) {
+	list = []enumInfo{
+		{Id: IPTypeV4, Name: IPV4},
+		{Id: IPTypeV6, Name: IPV6},
+	}
+
+	return
+}
+
+func IpIdNameMap() (ipIdNameMap map[int]string) {
+	ipTypeNameList := IpTypeNameList()
+
+	ipIdNameMap = make(map[int]string)
+	for _, IpTypeNameDetail := range ipTypeNameList {
+		ipIdNameMap[IpTypeNameDetail.Id] = IpTypeNameDetail.Name
+	}
+
+	return
+}
+
+func IpNameIdMap() (nameIdMap map[string]int) {
+	ipTypeNameList := IpTypeNameList()
+
+	nameIdMap = make(map[string]int)
+	for _, IpTypeNameDetail := range ipTypeNameList {
+		nameIdMap[IpTypeNameDetail.Name] = IpTypeNameDetail.Id
+	}
+
+	return
+}
+
+func HealthTypeNameList() (list []enumInfo) {
+	list = []enumInfo{
+		{Id: HealthY, Name: HealthNameY},
+		{Id: HealthN, Name: HealthNameN},
+	}
+
+	return
+}
+
+func HealthTypeNameMap() (healthNameMap map[int]string) {
+	healthNameList := HealthTypeNameList()
+
+	healthNameMap = make(map[int]string)
+	for _, healthNameDetail := range healthNameList {
+		healthNameMap[healthNameDetail.Id] = healthNameDetail.Name
+	}
+
+	return
+}
+
+
 func InterceptSni(domains []string) ([]string, error) {
 	domainSniInfos := make([]string, 0)
 	if len(domains) == 0 {
@@ -352,8 +404,8 @@ func EtcdKey(keyType string, id string) string {
 	switch strings.ToLower(keyType) {
 	case EtcdKeyTypeService:
 		key = prefix + EtcdKeyTypeService + "/" + id
-	case EtcdKeyTypeRoute:
-		key = prefix + EtcdKeyTypeRoute + "/" + id
+	case EtcdKeyTypeRouter:
+		key = prefix + EtcdKeyTypeRouter + "/" + id
 	case EtcdKeyTypePlugin:
 		key = prefix + EtcdKeyTypePlugin + "/" + id
 	case EtcdKeyTypeCertificate:
