@@ -52,22 +52,21 @@ func RouteAdd(c *gin.Context) {
 }
 
 func RouteList(c *gin.Context) {
-	serviceId := strings.TrimSpace(c.Param("service_id"))
-
-	checkServiceExistErr := services.CheckServiceExist(serviceId)
-	if checkServiceExistErr != nil {
-		utils.Error(c, checkServiceExistErr.Error())
-		return
-	}
-
 	var bindParams = validators.ValidatorRouteList{}
 	if msg, err := packages.ParseRequestParams(c, &bindParams); err != nil {
 		utils.Error(c, msg)
 		return
 	}
 
+	// @todo 这里检测方法内需要改动，牵扯到服务了
+	checkServiceExistErr := services.CheckServiceExist(bindParams.ServiceResID)
+	if checkServiceExistErr != nil {
+		utils.Error(c, checkServiceExistErr.Error())
+		return
+	}
+
 	structRouteList := services.StructRouteList{}
-	routeList, total, err := structRouteList.RouteListPage(serviceId, &bindParams)
+	routeList, total, err := structRouteList.RouteListPage(bindParams.ServiceResID, &bindParams)
 	if err != nil {
 		utils.Error(c, err.Error())
 		return

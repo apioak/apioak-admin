@@ -35,9 +35,10 @@ type ValidatorRouteAddUpdate struct {
 }
 
 type ValidatorRouteList struct {
-	Search        string `form:"search" json:"search" zh:"搜索内容" en:"Search content" binding:"omitempty"`
-	IsEnable      int    `form:"is_enable" json:"is_enable" zh:"路由开关" en:"Routing enable" binding:"omitempty,oneof=1 2"`
-	ReleaseStatus int    `form:"release_status" json:"release_status" zh:"发布状态" en:"Release status" binding:"omitempty,oneof=1 2 3"`
+	ServiceResID string `json:"service_res_id" zh:"所属服务" en:"Belonging service" binding:"omitempty"`
+	Search       string `form:"search" json:"search" zh:"搜索内容" en:"Search content" binding:"omitempty"`
+	Enable       int    `form:"enable" json:"enable" zh:"路由开关" en:"Routing enable" binding:"omitempty,oneof=1 2"`
+	Release      int    `form:"release" json:"release" zh:"发布状态" en:"Release status" binding:"omitempty,oneof=1 2 3"`
 	BaseListPage
 }
 

@@ -12,15 +12,15 @@ import (
 )
 
 type Routes struct {
-	ID             int       `gorm:"column:id;primary_key"`  //primary key
-	ResID          string    `gorm:"column:res_id"`          //Route id
-	ServiceResID   string    `gorm:"column:service_res_id"`  //Service id
-	UpstreamResID  string    `gorm:"column:upstream_res_id"` //Upstream id
-	RouteName      string    `gorm:"column:route_name"`      //Route name
-	RequestMethods string    `gorm:"column:request_methods"` //Request method
-	RoutePath      string    `gorm:"column:route_path"`      //Routing path
-	Enable         int       `gorm:"column:enable"`          //Routing enable  1:on  2:off
-	Release        int       `gorm:"column:release"`         //Service release status 1:unpublished  2:to be published  3:published
+	ID             int    `gorm:"column:id;primary_key"`  // primary key
+	ResID          string `gorm:"column:res_id"`          // Route id
+	ServiceResID   string `gorm:"column:service_res_id"`  // Service id
+	UpstreamResID  string `gorm:"column:upstream_res_id"` // Upstream id
+	RouteName      string `gorm:"column:route_name"`      // Route name
+	RequestMethods string `gorm:"column:request_methods"` // Request method
+	RoutePath      string `gorm:"column:route_path"`      // Routing path
+	Enable         int    `gorm:"column:enable"`          // Routing enable  1:on  2:off
+	Release        int    `gorm:"column:release"`         // Service release status 1:unpublished  2:to be published  3:published
 	ModelTime
 }
 
@@ -346,8 +346,9 @@ type RoutePluginConfigs struct {
 }
 
 type RoutePluginConfigList struct {
-	ID             string               `json:"id"`
-	ServiceID      string               `json:"service_id"`
+	ID             int                  `json:"id"`
+	ResID          string               `json:"res_id"`
+	ServiceResID   string               `json:"service_res_id"`
 	RouteName      string               `json:"route_name"`
 	RequestMethods string               `json:"request_methods"`
 	RoutePath      string               `json:"route_path"`
@@ -356,20 +357,23 @@ type RoutePluginConfigList struct {
 	Plugins        []RoutePluginConfigs `json:"plugins"`
 }
 
-func (r *Routes) RouteListPage(serviceId string, param *validators.ValidatorRouteList) (list []RoutePluginConfigList, total int, listError error) {
+func (r *Routes) RouteListPage(serviceResId string, param *validators.ValidatorRouteList) (list []RoutePluginConfigList, total int, listError error) {
 	list = make([]RoutePluginConfigList, 0)
 	routesPluginList := make([]RoutesPlugins, 0)
 
 	routesPlugins := RoutesPlugins{}
 	tx := packages.GetDb().
-		Table(routesPlugins.TableName()).
-		Where("service_id = ?", serviceId)
+		Table(routesPlugins.TableName())
+
+	if len(serviceResId) > 0 {
+		tx = tx.Where("service_res_id = ?", serviceResId)
+	}
 
 	param.Search = strings.TrimSpace(param.Search)
 	if len(param.Search) != 0 {
 		search := "%" + param.Search + "%"
 		orWhere := packages.GetDb().
-			Or("id LIKE ?", search).
+			Or("res_id LIKE ?", search).
 			Or("route_name LIKE ?", search).
 			Or("route_path LIKE ?", search).
 			Or("request_methods LIKE ?", strings.ToUpper(search))
@@ -377,11 +381,11 @@ func (r *Routes) RouteListPage(serviceId string, param *validators.ValidatorRout
 		tx = tx.Where(orWhere)
 	}
 
-	if param.IsEnable != 0 {
-		tx = tx.Where("is_enable = ?", param.IsEnable)
+	if param.Enable != 0 {
+		tx = tx.Where("enable = ?", param.Enable)
 	}
-	if param.ReleaseStatus != 0 {
-		tx = tx.Where("release_status = ?", param.ReleaseStatus)
+	if param.Release != 0 {
+		tx = tx.Where("release = ?", param.Release)
 	}
 
 	countError := ListCount(tx, &total)
@@ -400,13 +404,13 @@ func (r *Routes) RouteListPage(serviceId string, param *validators.ValidatorRout
 		return
 	}
 
-	routeIds := make([]string, 0)
+	routeResIds := make([]string, 0)
 	for _, routesPluginInfo := range routesPluginList {
-		routeIds = append(routeIds, routesPluginInfo.ResID)
+		routeResIds = append(routeResIds, routesPluginInfo.ResID)
 	}
 
 	routePluginsModel := RoutePlugins{}
-	routesPluginConfigList := routePluginsModel.RoutePluginAllListByRouteIds(routeIds)
+	routesPluginConfigList := routePluginsModel.RoutePluginAllListByRouteIds(routeResIds)
 
 	routesPluginConfigMap := make(map[string]map[string]RoutePlugins)
 	if len(routesPluginConfigList) != 0 {
@@ -420,8 +424,9 @@ func (r *Routes) RouteListPage(serviceId string, param *validators.ValidatorRout
 
 	for _, routesPluginInfo := range routesPluginList {
 		routePluginConfigList := RoutePluginConfigList{
-			ID:             routesPluginInfo.ResID,
-			ServiceID:      routesPluginInfo.ServiceResID,
+			ID:             routesPluginInfo.ID,
+			ResID:          routesPluginInfo.ResID,
+			ServiceResID:   routesPluginInfo.ServiceResID,
 			RouteName:      routesPluginInfo.RouteName,
 			RequestMethods: routesPluginInfo.RequestMethods,
 			RoutePath:      routesPluginInfo.RoutePath,
@@ -496,7 +501,7 @@ func (r *Routes) RouteSwitchEnable(id string, enable int) error {
 		Table(r.TableName()).
 		Where("id = ?", id).
 		Updates(Routes{
-			Enable:      enable,
+			Enable:  enable,
 			Release: releaseStatus}).Error
 
 	if updateErr != nil {

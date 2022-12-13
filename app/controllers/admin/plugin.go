@@ -124,3 +124,14 @@ func PluginInfo(c *gin.Context) {
 
 	utils.Ok(c, pluginInfo)
 }
+
+func PluginAddList(c *gin.Context) {
+	pluginAddListItem := services.PluginAddListItem{}
+	pluginAddList, err := pluginAddListItem.PluginAddList()
+	if err != nil {
+		utils.Error(c, err.Error())
+		return
+	}
+
+	utils.Ok(c, pluginAddList)
+}

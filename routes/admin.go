@@ -75,6 +75,7 @@ func RouteRegister(routeEngine *gin.Engine) {
 			plugin.GET("/info/:id", admin.PluginInfo)
 			plugin.PUT("/update/:id", admin.PluginUpdate)
 			plugin.DELETE("/delete/:id", admin.PluginDelete)
+			plugin.GET("/add-list", admin.PluginAddList)
 		}
 
 		// certificate

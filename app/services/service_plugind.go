@@ -162,3 +162,31 @@ func PluginBasicInfoMaintain() {
 		}
 	}
 }
+
+type PluginAddListItem struct {
+	ResID       string `json:"res_id"`
+	PluginKey   string `json:"plugin_key"`
+	Icon        string `json:"icon"`
+	Type        int    `json:"type"`
+	Description string `json:"description"`
+}
+
+func (s PluginAddListItem) PluginAddList() (list []PluginAddListItem, err error) {
+	pluginModel := models.Plugins{}
+	pluginAllList := pluginModel.PluginAllList()
+	if len(pluginAllList) == 0 {
+		return
+	}
+
+	for _, pluginInfo := range pluginAllList {
+		list = append(list, PluginAddListItem{
+			ResID:       pluginInfo.ResID,
+			PluginKey:   pluginInfo.PluginKey,
+			Icon:        pluginInfo.Icon,
+			Type:        pluginInfo.Type,
+			Description: pluginInfo.Description,
+		})
+	}
+
+	return
+}

@@ -276,7 +276,8 @@ type routePlugin struct {
 }
 
 type StructRouteList struct {
-	ID             string        `json:"id"`
+	ID             int           `json:"id"`
+	ResID          string        `json:"res_id"`
 	RouteName      string        `json:"route_name"`
 	RequestMethods []string      `json:"request_methods"`
 	RoutePath      string        `json:"route_path"`
@@ -285,16 +286,17 @@ type StructRouteList struct {
 	PluginList     []routePlugin `json:"plugin_list"`
 }
 
-func (s *StructRouteList) RouteListPage(serviceId string, param *validators.ValidatorRouteList) ([]StructRouteList, int, error) {
+func (s *StructRouteList) RouteListPage(serviceResId string, param *validators.ValidatorRouteList) ([]StructRouteList, int, error) {
 
 	routeModel := models.Routes{}
-	routeInfos, total, listError := routeModel.RouteListPage(serviceId, param)
+	routeInfos, total, listError := routeModel.RouteListPage(serviceResId, param)
 
 	routeList := make([]StructRouteList, 0)
 	if len(routeInfos) != 0 {
 		for _, routeInfo := range routeInfos {
 			structRouteList := StructRouteList{}
 			structRouteList.ID = routeInfo.ID
+			structRouteList.ResID = routeInfo.ResID
 			structRouteList.RouteName = routeInfo.RouteName
 			structRouteList.RequestMethods = strings.Split(routeInfo.RequestMethods, ",")
 			structRouteList.RoutePath = routeInfo.RoutePath

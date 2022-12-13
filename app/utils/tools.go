@@ -149,6 +149,7 @@ func PluginAllTypes() []enumInfo {
 		{Id: PluginTypeIdLimit, Name: PluginTypeNameLimit},
 		{Id: PluginTypeIdSafety, Name: PluginTypeNameSafety},
 		{Id: PluginTypeIdFlowControl, Name: PluginTypeNameFlowControl},
+		{Id: PluginTypeIdOther, Name: PluginTypeNameOther},
 	}
 
 	return pluginTypeList
