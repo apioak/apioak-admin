@@ -9,6 +9,47 @@ import (
 	"strings"
 )
 
+type UpstreamNodeItem struct {
+	ResID         string `json:"res_id"`
+	UpstreamResID string `json:"upstream_res_id"`
+	NodeIP        string `json:"node_ip"`
+	IPType        int    `json:"ip_type"`
+	IPTypeName    string `json:"ip_type_name"`
+	NodePort      int    `json:"node_port"`
+	NodeWeight    int    `json:"node_weight"`
+	Health        int    `json:"health"`
+	HealthName    string `json:"health_name"`
+	HealthCheck   int    `json:"health_check"`
+}
+
+func (n UpstreamNodeItem) UpstreamNodeListByUpstreamResIds(upstreamResIds []string) (nodeList []UpstreamNodeItem, err error) {
+	upstreamNodeModel := models.UpstreamNodes{}
+	upstreamNodeList, err := upstreamNodeModel.UpstreamNodeListByUpstreamResIds(upstreamResIds)
+	if err != nil || len(upstreamNodeList) == 0 {
+		return
+	}
+
+	iPTypeNameMap := utils.IpIdNameMap()
+	healthTypeNameMap := utils.HealthTypeNameMap()
+
+	for _, upstreamNodeDetail := range upstreamNodeList {
+
+		nodeList = append(nodeList, UpstreamNodeItem{
+			ResID: upstreamNodeDetail.ResID,
+			UpstreamResID: upstreamNodeDetail.UpstreamResID,
+			NodeIP: upstreamNodeDetail.NodeIP,
+			IPType: upstreamNodeDetail.IPType,
+			IPTypeName: iPTypeNameMap[upstreamNodeDetail.IPType],
+			NodePort: upstreamNodeDetail.NodePort,
+			NodeWeight: upstreamNodeDetail.NodeWeight,
+			Health: upstreamNodeDetail.Health,
+			HealthName: healthTypeNameMap[upstreamNodeDetail.Health],
+		})
+	}
+
+	return
+}
+
 func UpstreamNodeRelease(upstreamNodeResIds []string, releaseType string) error {
 	releaseType = strings.ToLower(releaseType)
 

@@ -1,22 +1,46 @@
 package rpc
 
 import (
+	"apioak-admin/app/enums"
 	"apioak-admin/app/packages"
+	"apioak-admin/app/utils"
+	"errors"
+	"net/http"
+	"net/url"
+	"strconv"
+	"sync"
+	"time"
 )
 
 type ApiOak struct {
-	Ip     string
-	Port   int
-	Domain string
-	Secret string
+	Protocol string
+	Ip       string
+	Port     int
+	Domain   string
+	Secret   string
 }
 
-func NewApiOak() ApiOak {
-	apiOak := ApiOak{}
-	apiOak.Ip = packages.ConfigApiOak.Ip
-	apiOak.Port = packages.ConfigApiOak.Port
-	apiOak.Domain = packages.ConfigApiOak.Domain
-	apiOak.Secret = packages.ConfigApiOak.Secret
+var (
+	apiOak     *ApiOak
+	apiOakOnce sync.Once
+
+	timeOut         = time.Second * 2
+	routerUri     = "/apioak/admin/routers"
+	upstreamUri     = "/apioak/admin/upstreams"
+	upstreamNodeUri = "/apioak/admin/upstream/nodes"
+)
+
+func NewApiOak() *ApiOak {
+
+	apiOakOnce.Do(func() {
+		apiOak = &ApiOak{
+			Protocol: packages.ConfigApiOak.Protocol,
+			Ip:       packages.ConfigApiOak.Ip,
+			Port:     packages.ConfigApiOak.Port,
+			Domain:   packages.ConfigApiOak.Domain,
+			Secret:   packages.ConfigApiOak.Secret,
+		}
+	})
 
 	return apiOak
 }
@@ -44,8 +68,62 @@ type UpstreamNodeConfig struct {
 	Check   HealthCheck `json:"check"`
 }
 
+func (m *ApiOak) commonPut(resName string, uri string, data interface{}, params url.Values, headers http.Header) (err error) {
+
+	getUri := uri + "/" + resName
+
+	var httpResp utils.HttpResp
+	httpResp, err = utils.Get(getUri, params, headers, timeOut)
+	if err != nil {
+		return
+	}
+
+	if httpResp.StatusCode == 404 {
+		httpResp, err = utils.PostJson(uri, data, headers, timeOut)
+		if err != nil {
+			return
+		}
+
+		if httpResp.StatusCode != 200 {
+			return errors.New(enums.CodeMessages(enums.PublishError))
+		}
+	} else if httpResp.StatusCode == 200 {
+		httpResp, err = utils.PutJson(getUri, data, headers, timeOut)
+		if err != nil {
+			return
+		}
+
+		if httpResp.StatusCode != 200 {
+			err = errors.New(enums.CodeMessages(enums.PublishError))
+		}
+	}
+
+	return
+}
+
 func (m *ApiOak) UpstreamNodePut(upstreamNodeConfigList []UpstreamNodeConfig) (err error) {
-	// @todo 发布逻辑，先检测远程是否存在，存在的直接更新，不存在的直接新增
+
+	if len(upstreamNodeConfigList) == 0 {
+		return
+	}
+
+	uri := m.Protocol + "://" + m.Ip + ":" + strconv.Itoa(m.Port) + upstreamNodeUri
+
+	for _, upstreamNodeConfigInfo := range upstreamNodeConfigList {
+
+		var param = url.Values{}
+		var header = http.Header{}
+		if len(m.Domain) > 0 {
+			header.Set("Host", m.Domain)
+		}
+
+		resName := upstreamNodeConfigInfo.Name
+		err = m.commonPut(resName, uri, upstreamNodeConfigInfo, param, header)
+		if err != nil {
+			return
+		}
+	}
+
 	return
 }
 
@@ -64,7 +142,27 @@ type UpstreamConfig struct {
 }
 
 func (m *ApiOak) UpstreamPut(upstreamConfigList []UpstreamConfig) (err error) {
-	// @todo 发布逻辑，先检测远程是否存在，存在的直接更新，不存在的直接新增
+	if len(upstreamConfigList) == 0 {
+		return
+	}
+
+	uri := m.Protocol + "://" + m.Ip + ":" + strconv.Itoa(m.Port) + upstreamUri
+
+	for _, upstreamConfigInfo := range upstreamConfigList {
+
+		var param = url.Values{}
+		var header = http.Header{}
+		if len(m.Domain) > 0 {
+			header.Set("Host", m.Domain)
+		}
+
+		resName := upstreamConfigInfo.Name
+		err = m.commonPut(resName, uri, upstreamConfigInfo, param, header)
+		if err != nil {
+			return
+		}
+	}
+
 	return
 }
 
@@ -73,7 +171,7 @@ func (m *ApiOak) UpstreamDelete(upstreamConfigList []UpstreamConfig) (err error)
 	return
 }
 
-type RouteConfig struct {
+type RouterConfig struct {
 	Name     string             `json:"name"`
 	Methods  []string           `json:"methods"`
 	Paths    []string           `json:"paths"`
@@ -84,12 +182,32 @@ type RouteConfig struct {
 	Plugins  []ConfigObjectName `json:"plugins"`
 }
 
-func (m *ApiOak) RoutePut(routeConfigList []RouteConfig) (err error) {
-	// @todo 发布逻辑，先检测远程是否存在，存在的直接更新，不存在的直接新增
+func (m *ApiOak) RouterPut(routerConfigList []RouterConfig) (err error) {
+	if len(routerConfigList) == 0 {
+		return
+	}
+
+	uri := m.Protocol + "://" + m.Ip + ":" + strconv.Itoa(m.Port) + routerUri
+
+	for _, routerConfigInfo := range routerConfigList {
+
+		var param = url.Values{}
+		var header = http.Header{}
+		if len(m.Domain) > 0 {
+			header.Set("Host", m.Domain)
+		}
+
+		resName := routerConfigInfo.Name
+		err = m.commonPut(resName, uri, routerConfigInfo, param, header)
+		if err != nil {
+			return
+		}
+	}
+
 	return
 }
 
-func (m *ApiOak) RouteDelete(routeConfigList []RouteConfig) (err error) {
+func (m *ApiOak) RouterDelete(routerConfigList []RouterConfig) (err error) {
 	// @todo 删除逻辑，先检测远程是否存在，存在的直接删除，不存在忽略
 	return
 }

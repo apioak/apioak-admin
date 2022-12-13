@@ -21,6 +21,7 @@ database:
   sql_mode: true # true or false sql打印开关
 
 apioak: # 数据面admin-api接口连接信息配置
+  protocol: http
   ip: 127.0.0.1
   port: 80
   domain: www.apioak.com

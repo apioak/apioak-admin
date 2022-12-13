@@ -90,7 +90,7 @@ func (p *Plugins) PluginInfosByResIds(resIds []string) ([]Plugins, error) {
 	return pluginInfos, err
 }
 
-func (p *Plugins) PluginInfoByResIdRouteServiceId(pluginResId string) Plugins {
+func (p *Plugins) PluginInfoByResIdRouterServiceId(pluginResId string) Plugins {
 	pluginInfo := Plugins{}
 	packages.GetDb().
 		Table(p.TableName()).

@@ -12,7 +12,7 @@ import (
 
 func CheckPluginExist(pluginResId string) error {
 	pluginModel := &models.Plugins{}
-	pluginInfo := pluginModel.PluginInfoByResIdRouteServiceId(pluginResId)
+	pluginInfo := pluginModel.PluginInfoByResIdRouterServiceId(pluginResId)
 	if pluginInfo.ResID != pluginResId {
 		return errors.New(enums.CodeMessages(enums.PluginNull))
 	}
@@ -20,9 +20,9 @@ func CheckPluginExist(pluginResId string) error {
 	return nil
 }
 
-func CheckPluginConfig(pluginId string, pluginConfig *validators.RoutePluginAddUpdate) error {
+func CheckPluginConfig(pluginId string, pluginConfig *validators.RouterPluginAddUpdate) error {
 	pluginModel := &models.Plugins{}
-	pluginInfo := pluginModel.PluginInfoByResIdRouteServiceId(pluginId)
+	pluginInfo := pluginModel.PluginInfoByResIdRouterServiceId(pluginId)
 
 	newPluginContext, newPluginContextErr := plugins.NewPluginContext(pluginInfo.PluginKey)
 	if newPluginContextErr != nil {
@@ -161,4 +161,32 @@ func PluginBasicInfoMaintain() {
 			pluginModel.PluginAdd(&newPluginData)
 		}
 	}
+}
+
+type PluginAddListItem struct {
+	ResID       string `json:"res_id"`
+	PluginKey   string `json:"plugin_key"`
+	Icon        string `json:"icon"`
+	Type        int    `json:"type"`
+	Description string `json:"description"`
+}
+
+func (s PluginAddListItem) PluginAddList() (list []PluginAddListItem, err error) {
+	pluginModel := models.Plugins{}
+	pluginAllList := pluginModel.PluginAllList()
+	if len(pluginAllList) == 0 {
+		return
+	}
+
+	for _, pluginInfo := range pluginAllList {
+		list = append(list, PluginAddListItem{
+			ResID:       pluginInfo.ResID,
+			PluginKey:   pluginInfo.PluginKey,
+			Icon:        pluginInfo.Icon,
+			Type:        pluginInfo.Type,
+			Description: pluginInfo.Description,
+		})
+	}
+
+	return
 }

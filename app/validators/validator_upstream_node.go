@@ -23,17 +23,19 @@ var (
 			"min":      "最小只能为%d",
 		},
 	}
-	defaultNodePort   = 80
-	nodePortMin       = 1
-	nodePortMax       = 65535
-	nodeWeightMin     = 1
-	nodeWeightMax     = 100
+	defaultNodePort = 80
+	nodePortMin     = 1
+	nodePortMax     = 65535
+	nodeWeightMin   = 1
+	nodeWeightMax   = 100
 )
 
 type UpstreamNodeAddUpdate struct {
-	NodeIp     string `json:"node_ip" zh:"上游节点IP" en:"Node IP" binding:"required,ip"`
-	NodePort   int    `json:"node_port" zh:"端口" en:"Node port" binding:"omitempty,min=1,max=65535"`
-	NodeWeight int    `json:"node_weight" zh:"权重" en:"Node weight" binding:"omitempty,min=1,max=100"`
+	NodeIp      string `json:"node_ip" zh:"上游节点IP" en:"Node IP" binding:"required,ip"`
+	NodePort    int    `json:"node_port" zh:"端口" en:"Node port" binding:"omitempty,min=1,max=65535"`
+	NodeWeight  int    `json:"node_weight" zh:"权重" en:"Node weight" binding:"omitempty,min=1,max=100"`
+	Health      int    `json:"health" zh:"健康状态" en:"Node health status" binding:"omitempty,oneof=1 2"`
+	HealthCheck int    `json:"health_check" zh:"健康检查" en:"Node health check" binding:"omitempty,oneof=1 2"`
 }
 
 func CheckUpstreamNode(fl validator.FieldLevel) bool {
@@ -131,10 +133,15 @@ func CorrectUpstreamAddNodes(upstreamNodes *[]UpstreamNodeAddUpdate) {
 		if nodeIpInfo.NodePort == 0 {
 			nodeIpInfo.NodePort = utils.DefaultNodePort
 		}
+		if nodeIpInfo.Health == 0 {
+			nodeIpInfo.Health = utils.HealthY
+		}
+		if nodeIpInfo.HealthCheck == 0 {
+			nodeIpInfo.HealthCheck = utils.HealthCheckOff
+		}
 
 		tmpNodeInfos = append(tmpNodeInfos, nodeIpInfo)
 	}
 
 	*upstreamNodes = tmpNodeInfos
 }
-

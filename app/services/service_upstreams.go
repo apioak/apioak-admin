@@ -9,7 +9,36 @@ import (
 	"strings"
 )
 
-func RouteUpstreamRelease(upstreamResIds []string, releaseType string) error {
+type UpstreamItem struct {
+	ResID          string `json:"res_id"`
+	Algorithm      int    `json:"algorithm"`
+	ConnectTimeout int    `json:"connect_timeout"`
+	WriteTimeout   int    `json:"write_timeout"`
+	ReadTimeout    int    `json:"read_timeout"`
+}
+
+func (u UpstreamItem) UpstreamDetailByResId(resId string) (upstreamItem UpstreamItem, err error) {
+
+	upstreamModel := models.Upstreams{}
+	upstreamDetail, err := upstreamModel.UpstreamDetailByResId(resId)
+	if err != nil {
+		return
+	}
+
+	if len(upstreamDetail.ResID) == 0 {
+		return
+	}
+
+	upstreamItem.ResID = upstreamDetail.ResID
+	upstreamItem.Algorithm = upstreamDetail.Algorithm
+	upstreamItem.ConnectTimeout = upstreamDetail.ConnectTimeout
+	upstreamItem.WriteTimeout = upstreamDetail.WriteTimeout
+	upstreamItem.ReadTimeout = upstreamDetail.ReadTimeout
+
+	return
+}
+
+func RouterUpstreamRelease(upstreamResIds []string, releaseType string) error {
 	releaseType = strings.ToLower(releaseType)
 
 	if (releaseType != utils.ReleaseTypePush) && (releaseType != utils.ReleaseTypeDelete) {

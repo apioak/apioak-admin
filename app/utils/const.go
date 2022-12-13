@@ -6,7 +6,7 @@ const (
 	IdTypeService       = "sv"
 	IdTypeServiceDomain = "sd"
 	IdTypeServiceNode   = "sn"
-	IdTypeRoute         = "rt"
+	IdTypeRouter        = "rt"
 	IdTypePlugin        = "pl"
 	IdTypeRoutePlugin   = "rp"
 	IdTypeCertificate   = "ce"
@@ -15,7 +15,7 @@ const (
 	IdTypeUpstreamNode  = "un"
 
 	EtcdKeyTypeService     = "service"
-	EtcdKeyTypeRoute       = "route"
+	EtcdKeyTypeRouter      = "router"
 	EtcdKeyTypePlugin      = "plugin"
 	EtcdKeyTypeCertificate = "certificate"
 
@@ -75,15 +75,21 @@ const (
 	HealthY = 1 // 健康状态——健康
 	HealthN = 2 // 健康状态——异常
 
-	ConfigHealthY = "HEALTH"	// 健康
-	ConfigHealthN = "UNHEALTH"	// 异常
+	HealthNameY = "健康" // 健康状态——健康
+	HealthNameN = "异常" // 健康状态——异常
+
+	ConfigHealthY = "HEALTH"   // 健康
+	ConfigHealthN = "UNHEALTH" // 异常
 
 	HealthCheckOn  = 1 // 健康检查——开
 	HealthCheckOff = 2 // 健康检查——关
 
+	ConfigHealthCheckOn  = true  // 健康检查——开
+	ConfigHealthCheckOff = false // 健康检查——关
+
 	// ===================================== route =====================================
 
-	DefaultRoutePath = "/*"
+	DefaultRouterPath = "/*"
 
 	RequestMethodALL = "ALL"
 
