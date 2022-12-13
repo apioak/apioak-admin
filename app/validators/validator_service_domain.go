@@ -82,11 +82,11 @@ func domainValidator(tag string, field string) string {
 	return errMsg
 }
 
-func CorrectServiceDomains(serviceDomains *[]string) {
+func CorrectServiceDomains(serviceDomains []string) {
 	tmpDomainsMap := make(map[string]byte, 0)
 	tmpServiceDomains := make([]string, 0)
 
-	for _, domain := range *serviceDomains {
+	for _, domain := range serviceDomains {
 		domainTrim := strings.TrimSpace(domain)
 		if len(domainTrim) <= 0 {
 			continue
@@ -101,5 +101,5 @@ func CorrectServiceDomains(serviceDomains *[]string) {
 		tmpServiceDomains = append(tmpServiceDomains, domainTrim)
 	}
 
-	serviceDomains = &tmpServiceDomains
+	serviceDomains = tmpServiceDomains
 }

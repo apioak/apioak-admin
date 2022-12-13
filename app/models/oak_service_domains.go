@@ -5,14 +5,15 @@ import (
 	"apioak-admin/app/packages"
 	"apioak-admin/app/utils"
 	"errors"
+	"gorm.io/gorm"
 	"strings"
 )
 
 type ServiceDomains struct {
-	ID        int64  `gorm:"column:id;primary_key"` //Domain id
-	ResID     string `gorm:"column:res_id"`         //ResID
-	ServiceID string `gorm:"column:service_id"`     //Service id
-	Domain    string `gorm:"column:domain"`         //Domain name
+	ID           int64  `gorm:"column:id;primary_key"` //Domain id
+	ResID        string `gorm:"column:res_id"`         //ResID
+	ServiceResID string `gorm:"column:service_res_id"` //Service id
+	Domain       string `gorm:"column:domain"`         //Domain name
 	ModelTime
 }
 
@@ -24,13 +25,12 @@ func (s *ServiceDomains) TableName() string {
 var recursionTimesServiceDomains = 1
 
 func (m *ServiceDomains) ModelUniqueId() (string, error) {
-	generateId, generateIdErr := utils.IdGenerate(utils.IdTypeServiceDomain)
-	if generateIdErr != nil {
-		return "", generateIdErr
+	generateId, err := utils.IdGenerate(utils.IdTypeServiceDomain)
+	if err != nil {
+		return "", err
 	}
 
-	result := packages.GetDb().
-		Table(m.TableName()).
+	result := packages.GetDb().Table(m.TableName()).
 		Where("res_id = ?", generateId).
 		Select("id").
 		First(m)
@@ -57,8 +57,7 @@ func (m *ServiceDomains) ModelUniqueId() (string, error) {
 
 func (s *ServiceDomains) DomainInfosByDomain(domains []string, filterServiceIds []string) ([]ServiceDomains, error) {
 	domainInfos := make([]ServiceDomains, 0)
-	db := packages.GetDb().
-		Table(s.TableName()).
+	db := packages.GetDb().Table(s.TableName()).
 		Where("domain IN ?", domains)
 
 	if len(filterServiceIds) != 0 {
@@ -71,13 +70,9 @@ func (s *ServiceDomains) DomainInfosByDomain(domains []string, filterServiceIds 
 }
 
 func (s *ServiceDomains) DomainInfosByServiceIds(serviceIds []string) ([]ServiceDomains, error) {
-	domainInfos := make([]ServiceDomains, 0)
-	if len(serviceIds) == 0 {
-		return domainInfos, nil
-	}
-	err := packages.GetDb().
-		Table(s.TableName()).
-		Where("service_id IN ?", serviceIds).
+
+	var domainInfos []ServiceDomains
+	err := packages.GetDb().Table(s.TableName()).Where("service_res_id IN ?", serviceIds).
 		Find(&domainInfos).Error
 
 	if err != nil {
@@ -88,23 +83,21 @@ func (s *ServiceDomains) DomainInfosByServiceIds(serviceIds []string) ([]Service
 }
 
 func (s *ServiceDomains) ServiceDomainInfosLikeDomain(domain string) ([]ServiceDomains, error) {
-	domainInfos := make([]ServiceDomains, 0)
+
 	domain = strings.TrimSpace(domain)
-	if len(domain) == 0 {
-		return domainInfos, nil
+	if domain == "" {
+		return []ServiceDomains{}, nil
 	}
 
+	var domains []ServiceDomains
 	domain = "%" + domain + "%"
-	err := packages.GetDb().
-		Table(s.TableName()).
-		Where("domain LIKE ?", domain).
-		Find(&domainInfos).Error
+	err := packages.GetDb().Model(s.TableName()).Where("domain LIKE ?", domain).Find(&domains).Error
 
-	if err != nil {
+	if err != nil && err != gorm.ErrRecordNotFound {
 		return nil, err
 	}
 
-	return domainInfos, nil
+	return domains, nil
 }
 
 func (s *ServiceDomains) DomainListByLikeSni(sni string) []ServiceDomains {

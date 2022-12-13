@@ -23,12 +23,14 @@ const (
 	ToReleaseProhibitsOp = 107 // 待发布状态禁止该操作
 	ReleaseTypeError     = 108 // 发布类型错误
 
-	ServiceNull       = 10001 // 服务不存在
-	ServiceParamsNull = 10002 // 服务参数缺失
+	ServiceNull          = 10001 // 服务不存在
+	ServiceParamsNull    = 10002 // 服务参数缺失
+	ServiceBindingRouter = 10003 // 当前服务已绑定路由,禁止删除
 
 	ServiceDomainExist       = 10101 // [%s]服务域名已存在
 	ServiceDomainFormatError = 10102 // 服务域名格式错误
 	ServiceDomainSslNull     = 10104 // [%s]服务域名证书缺失
+	ServiceDomainNotFound    = 10105 // 服务域名不存在
 
 	RouteDefaultPathNoPermission    = 10201 // [/*]默认路径暂无权限操作
 	RoutePathExist                  = 10202 // 路由路径已存在
@@ -81,12 +83,14 @@ var ZhMapMessages = map[int]string{
 	ToReleaseProhibitsOp: "待发布状态禁止该操作",
 	ReleaseTypeError:     "发布类型错误",
 
-	ServiceNull:       "服务不存在",
-	ServiceParamsNull: "服务参数缺失",
+	ServiceNull:          "服务不存在",
+	ServiceParamsNull:    "服务参数缺失",
+	ServiceBindingRouter: "当前服务已绑定路由,禁止删除",
 
 	ServiceDomainExist:       "[%s]域名已存在",
 	ServiceDomainFormatError: "服务域名格式错误",
 	ServiceDomainSslNull:     "[%s]服务域名证书缺失",
+	ServiceDomainNotFound:    "服务域名不存在",
 
 	RouteDefaultPathNoPermission:    "[/*]默认路径暂无权限操作",
 	RoutePathExist:                  "[%s]路由路径已存在",
@@ -139,12 +143,14 @@ var EnMapMessages = map[int]string{
 	ToReleaseProhibitsOp: "Pending status prohibits this operation",
 	ReleaseTypeError:     "Release type error",
 
-	ServiceNull:       "Service does not exist",
-	ServiceParamsNull: "Missing service parameters",
+	ServiceNull:          "Service does not exist",
+	ServiceParamsNull:    "Missing service parameters",
+	ServiceBindingRouter: "The current service has bound a route, and deletion is prohibited",
 
 	ServiceDomainExist:       "[%s]Domain name already exists",
 	ServiceDomainFormatError: "Service domain name format error",
 	ServiceDomainSslNull:     "[%s]Service domain name certificate is missing",
+	ServiceDomainNotFound:    "Service domain is missing",
 
 	RouteDefaultPathNoPermission:    "[/*]The default path does not have permission to operate temporarily",
 	RoutePathExist:                  "[%s]Routing path already exists",

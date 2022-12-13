@@ -3,32 +3,106 @@ package services
 import (
 	"apioak-admin/app/enums"
 	"apioak-admin/app/models"
-	"apioak-admin/app/packages"
 	"apioak-admin/app/utils"
 	"apioak-admin/app/validators"
-	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
+	"gorm.io/gorm"
 	"strings"
-	"time"
+	"sync"
 )
+
+type ServicesService struct {
+}
+
+var (
+	servicesService *ServicesService
+	servicesOnce    sync.Once
+)
+
+func NewServicesService() *ServicesService {
+
+	servicesOnce.Do(func() {
+		servicesService = &ServicesService{}
+	})
+
+	return servicesService
+}
 
 func CheckServiceExist(serviceResId string) error {
 	serviceModel := &models.Services{}
-	serviceInfo := serviceModel.ServiceInfoById(serviceResId)
-	if len(serviceInfo.ResID) == 0 {
-		return errors.New(enums.CodeMessages(enums.ServiceNull))
+	_, err := serviceModel.ServiceInfoById(serviceResId)
+
+	if err != nil {
+		return err
 	}
 
 	return nil
 }
 
-func CheckServiceEnableChange(serviceId string, enable int) error {
+func (s *ServicesService) ServiceCreate(request *validators.ServiceAddUpdate) error {
+
+	createServiceData := &models.Services{
+		Name:     request.Name,
+		Protocol: request.Protocol,
+		Enable:   request.Enable,
+		Release:  utils.ReleaseStatusU,
+	}
+
+	_, err := (&models.Services{}).ServiceAdd(createServiceData, request.ServiceDomains)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *ServicesService) ServiceUpdate(serviceId string, request *validators.ServiceAddUpdate) error {
+	serviceModel := models.Services{}
+	serviceInfo, err := serviceModel.ServiceInfoById(serviceId)
+
+	if err != nil {
+		return err
+	}
+
+	updateServiceData := models.Services{
+		Name:     request.Name,
+		Protocol: request.Protocol,
+		Enable:   request.Enable,
+		Release:  serviceInfo.Release,
+	}
+	if serviceInfo.Release == utils.ReleaseStatusY {
+		updateServiceData.Release = utils.ReleaseStatusT
+	}
+
+	return serviceModel.ServiceUpdate(serviceId, &updateServiceData, request.ServiceDomains)
+}
+
+func (s *ServicesService) ServiceUpdateName(serviceId string, request *validators.ServiceUpdateName) error {
+	serviceModel := models.Services{}
+	service, err := serviceModel.ServiceInfoById(serviceId)
+
+	if err != nil {
+		return err
+	}
+
+	updateParam := map[string]interface{}{
+		"name": request.Name,
+	}
+	if service.Release == utils.ReleaseStatusY {
+		updateParam["release"] = utils.ReleaseStatusT
+	}
+
+	return serviceModel.ServiceUpdateColumns(serviceId, updateParam)
+}
+
+func checkServiceEnableChange(serviceId string, enable int) error {
 	serviceModel := &models.Services{}
-	serviceInfo := serviceModel.ServiceInfoById(serviceId)
-	if serviceInfo.ResID != serviceId {
-		return errors.New(enums.CodeMessages(enums.ServiceNull))
+	serviceInfo, err := serviceModel.ServiceInfoById(serviceId)
+
+	if err != nil {
+		return err
 	}
 
 	if serviceInfo.Enable == enable {
@@ -38,127 +112,285 @@ func CheckServiceEnableChange(serviceId string, enable int) error {
 	return nil
 }
 
-//func CheckServiceWebsocketChange(serviceId string, webSocket int) error {
-//	serviceModel := &models.Services{}
-//	serviceInfo := serviceModel.ServiceInfoById(serviceId)
-//	if serviceInfo.ID != serviceId {
-//		return errors.New(enums.CodeMessages(enums.ServiceNull))
-//	}
-//
-//	if serviceInfo.WebSocket == webSocket {
-//		return errors.New(enums.CodeMessages(enums.SwitchNoChange))
-//	}
-//
-//	return nil
-//}
-//
-//func CheckServiceHealthCheckChange(serviceId string, healthCheck int) error {
-//	serviceModel := &models.Services{}
-//	serviceInfo := serviceModel.ServiceInfoById(serviceId)
-//	if serviceInfo.ID != serviceId {
-//		return errors.New(enums.CodeMessages(enums.ServiceNull))
-//	}
-//
-//	if serviceInfo.HealthCheck == healthCheck {
-//		return errors.New(enums.CodeMessages(enums.SwitchNoChange))
-//	}
-//
-//	return nil
-//}
+func (s *ServicesService) ServiceSwitchEnable(serviceId string, enable int) error {
+	serviceModel := models.Services{}
+	service, err := serviceModel.ServiceInfoById(serviceId)
 
-func CheckServiceRelease(serviceId string) error {
+	if err != nil {
+		return err
+	}
+
+	err = checkServiceEnableChange(serviceId, enable)
+
+	updateParam := map[string]interface{}{
+		"enable": enable,
+	}
+	if service.Release == utils.ReleaseStatusY {
+		updateParam["release"] = utils.ReleaseStatusT
+	}
+
+	return serviceModel.ServiceUpdateColumns(serviceId, updateParam)
+}
+
+type StructServiceInfo struct {
+	ID             int64    `json:"id"`              //Service id
+	ResID          string   `json:"res_id"`          //Service res id
+	Name           string   `json:"name"`            //Service name
+	Protocol       int      `json:"protocol"`        //Protocol  1:HTTP  2:HTTPS  3:HTTP&HTTPS
+	Enable         int      `json:"enable"`          //Service enable  1:on  2:off
+	Release        int      `json:"release"`         //Service release status 1:unpublished  2:to be published  3:published
+	ServiceDomains []string `json:"service_domains"` //Service Domains
+}
+
+func (s *ServicesService) ServiceInfoById(serviceId string) (StructServiceInfo, error) {
+	serviceInfo := StructServiceInfo{}
+
+	service, err := (&models.Services{}).ServiceInfoById(serviceId)
+	if err != nil {
+		return serviceInfo, err
+	}
+
+	serviceInfo = StructServiceInfo{
+		ID:       service.ID,
+		ResID:    service.ResID,
+		Name:     service.Name,
+		Protocol: service.Protocol,
+		Enable:   service.Enable,
+		Release:  service.Release,
+	}
+	serviceDomain, err := (&models.ServiceDomains{}).DomainInfosByServiceIds([]string{serviceId})
+
+	domain := []string{}
+	if err == nil {
+		for _, v := range serviceDomain {
+			domain = append(domain, v.Domain)
+		}
+	}
+
+	serviceInfo.ServiceDomains = domain
+
+	return serviceInfo, nil
+}
+
+func (s *ServicesService) ServiceDelete(serviceId string) error {
+
+	routeModel := models.Routes{}
+	routerList, err := routeModel.RouteInfosByServiceId(serviceId)
+
+	if err != nil {
+		return errors.New(err.Error())
+	}
+
+	if len(routerList) > 0 {
+		return errors.New(enums.CodeMessages(enums.ServiceBindingRouter))
+	}
+
+	// TODO 获取consul 服务数据
+
 	serviceModel := &models.Services{}
-	serviceInfo := serviceModel.ServiceInfoById(serviceId)
+	err = serviceModel.ServiceDelete(serviceId)
+	if err != nil {
+		return errors.New(err.Error())
+	}
+
+	// TODO 删除consul 服务数据
+
+	return nil
+}
+
+type ServiceItem struct {
+	ID             int64    `json:"id"`
+	ResID          string   `json:"res_id"`          //Service id
+	Name           string   `json:"name"`            //Service name
+	Protocol       int      `json:"protocol"`        //Protocol  1:HTTP  2:HTTPS  3:HTTP&HTTPS
+	Enable         int      `json:"enable"`          //Service enable  1:on  2:off
+	Release        int      `json:"release"`         //Service release status 1:unpublished  2:to be published  3:published
+	ServiceDomains []string `json:"service_domains"` //Domain name
+}
+
+func (s *ServicesService) ServiceList(request *validators.ServiceList) ([]ServiceItem, int, error) {
+	serviceModel := models.Services{}
+	searchContent := strings.TrimSpace(request.Search)
+
+	serviceIds := []string{}
+	if searchContent != "" {
+		services, err := serviceModel.ServiceInfosLikeResIdName(searchContent)
+		if err == nil {
+			for _, v := range services {
+				serviceIds = append(serviceIds, v.ResID)
+			}
+		}
+
+		serviceDomainModel := models.ServiceDomains{}
+		serviceDomains, err := serviceDomainModel.ServiceDomainInfosLikeDomain(searchContent)
+		if err == nil {
+			for _, v := range serviceDomains {
+				serviceIds = append(serviceIds, v.ServiceResID)
+			}
+		}
+
+		if len(serviceIds) == 0 {
+			return []ServiceItem{}, 0, nil
+		}
+	}
+	list, total, err := serviceModel.ServiceList(serviceIds, request)
+
+	if err != nil && err != gorm.ErrRecordNotFound {
+		return []ServiceItem{}, 0, err
+	}
+
+	serviceList := []ServiceItem{}
+
+	if len(list) == 0 {
+		return []ServiceItem{}, 0, nil
+	}
+
+	listServiceId := []string{}
+	for _, v := range list {
+		listServiceId = append(listServiceId, v.ResID)
+	}
+
+	domains, err := (&models.ServiceDomains{}).DomainInfosByServiceIds(listServiceId)
+
+	serviceDomainMap := map[string][]models.ServiceDomains{}
+	if err == nil {
+		for _, v := range domains {
+			if _, ok := serviceDomainMap[v.ServiceResID]; !ok {
+				serviceDomainMap[v.ServiceResID] = []models.ServiceDomains{}
+			}
+			serviceDomainMap[v.ServiceResID] = append(serviceDomainMap[v.ServiceResID], v)
+		}
+	}
+
+	for _, v := range list {
+
+		domain := []string{}
+		if tmp, ok := serviceDomainMap[v.ResID]; ok {
+			for _, vd := range tmp {
+				domain = append(domain, vd.Domain)
+			}
+		}
+		serviceList = append(serviceList, ServiceItem{
+			ID:             v.ID,
+			ResID:          v.ResID,
+			Name:           v.Name,
+			Protocol:       v.Protocol,
+			Enable:         v.Enable,
+			Release:        v.Release,
+			ServiceDomains: domain,
+		})
+	}
+
+	return serviceList, total, nil
+}
+
+func checkServiceRelease(serviceId string) error {
+	serviceModel := &models.Services{}
+	serviceInfo, err := serviceModel.ServiceInfoById(serviceId)
+
+	if err != nil {
+		return err
+	}
 
 	if serviceInfo.Release == utils.ReleaseStatusY {
 		return errors.New(enums.CodeMessages(enums.SwitchPublished))
 	}
 
 	if (serviceInfo.Protocol == utils.ProtocolHTTPS) || (serviceInfo.Protocol == utils.ProtocolHTTPAndHTTPS) {
-		serviceDomainModel := models.ServiceDomains{}
-		serviceDomainInfos, serviceDomainInfosErr := serviceDomainModel.DomainInfosByServiceIds([]string{serviceId})
-		if serviceDomainInfosErr != nil {
-			return serviceDomainInfosErr
+		serviceDomains, err := (&models.ServiceDomains{}).DomainInfosByServiceIds([]string{serviceId})
+		if err != nil {
+			return err
 		}
-		if len(serviceDomainInfos) == 0 {
+		if len(serviceDomains) == 0 {
 			return nil
 		}
 
-		serviceDomains := make([]string, 0)
-		for _, serviceDomainInfo := range serviceDomainInfos {
-			serviceDomains = append(serviceDomains, serviceDomainInfo.Domain)
+		domains := []string{}
+		for _, v := range serviceDomains {
+			domains = append(domains, v.Domain)
 		}
 
-		domainSnis, domainSnisErr := utils.InterceptSni(serviceDomains)
-		if domainSnisErr != nil {
-			return domainSnisErr
+		domainSnis, err := utils.InterceptSni(domains)
+		if err != nil {
+			return err
 		}
 
 		certificatesModel := models.Certificates{}
-		domainCertificateInfos := certificatesModel.CertificateInfoByDomainSniInfos(domainSnis)
+		_ = certificatesModel.CertificateInfoByDomainSniInfos(domainSnis)
 
-		if len(domainCertificateInfos) < len(domainSnis) {
-
-			domainCertificatesMap := make(map[string]byte, 0)
-			for _, domainCertificateInfo := range domainCertificateInfos {
-				domainCertificatesMap[domainCertificateInfo.Sni] = 0
-			}
-
-			noCertificateDomains := make([]string, 0)
-			for _, serviceDomainInfo := range serviceDomainInfos {
-				disassembleDomains := strings.Split(serviceDomainInfo.Domain, ".")
-				disassembleDomains[0] = "*"
-				domainSni := strings.Join(disassembleDomains, ".")
-				_, ok := domainCertificatesMap[domainSni]
-				if ok == false {
-					noCertificateDomains = append(noCertificateDomains, serviceDomainInfo.Domain)
-				}
-			}
-
-			if len(noCertificateDomains) != 0 {
-				return fmt.Errorf(fmt.Sprintf(enums.CodeMessages(enums.ServiceDomainSslNull), strings.Join(noCertificateDomains, ",")))
-			}
-		}
-
-		noReleaseCertificates := make([]string, 0)
-		noEnableCertificates := make([]string, 0)
-		for _, domainCertificateInfo := range domainCertificateInfos {
-			if domainCertificateInfo.ReleaseStatus != utils.ReleaseStatusY {
-				noReleaseCertificates = append(noReleaseCertificates, domainCertificateInfo.Sni)
-			}
-			if domainCertificateInfo.IsEnable != utils.EnableOn {
-				noEnableCertificates = append(noEnableCertificates, domainCertificateInfo.Sni)
-			}
-		}
-
-		if len(noReleaseCertificates) != 0 {
-			return fmt.Errorf(fmt.Sprintf(enums.CodeMessages(enums.CertificateNoRelease), strings.Join(noReleaseCertificates, ",")))
-		}
-
-		if len(noEnableCertificates) != 0 {
-			return fmt.Errorf(fmt.Sprintf(enums.CodeMessages(enums.CertificateEnableOff), strings.Join(noEnableCertificates, ",")))
-		}
+		//if len(domainCert) < len(domainSnis) {
+		//
+		//	domainCertificatesMap := make(map[string]byte, 0)
+		//	for _, domainCertificateInfo := range domainCert {
+		//		domainCertificatesMap[domainCertificateInfo.Sni] = 0
+		//	}
+		//
+		//	noCertificateDomains := make([]string, 0)
+		//	for _, serviceDomainInfo := range domainCert {
+		//		disassembleDomains := strings.Split(serviceDomainInfo.Domain, ".")
+		//		disassembleDomains[0] = "*"
+		//		domainSni := strings.Join(disassembleDomains, ".")
+		//		_, ok := domainCertificatesMap[domainSni]
+		//		if ok == false {
+		//			noCertificateDomains = append(noCertificateDomains, serviceDomainInfo.Domain)
+		//		}
+		//	}
+		//
+		//	if len(noCertificateDomains) != 0 {
+		//		return fmt.Errorf(fmt.Sprintf(enums.CodeMessages(enums.ServiceDomainSslNull), strings.Join(noCertificateDomains, ",")))
+		//	}
+		//}
+		//
+		//noReleaseCertificates := make([]string, 0)
+		//noEnableCertificates := make([]string, 0)
+		//for _, domainCertificateInfo := range domainCertificateInfos {
+		//	if domainCertificateInfo.ReleaseStatus != utils.ReleaseStatusY {
+		//		noReleaseCertificates = append(noReleaseCertificates, domainCertificateInfo.Sni)
+		//	}
+		//	if domainCertificateInfo.IsEnable != utils.EnableOn {
+		//		noEnableCertificates = append(noEnableCertificates, domainCertificateInfo.Sni)
+		//	}
+		//}
+		//
+		//if len(noReleaseCertificates) != 0 {
+		//	return fmt.Errorf(fmt.Sprintf(enums.CodeMessages(enums.CertificateNoRelease), strings.Join(noReleaseCertificates, ",")))
+		//}
+		//
+		//if len(noEnableCertificates) != 0 {
+		//	return fmt.Errorf(fmt.Sprintf(enums.CodeMessages(enums.CertificateEnableOff), strings.Join(noEnableCertificates, ",")))
+		//}
 	}
 
 	return nil
 }
 
-func CheckServiceDelete(serviceId string) error {
+func (s *ServicesService) ServiceRelease(serviceId string) error {
 	serviceModel := &models.Services{}
-	serviceInfo := serviceModel.ServiceInfoById(serviceId)
+	_, err := serviceModel.ServiceInfoById(serviceId)
 
-	if serviceInfo.Release == utils.ReleaseStatusY {
-		if serviceInfo.Enable == utils.EnableOn {
-			return errors.New(enums.CodeMessages(enums.SwitchONProhibitsOp))
-		}
-	} else if serviceInfo.Release == utils.ReleaseStatusT {
-		return errors.New(enums.CodeMessages(enums.ToReleaseProhibitsOp))
+	if err != nil {
+		return err
+	}
+	err = checkServiceRelease(serviceId)
+	if err != nil {
+		return err
 	}
 
+	updateParam := map[string]interface{}{
+		"release": utils.ReleaseStatusY,
+	}
+	err = serviceModel.ServiceUpdateColumns(serviceId, updateParam)
+	if err != nil {
+		return err
+	}
+
+	// TODO 查询consul service info
+
+	// TODO 更新consul service info
 	return nil
 }
 
-func CheckExistDomain(domains []string, filterServiceIds []string) error {
+func (s *ServicesService) CheckExistDomain(domains []string, filterServiceIds []string) error {
 	serviceDomainInfo := models.ServiceDomains{}
 	serviceDomains, err := serviceDomainInfo.DomainInfosByDomain(domains, filterServiceIds)
 	if err != nil {
@@ -193,9 +425,9 @@ func CheckDomainCertificate(protocol int, domains []string) error {
 		return nil
 	}
 
-	domainSniInfos, domainSniInfosErr := utils.InterceptSni(domains)
-	if domainSniInfosErr != nil {
-		return domainSniInfosErr
+	domainSniInfos, err := utils.InterceptSni(domains)
+	if err != nil {
+		return err
 	}
 
 	certificatesModel := models.Certificates{}
@@ -225,387 +457,4 @@ func CheckDomainCertificate(protocol int, domains []string) error {
 	}
 
 	return nil
-}
-
-func ServiceCreate(request *validators.ServiceAddUpdate) error {
-	serviceModel := &models.Services{}
-
-	createServiceData := models.Services{
-		Name:     request.Name,
-		Protocol: request.Protocol,
-		Enable:   request.Enable,
-		Release:  utils.ReleaseStatusU,
-	}
-
-	_, err := serviceModel.ServiceAdd(&createServiceData, request.ServiceDomains)
-
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func ServiceUpdate(serviceId string, serviceData *validators.ServiceAddUpdate) error {
-	serviceModel := models.Services{}
-	serviceInfo := serviceModel.ServiceInfoById(serviceId)
-
-	updateServiceData := models.Services{
-		Protocol: serviceData.Protocol,
-		Enable:   serviceData.Enable,
-		Release:  serviceInfo.Release,
-	}
-	if serviceInfo.Release == utils.ReleaseStatusY {
-		updateServiceData.Release = utils.ReleaseStatusT
-	}
-
-	if serviceData.Release == utils.ReleaseY {
-		updateServiceData.Release = utils.ReleaseStatusY
-	}
-
-	serviceDomains := make([]validators.ServiceDomainAddUpdate, 0)
-	for _, domain := range serviceData.ServiceDomains {
-		serviceDomain := validators.ServiceDomainAddUpdate{
-			Domain: domain,
-		}
-
-		serviceDomains = append(serviceDomains, serviceDomain)
-	}
-
-	addDomains, _ := GetToOperateDomains(serviceId, &serviceDomains)
-
-	updateErr := serviceModel.ServiceUpdate(serviceId, &updateServiceData, &addDomains)
-
-	if (updateErr == nil) && (serviceData.Release == utils.ReleaseY) {
-		releaseErr := ServiceRelease(serviceId)
-		if releaseErr != nil {
-			if serviceInfo.Release != utils.ReleaseStatusU {
-				updateServiceData.Release = utils.ReleaseStatusT
-			}
-			serviceModel.ServiceUpdateColumnsById(serviceId, &updateServiceData)
-
-			return releaseErr
-		}
-	}
-
-	return updateErr
-}
-
-func ServiceDelete(serviceId string) error {
-	configReleaseErr := ServiceConfigRelease(utils.ReleaseTypeDelete, serviceId)
-	if configReleaseErr != nil {
-		return configReleaseErr
-	}
-
-	// 获取该服务下所有的已发布和待发布的路由和路由插件
-	routeModel := models.Routes{}
-	releaseRouteInfos := routeModel.RouteInfosByServiceIdReleaseStatus(serviceId, []int{})
-
-	routeIds := make([]string, 0)
-	if len(releaseRouteInfos) != 0 {
-		for _, releaseRouteInfo := range releaseRouteInfos {
-			routeIds = append(routeIds, releaseRouteInfo.ResID)
-		}
-	}
-
-	routePluginModel := models.RoutePlugins{}
-	routePluginInfos := routePluginModel.RoutePluginInfosByRouteIdRelease(routeIds, []int{utils.ReleaseStatusT, utils.ReleaseStatusY})
-
-	if len(releaseRouteInfos) != 0 {
-		for _, releaseRouteInfo := range releaseRouteInfos {
-			if releaseRouteInfo.Release != utils.ReleaseStatusU {
-				routeDeleteReleaseErr := ServiceRouteConfigRelease(utils.ReleaseTypeDelete, releaseRouteInfo.ResID)
-				if routeDeleteReleaseErr != nil {
-					return routeDeleteReleaseErr
-				}
-			}
-		}
-	}
-
-	if len(routePluginInfos) != 0 {
-		for _, routePluginInfo := range routePluginInfos {
-			routePluginDeleteReleaseErr := ServiceRoutePluginConfigRelease(utils.ReleaseTypeDelete, routePluginInfo.ID)
-			if routePluginDeleteReleaseErr != nil {
-				return routePluginDeleteReleaseErr
-			}
-		}
-	}
-
-	serviceModel := &models.Services{}
-	deleteErr := serviceModel.ServiceDelete(serviceId)
-	if deleteErr != nil {
-		ServiceConfigRelease(utils.ReleaseTypePush, serviceId)
-		return errors.New(deleteErr.Error())
-	}
-
-	return nil
-}
-
-type structTimeouts struct {
-	ConnectionTimeout int `json:"connection_timeout"`
-	ReadTimeout       int `json:"read_timeout"`
-	SendTimeout       int `json:"send_timeout"`
-}
-
-type StructServiceList struct {
-	ID             string   `json:"id"`              //Service id
-	Name           string   `json:"name"`            //Service name
-	Protocol       int      `json:"protocol"`        //Protocol  1:HTTP  2:HTTPS  3:HTTP&HTTPS
-	Enable         int      `json:"enable"`          //Service enable  1:on  2:off
-	Release        int      `json:"release"`         //Service release status 1:unpublished  2:to be published  3:published
-	ServiceDomains []string `json:"service_domains"` //Domain name
-}
-
-func (structServiceList *StructServiceList) ServiceListPage(param *validators.ServiceList) ([]StructServiceList, int, error) {
-	serviceModel := models.Services{}
-	searchContent := strings.TrimSpace(param.Search)
-
-	serviceIds := make([]string, 0)
-	var listError error
-	if len(searchContent) != 0 {
-		serviceInfos, serviceErr := serviceModel.ServiceInfosLikeIdName(searchContent)
-		if serviceErr != nil {
-			listError = serviceErr
-		}
-
-		serviceDomainModel := models.ServiceDomains{}
-		serviceDomains, domainErr := serviceDomainModel.ServiceDomainInfosLikeDomain(searchContent)
-		if domainErr != nil {
-			listError = domainErr
-		}
-
-		tpmServiceIds := map[string]string{}
-		if len(serviceInfos) != 0 {
-			for _, serviceInfo := range serviceInfos {
-				_, serviceExist := tpmServiceIds[serviceInfo.ResID]
-				if !serviceExist {
-					tpmServiceIds[serviceInfo.ResID] = serviceInfo.ResID
-				}
-			}
-		}
-		if len(serviceDomains) != 0 {
-			for _, serviceDomain := range serviceDomains {
-				_, domainExist := tpmServiceIds[serviceDomain.ServiceID]
-				if !domainExist {
-					tpmServiceIds[serviceDomain.ServiceID] = serviceDomain.ServiceID
-				}
-			}
-		}
-
-		if len(tpmServiceIds) > 0 {
-			for _, tpmServiceId := range tpmServiceIds {
-				serviceIds = append(serviceIds, tpmServiceId)
-			}
-		}
-
-		if len(serviceIds) == 0 {
-			serviceIds = append(serviceIds, "search-content-exist-set-default-service-id")
-		}
-	}
-	list, total, listError := serviceModel.ServiceAllInfosListPage(serviceIds, param)
-
-	serviceList := make([]StructServiceList, 0)
-	if len(list) != 0 {
-		for _, serviceInfo := range list {
-			tmpServiceInfo := StructServiceList{}
-			tmpServiceInfo.ID = serviceInfo.ResID
-			tmpServiceInfo.Name = serviceInfo.Name
-			tmpServiceInfo.Protocol = serviceInfo.Protocol
-			tmpServiceInfo.Enable = serviceInfo.Enable
-			tmpServiceInfo.Release = serviceInfo.Release
-
-			tmpServiceInfo.ServiceDomains = make([]string, 0)
-			if len(serviceInfo.Domains) != 0 {
-				for _, domainInfo := range serviceInfo.Domains {
-					tmpServiceInfo.ServiceDomains = append(tmpServiceInfo.ServiceDomains, domainInfo.Domain)
-				}
-			}
-
-			serviceList = append(serviceList, tmpServiceInfo)
-		}
-	}
-
-	return serviceList, total, listError
-}
-
-type structServiceNode struct {
-	NodeIP     string `json:"node_ip"`     //Node IP
-	NodePort   int    `json:"node_port"`   //Node port
-	NodeWeight int    `json:"node_weight"` //Node weight
-}
-
-type StructServiceInfo struct {
-	ID             string   `json:"id"`              //Service id
-	Name           string   `json:"name"`            //Service name
-	Protocol       int      `json:"protocol"`        //Protocol  1:HTTP  2:HTTPS  3:HTTP&HTTPS
-	Enable         int      `json:"enable"`          //Service enable  1:on  2:off
-	Release        int      `json:"release"`         //Service release status 1:unpublished  2:to be published  3:published
-	ServiceDomains []string `json:"service_domains"` //Service Domains
-}
-
-func (s *StructServiceInfo) ServiceInfoById(serviceId string) (StructServiceInfo, error) {
-	serviceInfo := StructServiceInfo{}
-	serviceId = strings.TrimSpace(serviceId)
-	err := errors.New(enums.CodeMessages(enums.ServiceParamsNull))
-	if len(serviceId) == 0 {
-		return serviceInfo, err
-	}
-
-	serviceModel := models.Services{}
-	serviceList, err := serviceModel.ServiceDomainNodeByIds([]string{serviceId})
-	if err != nil {
-		return serviceInfo, err
-	}
-
-	serviceListInfo := serviceList[0]
-	serviceInfo.ID = serviceListInfo.ResID
-	serviceInfo.Name = serviceListInfo.Name
-	serviceInfo.Protocol = serviceListInfo.Protocol
-	serviceInfo.Enable = serviceListInfo.Enable
-	serviceInfo.Release = serviceListInfo.Release
-
-	serviceInfo.ServiceDomains = make([]string, 0)
-	if len(serviceListInfo.Domains) != 0 {
-		for _, domainInfo := range serviceListInfo.Domains {
-			serviceInfo.ServiceDomains = append(serviceInfo.ServiceDomains, domainInfo.Domain)
-		}
-	}
-
-	return serviceInfo, nil
-}
-
-func ServiceRelease(serviceId string) error {
-	serviceModel := &models.Services{}
-	serviceInfo := serviceModel.ServiceInfoById(serviceId)
-
-	serviceReleaseErr := serviceModel.ServiceSwitchRelease(serviceId, utils.ReleaseStatusY)
-	if serviceReleaseErr != nil {
-		return serviceReleaseErr
-	}
-
-	configReleaseErr := ServiceConfigRelease(utils.ReleaseTypePush, serviceId)
-	if configReleaseErr == nil {
-		routeModel := models.Routes{}
-		defaultRouteInfos, defaultRouteInfoErr := routeModel.RouteInfosByServiceRoutePath(serviceId, []string{utils.DefaultRoutePath}, []string{})
-		if len(defaultRouteInfos) == 0 {
-			serviceModel.ServiceSwitchRelease(serviceId, serviceInfo.Release)
-			return errors.New(enums.CodeMessages(enums.RouteDefaultPathNull))
-		}
-
-		if defaultRouteInfoErr != nil {
-			serviceModel.ServiceSwitchRelease(serviceId, serviceInfo.Release)
-			return defaultRouteInfoErr
-		}
-		defaultRouteInfo := defaultRouteInfos[0]
-
-		routeReleaseErr := ServiceRouteConfigRelease(utils.ReleaseTypePush, defaultRouteInfo.ResID)
-		if routeReleaseErr != nil {
-			serviceModel.ServiceSwitchRelease(serviceId, serviceInfo.Release)
-			return routeReleaseErr
-		}
-
-		routeModel.Release = utils.ReleaseStatusY
-		routeModel.RouteUpdate(defaultRouteInfo.ResID, routeModel)
-	}
-
-	return configReleaseErr
-}
-
-func ServiceConfigRelease(releaseType string, serviceId string) error {
-	serviceConfig, serviceConfigErr := generateServicesConfig(serviceId)
-	if serviceConfigErr != nil {
-		return serviceConfigErr
-	}
-
-	serviceConfigJson, serviceConfigJsonErr := json.Marshal(serviceConfig)
-	if serviceConfigJsonErr != nil {
-		return serviceConfigJsonErr
-	}
-	serviceConfigStr := string(serviceConfigJson)
-
-	etcdKey := utils.EtcdKey(utils.EtcdKeyTypeService, serviceId)
-	if len(etcdKey) == 0 {
-		return errors.New(enums.CodeMessages(enums.EtcdKeyNull))
-	}
-
-	etcdClient := packages.GetEtcdClient()
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*utils.EtcdTimeOut)
-	defer cancel()
-
-	var respErr error
-	if strings.ToLower(releaseType) == utils.ReleaseTypePush {
-		_, respErr = etcdClient.Put(ctx, etcdKey, serviceConfigStr)
-	} else if strings.ToLower(releaseType) == utils.ReleaseTypePush {
-		_, respErr = etcdClient.Delete(ctx, etcdKey)
-	}
-
-	if respErr != nil {
-		return errors.New(enums.CodeMessages(enums.EtcdUnavailable))
-	}
-
-	return nil
-}
-
-type ServiceUpstreamConfig struct {
-	IPType int    `json:"ip_type"`
-	IP     string `json:"ip"`
-	Port   int    `json:"port"`
-	Weight int    `json:"weight"`
-}
-
-type ServiceTimeOutConfig struct {
-	ConnectionTimeout int `json:"connection_timeout"`
-	ReadTimeout       int `json:"read_timeout"`
-	SendTimeout       int `json:"send_timeout"`
-}
-
-type ServiceConfig struct {
-	ID         string            `json:"id"`
-	Protocol   int               `json:"protocol"`
-	Enable     int               `json:"enable"`
-	Domains    []string          `json:"domains"`
-	DomainSnis map[string]string `json:"domain_snis"`
-}
-
-func generateServicesConfig(id string) (ServiceConfig, error) {
-	serviceConfig := ServiceConfig{}
-	serviceModel := models.Services{}
-	serviceInfo, serviceInfoErr := serviceModel.ServiceDomainNodeById(id)
-	if serviceInfoErr != nil {
-		return serviceConfig, serviceInfoErr
-	}
-
-	domains := make([]string, 0)
-	domainSnis := make(map[string]string, 0)
-	if len(serviceInfo.Domains) != 0 {
-		for _, domain := range serviceInfo.Domains {
-			domains = append(domains, domain.Domain)
-			disassembleDomains := strings.Split(domain.Domain, ".")
-			disassembleDomains[0] = "*"
-			domainSniInfo := strings.Join(disassembleDomains, ".")
-			domainSnis[domain.Domain] = domainSniInfo
-		}
-	}
-
-	upstreams := make([]ServiceUpstreamConfig, 0)
-	if len(serviceInfo.Nodes) != 0 {
-		for _, nodeInfo := range serviceInfo.Nodes {
-			serviceUpstreamConfig := ServiceUpstreamConfig{
-				IPType: nodeInfo.IPType,
-				IP:     nodeInfo.NodeIP,
-				Port:   nodeInfo.NodePort,
-				Weight: nodeInfo.NodeWeight,
-			}
-
-			upstreams = append(upstreams, serviceUpstreamConfig)
-		}
-	}
-
-	serviceConfig.ID = serviceInfo.ResID
-	serviceConfig.Protocol = serviceInfo.Protocol
-	serviceConfig.Enable = serviceInfo.Enable
-	serviceConfig.Domains = domains
-	serviceConfig.DomainSnis = domainSnis
-
-	return serviceConfig, nil
 }

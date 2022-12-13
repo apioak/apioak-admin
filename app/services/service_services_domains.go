@@ -29,8 +29,8 @@ func GetToOperateDomains(serviceId string, updateDomains *[]validators.ServiceDo
 			continue
 		}
 		domain := models.ServiceDomains{
-			ServiceID: serviceId,
-			Domain:    updateDomain.Domain,
+			ServiceResID: serviceId,
+			Domain:       updateDomain.Domain,
 		}
 		addDomains = append(addDomains, domain)
 	}

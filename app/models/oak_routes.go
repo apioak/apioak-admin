@@ -12,15 +12,15 @@ import (
 )
 
 type Routes struct {
-	ID             int       `gorm:"column:id;primary_key"`  //primary key
-	ResID          string    `gorm:"column:res_id"`          //Route id
-	ServiceResID   string    `gorm:"column:service_res_id"`  //Service id
-	UpstreamResID  string    `gorm:"column:upstream_res_id"` //Upstream id
-	RouteName      string    `gorm:"column:route_name"`      //Route name
-	RequestMethods string    `gorm:"column:request_methods"` //Request method
-	RoutePath      string    `gorm:"column:route_path"`      //Routing path
-	Enable         int       `gorm:"column:enable"`          //Routing enable  1:on  2:off
-	Release        int       `gorm:"column:release"`         //Service release status 1:unpublished  2:to be published  3:published
+	ID             int    `gorm:"column:id;primary_key"`  //primary key
+	ResID          string `gorm:"column:res_id"`          //Route id
+	ServiceResID   string `gorm:"column:service_res_id"`  //Service id
+	UpstreamResID  string `gorm:"column:upstream_res_id"` //Upstream id
+	RouteName      string `gorm:"column:route_name"`      //Route name
+	RequestMethods string `gorm:"column:request_methods"` //Request method
+	RoutePath      string `gorm:"column:route_path"`      //Routing path
+	Enable         int    `gorm:"column:enable"`          //Routing enable  1:on  2:off
+	Release        int    `gorm:"column:release"`         //Service release status 1:unpublished  2:to be published  3:published
 	ModelTime
 }
 
@@ -139,22 +139,19 @@ func (r *Routes) RouteInfosByServiceRouteId(serviceId string, routeId string) (R
 	return routeInfo, err
 }
 
-func (r *Routes) RouteInfosByServiceIdReleaseStatus(serviceId string, releaseStatus []int) []Routes {
+func (r *Routes) RouteInfosByServiceId(serviceId string) ([]Routes, error) {
 	routeInfos := make([]Routes, 0)
 	if len(serviceId) == 0 {
-		return routeInfos
+		return routeInfos, nil
 	}
 
-	db := packages.GetDb().
-		Table(r.TableName()).
-		Where("service_id = ?", serviceId)
+	err := packages.GetDb().Model(&Routes{}).Where("service_res_id = ?", serviceId).Find(&routeInfos).Error
 
-	if len(releaseStatus) != 0 {
-		db = db.Where("release_status IN ?", releaseStatus)
+	if err != nil && err != gorm.ErrRecordNotFound {
+		return routeInfos, err
 	}
-	db.Find(&routeInfos)
 
-	return routeInfos
+	return routeInfos, nil
 }
 
 func (r *Routes) RouteAdd(routeData Routes, upstreamData Upstreams, upstreamNodes []UpstreamNodes) (string, error) {
@@ -496,7 +493,7 @@ func (r *Routes) RouteSwitchEnable(id string, enable int) error {
 		Table(r.TableName()).
 		Where("id = ?", id).
 		Updates(Routes{
-			Enable:      enable,
+			Enable:  enable,
 			Release: releaseStatus}).Error
 
 	if updateErr != nil {

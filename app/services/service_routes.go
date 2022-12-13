@@ -384,7 +384,6 @@ func ServiceRouteRelease(routeResIds []string, releaseType string) error {
 	publishedServiceResIdsMap := make(map[string]byte)
 	// @todo 根据服务ID获取已经发布的服务数据（如果没有已经发布的数据，则本次发布不允许，直接返回错误信息即可）
 
-
 	toBeOpUpstreamResIds := make([]string, 0)
 	toBeOpRouteList := make([]models.Routes, 0)
 	for _, routeInfo := range routeList {

@@ -25,15 +25,7 @@ type ServiceUpdateName struct {
 }
 
 type ServiceSwitchEnable struct {
-	IsEnable int `json:"is_enable" zh:"服务开关" en:"Service enable" binding:"required,oneof=1 2"`
-}
-
-type ServiceSwitchWebsocket struct {
-	WebSocket int `json:"web_socket" zh:"WebSocket" en:"WebSocket" binding:"required,oneof=1 2"`
-}
-
-type ServiceSwitchHealthCheck struct {
-	HealthCheck int `json:"health_check" zh:"健康检查" en:"Health" binding:"required,oneof=1 2"`
+	Enable int `json:"enable" zh:"服务开关" en:"Service enable" binding:"required,oneof=1 2"`
 }
 
 func CorrectServiceAttributesDefault(serviceAddUpdate *ServiceAddUpdate) {
