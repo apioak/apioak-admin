@@ -174,12 +174,8 @@ func (s *ServicesService) ServiceInfoById(serviceId string) (StructServiceInfo, 
 
 func (s *ServicesService) ServiceDelete(serviceId string) error {
 
-	routeModel := models.Routes{}
-	routerList, err := routeModel.RouteInfosByServiceId(serviceId)
-
-	if err != nil {
-		return errors.New(err.Error())
-	}
+	routeModel := models.Routers{}
+	routerList := routeModel.RouterInfosByServiceIdReleaseStatus(serviceId, []int{})
 
 	if len(routerList) > 0 {
 		return errors.New(enums.CodeMessages(enums.ServiceBindingRouter))
@@ -188,7 +184,7 @@ func (s *ServicesService) ServiceDelete(serviceId string) error {
 	// TODO 获取consul 服务数据
 
 	serviceModel := &models.Services{}
-	err = serviceModel.ServiceDelete(serviceId)
+	err := serviceModel.ServiceDelete(serviceId)
 	if err != nil {
 		return errors.New(err.Error())
 	}

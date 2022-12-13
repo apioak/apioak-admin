@@ -28,8 +28,6 @@ func RouterRegister(routerEngine *gin.Engine) {
 		// service
 		service := adminRouter.Group("service")
 		{
-			service.GET("/common/load-balance/list", admin.ServiceLoadBalanceList)
-
 			service.POST("/add", admin.ServiceAdd)
 			service.GET("/list", admin.ServiceList)
 			service.GET("/info/:id", admin.ServiceInfo)
@@ -38,8 +36,8 @@ func RouterRegister(routerEngine *gin.Engine) {
 			service.PUT("/update/name/:id", admin.ServiceUpdateName)
 			service.PUT("/switch/enable/:id", admin.ServiceSwitchEnable)
 			service.PUT("/switch/release/:id", admin.ServiceSwitchRelease)
-			service.PUT("/switch/websocket/:id", admin.ServiceSwitchWebsocket)
-			service.PUT("/switch/health-check/:id", admin.ServiceSwitchHealthCheck)
+			//service.PUT("/switch/websocket/:id", admin.ServiceSwitchWebsocket)
+			//service.PUT("/switch/health-check/:id", admin.ServiceSwitchHealthCheck)
 		}
 
 		// router
@@ -50,7 +48,6 @@ func RouterRegister(routerEngine *gin.Engine) {
 			route.GET("/list", admin.RouterList)
 			route.GET("/info/:service_res_id/:router_res_id", admin.RouterInfo)
 			route.PUT("/switch/release/:service_res_id/:router_res_id", admin.RouterSwitchRelease)
-
 
 			// route.PUT("/update/:service_id/:route_id", admin.RouterUpdate)
 			// route.DELETE("/delete/:service_id/:route_id", admin.RouteDelete)
