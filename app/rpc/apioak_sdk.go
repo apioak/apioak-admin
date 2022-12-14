@@ -4,6 +4,7 @@ import (
 	"apioak-admin/app/enums"
 	"apioak-admin/app/packages"
 	"apioak-admin/app/utils"
+	"encoding/json"
 	"errors"
 	"net/http"
 	"net/url"
@@ -18,6 +19,7 @@ type ApiOak struct {
 	Port     int
 	Domain   string
 	Secret   string
+	Address  string
 }
 
 var (
@@ -25,7 +27,7 @@ var (
 	apiOakOnce sync.Once
 
 	timeOut         = time.Second * 2
-	routerUri     = "/apioak/admin/routers"
+	routerUri       = "/apioak/admin/routers"
 	upstreamUri     = "/apioak/admin/upstreams"
 	upstreamNodeUri = "/apioak/admin/upstream/nodes"
 )
@@ -33,12 +35,22 @@ var (
 func NewApiOak() *ApiOak {
 
 	apiOakOnce.Do(func() {
+
+		address := packages.ConfigApiOak.Protocol + "://"
+		if len(packages.ConfigApiOak.Domain) != 0 {
+			address = address + packages.ConfigApiOak.Domain
+		} else {
+			address = address + packages.ConfigApiOak.Ip
+		}
+		address = address + ":" + strconv.Itoa(packages.ConfigApiOak.Port)
+
 		apiOak = &ApiOak{
 			Protocol: packages.ConfigApiOak.Protocol,
 			Ip:       packages.ConfigApiOak.Ip,
 			Port:     packages.ConfigApiOak.Port,
 			Domain:   packages.ConfigApiOak.Domain,
 			Secret:   packages.ConfigApiOak.Secret,
+			Address:  address,
 		}
 	})
 
@@ -46,6 +58,7 @@ func NewApiOak() *ApiOak {
 }
 
 type ConfigObjectName struct {
+	Id   string `json:"id,omitempty"`
 	Name string `json:"name"`
 }
 
@@ -102,12 +115,11 @@ func (m *ApiOak) commonPut(resName string, uri string, data interface{}, params 
 }
 
 func (m *ApiOak) UpstreamNodePut(upstreamNodeConfigList []UpstreamNodeConfig) (err error) {
-
 	if len(upstreamNodeConfigList) == 0 {
 		return
 	}
 
-	uri := m.Protocol + "://" + m.Ip + ":" + strconv.Itoa(m.Port) + upstreamNodeUri
+	uri := m.Address + upstreamNodeUri
 
 	for _, upstreamNodeConfigInfo := range upstreamNodeConfigList {
 
@@ -127,8 +139,88 @@ func (m *ApiOak) UpstreamNodePut(upstreamNodeConfigList []UpstreamNodeConfig) (e
 	return
 }
 
-func (m *ApiOak) UpstreamNodeDelete(upstreamNodeConfigList []UpstreamNodeConfig) (err error) {
-	// @todo 删除逻辑，先检测远程是否存在，存在的直接删除，不存在忽略
+func (m *ApiOak) UpstreamNodeDelete(upstreamNodeResIds []string) (err error) {
+	if len(upstreamNodeResIds) == 0 {
+		return
+	}
+
+	uri := m.Address + upstreamNodeUri
+
+	for _, upstreamNodeResId := range upstreamNodeResIds {
+
+		var params = url.Values{}
+		var headers = http.Header{}
+		if len(m.Domain) > 0 {
+			headers.Set("Host", m.Domain)
+		}
+
+		uri = uri + "/" + upstreamNodeResId
+
+		var httpResp utils.HttpResp
+		httpResp, err = utils.Get(uri, params, headers, timeOut)
+		if err != nil {
+			return
+		}
+
+		if httpResp.StatusCode == 500 {
+			err = errors.New(enums.CodeMessages(enums.SyncError))
+			return
+		} else if httpResp.StatusCode == 200 {
+			httpResp, err = utils.Delete(uri, params, headers, timeOut)
+			if err != nil {
+				return
+			}
+
+			if httpResp.StatusCode != 200 {
+				err = errors.New(enums.CodeMessages(enums.PublishError))
+			}
+			return
+		}
+	}
+
+	return
+}
+
+func (m *ApiOak) UpstreamNodeDeleteByIds(upstreamNodeIds []string) (err error) {
+	if len(upstreamNodeIds) == 0 {
+		return
+	}
+
+	uri := m.Address + upstreamNodeUri
+
+	for _, upstreamNodeId := range upstreamNodeIds {
+
+		var params = url.Values{}
+		var headers = http.Header{}
+		if len(m.Domain) > 0 {
+			headers.Set("Host", m.Domain)
+		}
+
+		uri = uri + "/" + upstreamNodeId
+
+		var httpResp utils.HttpResp
+		httpResp, err = utils.Get(uri, params, headers, timeOut)
+
+		if err != nil {
+			return
+		}
+
+		if httpResp.StatusCode == 500 {
+			err = errors.New(enums.CodeMessages(enums.SyncError))
+			return
+		} else if httpResp.StatusCode == 200 {
+			httpResp, err = utils.Delete(uri, params, headers, timeOut)
+			if err != nil {
+				return
+			}
+
+			if httpResp.StatusCode != 200 {
+				err = errors.New(enums.CodeMessages(enums.PublishError))
+			}
+			return
+		}
+	}
+
 	return
 }
 
@@ -141,12 +233,61 @@ type UpstreamConfig struct {
 	Nodes          []ConfigObjectName `json:"nodes"`
 }
 
+func (m *ApiOak) UpstreamGet(upstreamResIds []string) (list []UpstreamConfig, err error) {
+	if len(upstreamResIds) == 0 {
+		return
+	}
+
+	uri := m.Address + upstreamUri
+
+	for _, upstreamResId := range upstreamResIds {
+
+		var params = url.Values{}
+		var headers = http.Header{}
+		if len(m.Domain) > 0 {
+			headers.Set("Host", m.Domain)
+		}
+
+		uri = uri + "/" + upstreamResId
+
+		var httpResp utils.HttpResp
+		httpResp, err = utils.Get(uri, params, headers, timeOut)
+		if err != nil {
+			return
+		}
+
+		if httpResp.StatusCode == 404 {
+			continue
+		} else if httpResp.StatusCode == 500 {
+			err = errors.New(enums.CodeMessages(enums.SyncError))
+			return
+		} else if httpResp.StatusCode == 200 {
+
+			var respData UpstreamConfig
+			err = json.Unmarshal(httpResp.Body, &respData)
+			if err != nil {
+				continue
+			}
+
+			if len(respData.Nodes) != 0 {
+				for k, node := range respData.Nodes {
+					respData.Nodes[k].Name = node.Id
+				}
+			}
+
+			list = append(list, respData)
+		}
+	}
+
+	return
+}
+
 func (m *ApiOak) UpstreamPut(upstreamConfigList []UpstreamConfig) (err error) {
 	if len(upstreamConfigList) == 0 {
 		return
 	}
 
-	uri := m.Protocol + "://" + m.Ip + ":" + strconv.Itoa(m.Port) + upstreamUri
+	uri := m.Address + upstreamUri
 
 	for _, upstreamConfigInfo := range upstreamConfigList {
 
@@ -166,8 +307,45 @@ func (m *ApiOak) UpstreamPut(upstreamConfigList []UpstreamConfig) (err error) {
 	return
 }
 
-func (m *ApiOak) UpstreamDelete(upstreamConfigList []UpstreamConfig) (err error) {
-	// @todo 删除逻辑，先检测远程是否存在，存在的直接删除，不存在忽略
+func (m *ApiOak) UpstreamDelete(upstreamResIds []string) (err error) {
+	if len(upstreamResIds) == 0 {
+		return
+	}
+
+	uri := m.Address + upstreamUri
+
+	for _, upstreamResId := range upstreamResIds {
+
+		var params = url.Values{}
+		var headers = http.Header{}
+		if len(m.Domain) > 0 {
+			headers.Set("Host", m.Domain)
+		}
+
+		uri = uri + "/" + upstreamResId
+
+		var httpResp utils.HttpResp
+		httpResp, err = utils.Get(uri, params, headers, timeOut)
+		if err != nil {
+			return
+		}
+
+		if httpResp.StatusCode == 500 {
+			err = errors.New(enums.CodeMessages(enums.SyncError))
+			return
+		} else if httpResp.StatusCode == 200 {
+			httpResp, err = utils.Delete(uri, params, headers, timeOut)
+			if err != nil {
+				return
+			}
+
+			if httpResp.StatusCode != 200 {
+				err = errors.New(enums.CodeMessages(enums.PublishError))
+			}
+			return
+		}
+	}
+
 	return
 }
 
@@ -182,12 +360,59 @@ type RouterConfig struct {
 	Plugins  []ConfigObjectName `json:"plugins"`
 }
 
+func (m *ApiOak) RouterGet(routerResIds []string) (list []RouterConfig, err error) {
+	if len(routerResIds) == 0 {
+		return
+	}
+
+	uri := m.Address + routerUri
+
+	for _, routerResId := range routerResIds {
+
+		var params = url.Values{}
+		var headers = http.Header{}
+		if len(m.Domain) > 0 {
+			headers.Set("Host", m.Domain)
+		}
+
+		uri = uri + "/" + routerResId
+
+		var httpResp utils.HttpResp
+		httpResp, err = utils.Get(uri, params, headers, timeOut)
+		if err != nil {
+			return
+		}
+
+		if httpResp.StatusCode == 404 {
+			continue
+		} else if httpResp.StatusCode == 500 {
+			err = errors.New(enums.CodeMessages(enums.SyncError))
+			return
+		} else if httpResp.StatusCode == 200 {
+
+			var respData RouterConfig
+			err = json.Unmarshal(httpResp.Body, &respData)
+			if err != nil {
+				continue
+			}
+
+			if len(respData.Upstream.Id) != 0 {
+				respData.Upstream.Name = respData.Upstream.Id
+			}
+
+			list = append(list, respData)
+		}
+	}
+
+	return
+}
+
 func (m *ApiOak) RouterPut(routerConfigList []RouterConfig) (err error) {
 	if len(routerConfigList) == 0 {
 		return
 	}
 
-	uri := m.Protocol + "://" + m.Ip + ":" + strconv.Itoa(m.Port) + routerUri
+	uri := m.Address + routerUri
 
 	for _, routerConfigInfo := range routerConfigList {
 
@@ -207,7 +432,44 @@ func (m *ApiOak) RouterPut(routerConfigList []RouterConfig) (err error) {
 	return
 }
 
-func (m *ApiOak) RouterDelete(routerConfigList []RouterConfig) (err error) {
-	// @todo 删除逻辑，先检测远程是否存在，存在的直接删除，不存在忽略
+func (m *ApiOak) RouterDelete(routerResIds []string) (err error) {
+	if len(routerResIds) == 0 {
+		return
+	}
+
+	uri := m.Address + routerUri
+
+	for _, routerResId := range routerResIds {
+
+		var params = url.Values{}
+		var headers = http.Header{}
+		if len(m.Domain) > 0 {
+			headers.Set("Host", m.Domain)
+		}
+
+		uri = uri + "/" + routerResId
+
+		var httpResp utils.HttpResp
+		httpResp, err = utils.Get(uri, params, headers, timeOut)
+		if err != nil {
+			return
+		}
+
+		if httpResp.StatusCode == 500 {
+			err = errors.New(enums.CodeMessages(enums.SyncError))
+			return
+		} else if httpResp.StatusCode == 200 {
+			httpResp, err = utils.Delete(uri, params, headers, timeOut)
+			if err != nil {
+				return
+			}
+
+			if httpResp.StatusCode != 200 {
+				err = errors.New(enums.CodeMessages(enums.PublishError))
+			}
+			return
+		}
+	}
+
 	return
 }

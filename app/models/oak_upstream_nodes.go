@@ -26,35 +26,38 @@ func (u *UpstreamNodes) TableName() string {
 	return "oak_upstream_nodes"
 }
 
-func (m *UpstreamNodes) ModelUniqueId() (string, error) {
-	generateId, generateIdErr := utils.IdGenerate(utils.IdTypeUpstreamNode)
-	if generateIdErr != nil {
-		return "", generateIdErr
+func (m *UpstreamNodes) ModelUniqueId() (generateId string, err error) {
+	generateId, err = utils.IdGenerate(utils.IdTypeUpstreamNode)
+	if err != nil {
+		return
 	}
 
-	result := packages.GetDb().
+	err = packages.GetDb().
 		Table(m.TableName()).
 		Where("res_id = ?", generateId).
 		Select("res_id").
-		First(m)
+		First(m).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		err = nil
+	}
 
-	if result.RowsAffected == 0 {
+	if err == nil {
 		recursionTimesServices = 1
-		return generateId, nil
+		return
 	} else {
 		if recursionTimesServices == utils.IdGenerateMaxTimes {
 			recursionTimesServices = 1
-			return "", errors.New(enums.CodeMessages(enums.IdConflict))
+			err = errors.New(enums.CodeMessages(enums.IdConflict))
+			return
 		}
 
 		recursionTimesServices++
-		id, err := m.ModelUniqueId()
-
+		generateId, err = m.ModelUniqueId()
 		if err != nil {
-			return "", err
+			return
 		}
 
-		return id, nil
+		return
 	}
 }
 

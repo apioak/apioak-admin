@@ -12,7 +12,6 @@ import (
 
 func RouterAdd(c *gin.Context) {
 	bindParams := validators.ValidatorRouterAddUpdate{
-		Release: utils.ReleaseN,
 	}
 	if msg, err := packages.ParseRequestParams(c, &bindParams); err != nil {
 		utils.Error(c, msg)
@@ -20,7 +19,7 @@ func RouterAdd(c *gin.Context) {
 	}
 
 	validators.GetRouterAttributesDefault(&bindParams)
-	validators.CorrectUpstreamTimeOut(&bindParams.UpstreamTimeout)
+	validators.CorrectUpstreamDefault(&bindParams.UpstreamAddUpdate)
 	validators.CorrectUpstreamAddNodes(&bindParams.UpstreamNodes)
 
 	if bindParams.RouterPath == utils.DefaultRouterPath {
@@ -99,6 +98,59 @@ func RouterInfo(c *gin.Context) {
 	utils.Ok(c, routeInfo)
 }
 
+func RouterUpdate(c *gin.Context) {
+	var bindParams = validators.ValidatorRouterAddUpdate{}
+	if msg, err := packages.ParseRequestParams(c, &bindParams); err != nil {
+		utils.Error(c, msg)
+		return
+	}
+	validators.GetRouterAttributesDefault(&bindParams)
+	validators.CorrectUpstreamDefault(&bindParams.UpstreamAddUpdate)
+	validators.CorrectUpstreamAddNodes(&bindParams.UpstreamNodes)
+
+	serviceResId := strings.TrimSpace(c.Param("service_res_id"))
+	routerResId := strings.TrimSpace(c.Param("router_res_id"))
+
+	checkServiceExistErr := services.CheckServiceExist(serviceResId)
+	if checkServiceExistErr != nil {
+		utils.Error(c, checkServiceExistErr.Error())
+		return
+	}
+
+	checkExistRouteErr := services.CheckRouterExist(routerResId, serviceResId)
+	if checkExistRouteErr != nil {
+		utils.Error(c, checkExistRouteErr.Error())
+		return
+	}
+
+	// @todo 默认服务下的全量路由检测，后续版本中放开
+	// checkEditDefaultPathRouterErr := services.CheckEditDefaultPathRouter(routerResId)
+	// if checkEditDefaultPathRouterErr != nil {
+	// 	utils.Error(c, checkEditDefaultPathRouterErr.Error())
+	// 	return
+	// }
+
+	checkServiceRouterPathErr := services.CheckServiceRouterPath(bindParams.RouterPath)
+	if checkServiceRouterPathErr != nil {
+		utils.Error(c, checkServiceRouterPathErr.Error())
+		return
+	}
+
+	err := services.CheckExistServiceRouterPath(bindParams.ServiceResID, bindParams.RouterPath, []string{serviceResId})
+	if err != nil {
+		utils.Error(c, err.Error())
+		return
+	}
+
+	updateErr := services.RouterUpdate(routerResId, bindParams)
+	if updateErr != nil {
+		utils.Error(c, updateErr.Error())
+		return
+	}
+
+	utils.Ok(c)
+}
+
 func RouterSwitchRelease(c *gin.Context) {
 	serviceResId := strings.TrimSpace(c.Param("service_res_id"))
 	routerResId := strings.TrimSpace(c.Param("router_res_id"))
@@ -123,7 +175,7 @@ func RouterSwitchRelease(c *gin.Context) {
 		return
 	}
 
-	serviceRouterReleaseErr := services.ServiceRouterRelease([]string{routerResId}, utils.ReleaseTypePush)
+	serviceRouterReleaseErr := services.RouterUpstreamRelease([]string{routerResId}, utils.ReleaseTypePush)
 	if serviceRouterReleaseErr != nil {
 		utils.Error(c, serviceRouterReleaseErr.Error())
 		return
@@ -134,55 +186,7 @@ func RouterSwitchRelease(c *gin.Context) {
 
 // ------------------------------------------------------------------------------------------
 
-// func RouterUpdate(c *gin.Context) {
-// 	var bindParams = validators.ValidatorRouterAddUpdate{}
-// 	if msg, err := packages.ParseRequestParams(c, &bindParams); err != nil {
-// 		utils.Error(c, msg)
-// 		return
-// 	}
-// 	validators.GetRouterAttributesDefault(&bindParams)
-//
-// 	serviceId := strings.TrimSpace(c.Param("service_id"))
-// 	routeId := strings.TrimSpace(c.Param("route_id"))
-//
-// 	checkServiceExistErr := services.CheckServiceExist(serviceId)
-// 	if checkServiceExistErr != nil {
-// 		utils.Error(c, checkServiceExistErr.Error())
-// 		return
-// 	}
-//
-// 	checkExistRouteErr := services.CheckRouterExist(routeId, serviceId)
-// 	if checkExistRouteErr != nil {
-// 		utils.Error(c, checkExistRouteErr.Error())
-// 		return
-// 	}
-//
-// 	checkEditDefaultPathRouterErr := services.CheckEditDefaultPathRouter(routeId)
-// 	if checkEditDefaultPathRouterErr != nil {
-// 		utils.Error(c, checkEditDefaultPathRouterErr.Error())
-// 		return
-// 	}
-//
-// 	checkServiceRouterPathErr := services.CheckServiceRouterPath(bindParams.RouterPath)
-// 	if checkServiceRouterPathErr != nil {
-// 		utils.Error(c, checkServiceRouterPathErr.Error())
-// 		return
-// 	}
-//
-// 	err := services.CheckExistServiceRouterPath(bindParams.ServiceResID, bindParams.RouterPath, []string{routeId})
-// 	if err != nil {
-// 		utils.Error(c, err.Error())
-// 		return
-// 	}
-//
-// 	updateErr := services.RouterUpdate(routeId, &bindParams)
-// 	if updateErr != nil {
-// 		utils.Error(c, updateErr.Error())
-// 		return
-// 	}
-//
-// 	utils.Ok(c)
-// }
+
 
 // func RouteDelete(c *gin.Context) {
 // 	serviceId := strings.TrimSpace(c.Param("service_id"))

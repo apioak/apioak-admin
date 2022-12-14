@@ -18,14 +18,14 @@ var (
 )
 
 type UpstreamTimeout struct {
-	ConnectTimeout int `json:"connect_timeout" zh:"连接超时" en:"Connect timeout" binding:"omitempty,min=1,max=600000"`
-	WriteTimeout   int `json:"write_timeout" zh:"写超时" en:"Write timeout" binding:"omitempty,min=1,max=600000"`
 	ReadTimeout    int `json:"read_timeout" zh:"读超市" en:"Read timeout" binding:"omitempty,min=1,max=600000"`
+	WriteTimeout   int `json:"write_timeout" zh:"写超时" en:"Write timeout" binding:"omitempty,min=1,max=600000"`
+	ConnectTimeout int `json:"connect_timeout" zh:"连接超时" en:"Connect timeout" binding:"omitempty,min=1,max=600000"`
 }
 
 type UpstreamAddUpdate struct {
 	LoadBalance   int                     `json:"load_balance" zh:"负载均衡算法" en:"Load balancing algorithm" binding:"omitempty,CheckLoadBalanceOneOf"`
-	UpstreamNodes []UpstreamNodeAddUpdate `json:"upstream_nodes" zh:"上游节点" en:"Upstream nodes" binding:"omitempty,min=1,CheckUpstreamNode"`
+	UpstreamNodes []UpstreamNodeAddUpdate `json:"upstream_nodes" zh:"上游节点" en:"Upstream nodes" binding:"omitempty,CheckUpstreamNode"`
 	UpstreamTimeout
 }
 
@@ -58,14 +58,17 @@ func CheckLoadBalanceOneOf(fl validator.FieldLevel) bool {
 	return true
 }
 
-func CorrectUpstreamTimeOut(upstreamTimeOuts *UpstreamTimeout) {
-	if upstreamTimeOuts.ConnectTimeout == 0 {
-		upstreamTimeOuts.ConnectTimeout = defaultTimeout
+func CorrectUpstreamDefault(upstreamData *UpstreamAddUpdate) {
+	if upstreamData.LoadBalance == 0 {
+		upstreamData.LoadBalance = utils.LoadBalanceRoundRobin
 	}
-	if upstreamTimeOuts.WriteTimeout == 0 {
-		upstreamTimeOuts.WriteTimeout = defaultTimeout
+	if upstreamData.ConnectTimeout == 0 {
+		upstreamData.ConnectTimeout = defaultTimeout
 	}
-	if upstreamTimeOuts.ReadTimeout == 0 {
-		upstreamTimeOuts.ReadTimeout = defaultTimeout
+	if upstreamData.WriteTimeout == 0 {
+		upstreamData.WriteTimeout = defaultTimeout
+	}
+	if upstreamData.ReadTimeout == 0 {
+		upstreamData.ReadTimeout = defaultTimeout
 	}
 }

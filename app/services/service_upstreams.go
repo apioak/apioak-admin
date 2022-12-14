@@ -38,76 +38,115 @@ func (u UpstreamItem) UpstreamDetailByResId(resId string) (upstreamItem Upstream
 	return
 }
 
-func RouterUpstreamRelease(upstreamResIds []string, releaseType string) error {
+func UpstreamRelease(upstreamResIds []string, releaseType string) (err error) {
+	if len(upstreamResIds) == 0 {
+		return
+	}
+
 	releaseType = strings.ToLower(releaseType)
 
 	if (releaseType != utils.ReleaseTypePush) && (releaseType != utils.ReleaseTypeDelete) {
-		return errors.New(enums.CodeMessages(enums.ReleaseTypeError))
-	}
-
-	upstreamModel := models.Upstreams{}
-
-	upstreamList, err := upstreamModel.UpstreamListByResIds(upstreamResIds)
-	if err != nil {
-		return err
-	}
-
-	if len(upstreamList) == 0 {
-		return nil
-	}
-
-	upstreamConfigList := make([]rpc.UpstreamConfig, 0)
-	upstreamNodeResIds := make([]string, 0)
-	for _, upstreamInfo := range upstreamList {
-
-		upstreamConfig, upstreamConfigErr := generateUpstreamConfig(upstreamInfo)
-		if upstreamConfigErr != nil {
-			return upstreamConfigErr
-		}
-
-		if len(upstreamConfig.Name) == 0 {
-			continue
-		}
-
-		upstreamConfigList = append(upstreamConfigList, upstreamConfig)
-
-		if len(upstreamConfig.Nodes) > 0 {
-			for _, upstreamCOnfigNodeName := range upstreamConfig.Nodes {
-				upstreamNodeResIds = append(upstreamNodeResIds, upstreamCOnfigNodeName.Name)
-			}
-		}
-
+		err = errors.New(enums.CodeMessages(enums.ReleaseTypeError))
+		return
 	}
 
 	newApiOak := rpc.NewApiOak()
-
 	if releaseType == utils.ReleaseTypePush {
-		releaseUpstreamNodeErr := UpstreamNodeRelease(upstreamNodeResIds, releaseType)
-		if releaseUpstreamNodeErr != nil {
-			return releaseUpstreamNodeErr
+		getUpstreamConfigList := make([]rpc.UpstreamConfig, 0)
+		getUpstreamConfigList, err = newApiOak.UpstreamGet(upstreamResIds)
+
+		if err != nil {
+			return
 		}
 
-		upstreamPutErr := newApiOak.UpstreamPut(upstreamConfigList)
-		if upstreamPutErr != nil {
-			return upstreamPutErr
+		upstreamNodeIds := make([]string, 0)
+		for _, getUpstreamConfigInfo := range getUpstreamConfigList {
+
+			if len(getUpstreamConfigInfo.Nodes) == 0 {
+				continue
+			}
+
+			for _, nodeInfo := range getUpstreamConfigInfo.Nodes {
+				upstreamNodeIds = append(upstreamNodeIds, nodeInfo.Id)
+			}
 		}
+
+		err = newApiOak.UpstreamDelete(upstreamResIds)
+		if err != nil {
+			return
+		}
+
+		err = newApiOak.UpstreamNodeDeleteByIds(upstreamNodeIds)
+		if err != nil {
+			return
+		}
+
+		err = UpstreamNodeRelease(upstreamResIds, releaseType)
+		if err != nil {
+			return
+		}
+
+		upstreamModel := models.Upstreams{}
+		var upstreamList []models.Upstreams
+		upstreamList, err = upstreamModel.UpstreamListByResIds(upstreamResIds)
+
+		if err != nil {
+			return
+		}
+
+		if len(upstreamList) == 0 {
+			return
+		}
+
+		upstreamNodeModel := models.UpstreamNodes{}
+		upstreamNodeList := make([]models.UpstreamNodes, 0)
+		upstreamNodeList, err = upstreamNodeModel.UpstreamNodeListByUpstreamResIds(upstreamResIds)
+		if err != nil {
+			return
+		}
+
+		upstreamNodeListMap := make(map[string]models.UpstreamNodes)
+		for _, upstreamNodeInfo := range upstreamNodeList {
+			upstreamNodeListMap[upstreamNodeInfo.UpstreamResID] = upstreamNodeInfo
+		}
+
+		upstreamConfigList := make([]rpc.UpstreamConfig, 0)
+		for _, upstreamInfo := range upstreamList {
+			_, ok := upstreamNodeListMap[upstreamInfo.ResID]
+			if !ok {
+				continue
+			}
+
+			var upstreamConfig rpc.UpstreamConfig
+			upstreamConfig, err = generateUpstreamConfig(upstreamInfo)
+			if err != nil {
+				return
+			}
+
+			upstreamConfigList = append(upstreamConfigList, upstreamConfig)
+		}
+
+		err = newApiOak.UpstreamPut(upstreamConfigList)
+		if err != nil {
+			return
+		}
+
 	} else {
-		upstreamDeleteErr := newApiOak.UpstreamDelete(upstreamConfigList)
-		if upstreamDeleteErr != nil {
-			return upstreamDeleteErr
+		err = newApiOak.UpstreamDelete(upstreamResIds)
+		if err != nil {
+			return
 		}
 
-		releaseUpstreamNodeErr := UpstreamNodeRelease(upstreamNodeResIds, releaseType)
-		if releaseUpstreamNodeErr != nil {
-			return releaseUpstreamNodeErr
+		err = UpstreamNodeRelease(upstreamResIds, releaseType)
+		if err != nil {
+			return
 		}
 	}
 
-	return nil
+	return
 }
 
-func generateUpstreamConfig(upstreamInfo models.Upstreams) (rpc.UpstreamConfig, error) {
-	upstreamConfig := rpc.UpstreamConfig{}
+func generateUpstreamConfig(upstreamInfo models.Upstreams) (config rpc.UpstreamConfig, err error) {
 
 	configBalanceList := utils.ConfigBalanceList()
 	configBalanceMap := make(map[int]string)
@@ -115,31 +154,32 @@ func generateUpstreamConfig(upstreamInfo models.Upstreams) (rpc.UpstreamConfig, 
 		configBalanceMap[configBalanceInfo.Id] = configBalanceInfo.Name
 	}
 
-	upstreamConfig.Algorithm = utils.ConfigBalanceNameRoundRobin
+	config.Algorithm = utils.ConfigBalanceNameRoundRobin
 	configBalance, ok := configBalanceMap[upstreamInfo.Algorithm]
 	if ok {
-		upstreamConfig.Algorithm = configBalance
+		config.Algorithm = configBalance
 	}
 
-	upstreamConfig.Name = upstreamInfo.ResID
-	upstreamConfig.ConnectTimeout = upstreamInfo.ConnectTimeout
-	upstreamConfig.WriteTimeout = upstreamInfo.WriteTimeout
-	upstreamConfig.ReadTimeout = upstreamInfo.ReadTimeout
-	upstreamConfig.Nodes = make([]rpc.ConfigObjectName, 0)
+	config.Name = upstreamInfo.ResID
+	config.ConnectTimeout = upstreamInfo.ConnectTimeout
+	config.WriteTimeout = upstreamInfo.WriteTimeout
+	config.ReadTimeout = upstreamInfo.ReadTimeout
+	config.Nodes = make([]rpc.ConfigObjectName, 0)
 
 	upstreamNodeModel := models.UpstreamNodes{}
-	upstreamNodeList, err := upstreamNodeModel.UpstreamNodeListByUpstreamResIds([]string{upstreamInfo.ResID})
+	upstreamNodeList := make([]models.UpstreamNodes, 0)
+	upstreamNodeList, err = upstreamNodeModel.UpstreamNodeListByUpstreamResIds([]string{upstreamInfo.ResID})
 	if err != nil {
-		return upstreamConfig, err
+		return
 	}
 
 	if len(upstreamNodeList) != 0 {
 		for _, upstreamNodeInfo := range upstreamNodeList {
-			upstreamConfig.Nodes = append(upstreamConfig.Nodes, rpc.ConfigObjectName{
+			config.Nodes = append(config.Nodes, rpc.ConfigObjectName{
 				Name: upstreamNodeInfo.ResID,
 			})
 		}
 	}
 
-	return upstreamConfig, nil
+	return
 }

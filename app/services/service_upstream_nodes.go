@@ -5,6 +5,7 @@ import (
 	"apioak-admin/app/models"
 	"apioak-admin/app/rpc"
 	"apioak-admin/app/utils"
+	"apioak-admin/app/validators"
 	"errors"
 	"strings"
 )
@@ -35,45 +36,125 @@ func (n UpstreamNodeItem) UpstreamNodeListByUpstreamResIds(upstreamResIds []stri
 	for _, upstreamNodeDetail := range upstreamNodeList {
 
 		nodeList = append(nodeList, UpstreamNodeItem{
-			ResID: upstreamNodeDetail.ResID,
+			ResID:         upstreamNodeDetail.ResID,
 			UpstreamResID: upstreamNodeDetail.UpstreamResID,
-			NodeIP: upstreamNodeDetail.NodeIP,
-			IPType: upstreamNodeDetail.IPType,
-			IPTypeName: iPTypeNameMap[upstreamNodeDetail.IPType],
-			NodePort: upstreamNodeDetail.NodePort,
-			NodeWeight: upstreamNodeDetail.NodeWeight,
-			Health: upstreamNodeDetail.Health,
-			HealthName: healthTypeNameMap[upstreamNodeDetail.Health],
+			NodeIP:        upstreamNodeDetail.NodeIP,
+			IPType:        upstreamNodeDetail.IPType,
+			IPTypeName:    iPTypeNameMap[upstreamNodeDetail.IPType],
+			NodePort:      upstreamNodeDetail.NodePort,
+			NodeWeight:    upstreamNodeDetail.NodeWeight,
+			Health:        upstreamNodeDetail.Health,
+			HealthName:    healthTypeNameMap[upstreamNodeDetail.Health],
 		})
 	}
 
 	return
 }
 
-func UpstreamNodeRelease(upstreamNodeResIds []string, releaseType string) error {
+func DiffUpstreamNode(upstreamResID string, paramNodeList []validators.UpstreamNodeAddUpdate) (
+	addNodeList []models.UpstreamNodes, updateNodeList []models.UpstreamNodes, delNodeResIds []string) {
+
+	if len(upstreamResID) == 0 {
+		return
+	}
+
+	paramNodeListMap := make(map[string]validators.UpstreamNodeAddUpdate)
+	for _, paramNodeInfo := range paramNodeList {
+		paramNodeListMap[paramNodeInfo.NodeIp] = paramNodeInfo
+	}
+
+	upstreamNodeModel := models.UpstreamNodes{}
+	upstreamNodeList, err := upstreamNodeModel.UpstreamNodeListByUpstreamResIds([]string{upstreamResID})
+	if err != nil {
+		return
+	}
+
+	upstreamNodeListMap := make(map[string]models.UpstreamNodes)
+	for _, upstreamNodeInfo := range upstreamNodeList {
+		upstreamNodeListMap[upstreamNodeInfo.NodeIP] = upstreamNodeInfo
+
+		paramNodeInfo, ok := paramNodeListMap[upstreamNodeInfo.NodeIP]
+
+		if ok {
+			updateNodeList = append(updateNodeList, models.UpstreamNodes{
+				ResID:      upstreamNodeInfo.ResID,
+				NodePort:   paramNodeInfo.NodePort,
+				NodeWeight: paramNodeInfo.NodeWeight,
+				Health:     paramNodeInfo.Health,
+			})
+		} else {
+			delNodeResIds = append(delNodeResIds, upstreamNodeInfo.ResID)
+		}
+	}
+
+	ipNameIdMap := utils.IpNameIdMap()
+
+	for _, paramNodeListInfo := range paramNodeList {
+		_, ok := upstreamNodeListMap[paramNodeListInfo.NodeIp]
+		if !ok {
+
+			resId, resIdErr := upstreamNodeModel.ModelUniqueId()
+			if resIdErr != nil {
+				continue
+			}
+
+			ipType, ipTypeErr := utils.DiscernIP(paramNodeListInfo.NodeIp)
+			if ipTypeErr != nil {
+				continue
+			}
+
+			addNodeList = append(addNodeList, models.UpstreamNodes{
+				ResID:         resId,
+				UpstreamResID: upstreamResID,
+				NodeIP:        paramNodeListInfo.NodeIp,
+				IPType:        ipNameIdMap[ipType],
+				NodePort:      paramNodeListInfo.NodePort,
+				NodeWeight:    paramNodeListInfo.NodeWeight,
+				Health:        paramNodeListInfo.Health,
+				HealthCheck:   utils.HealthCheckOff,
+			})
+		}
+	}
+
+	return
+}
+
+func UpstreamNodeRelease(upstreamResIds []string, releaseType string) (err error) {
+	if len(upstreamResIds) == 0 {
+		return
+	}
+
 	releaseType = strings.ToLower(releaseType)
 
 	if (releaseType != utils.ReleaseTypePush) && (releaseType != utils.ReleaseTypeDelete) {
-		return errors.New(enums.CodeMessages(enums.ReleaseTypeError))
+		err = errors.New(enums.CodeMessages(enums.ReleaseTypeError))
+		return
+	}
+
+	newApiOak := rpc.NewApiOak()
+
+	if releaseType == utils.ReleaseTypeDelete {
+		return
 	}
 
 	upstreamNodeModel := models.UpstreamNodes{}
 
-	upstreamNodeList, err := upstreamNodeModel.UpstreamNodeListByResIds(upstreamNodeResIds)
+	upstreamNodeList := make([]models.UpstreamNodes, 0)
+	upstreamNodeList, err = upstreamNodeModel.UpstreamNodeListByUpstreamResIds(upstreamResIds)
 	if err != nil {
-		return err
+		return
 	}
 
 	if len(upstreamNodeList) == 0 {
-		return nil
+		return
 	}
 
 	upstreamNodeConfigList := make([]rpc.UpstreamNodeConfig, 0)
 	for _, upstreamNodeInfo := range upstreamNodeList {
-
-		upstreamNodeConfig, upstreamNodeConfigErr := generateUpstreamNodeConfig(upstreamNodeInfo)
-		if upstreamNodeConfigErr != nil {
-			return upstreamNodeConfigErr
+		var upstreamNodeConfig rpc.UpstreamNodeConfig
+		upstreamNodeConfig, err = generateUpstreamNodeConfig(upstreamNodeInfo)
+		if err != nil {
+			return err
 		}
 
 		if len(upstreamNodeConfig.Name) == 0 {
@@ -83,21 +164,12 @@ func UpstreamNodeRelease(upstreamNodeResIds []string, releaseType string) error 
 		upstreamNodeConfigList = append(upstreamNodeConfigList, upstreamNodeConfig)
 	}
 
-	newApiOak := rpc.NewApiOak()
-
-	if releaseType == utils.ReleaseTypePush {
-		upstreamNodePutErr := newApiOak.UpstreamNodePut(upstreamNodeConfigList)
-		if upstreamNodePutErr != nil {
-			return upstreamNodePutErr
-		}
-	} else {
-		upstreamNodeDeleteErr := newApiOak.UpstreamNodeDelete(upstreamNodeConfigList)
-		if upstreamNodeDeleteErr != nil {
-			return upstreamNodeDeleteErr
-		}
+	err = newApiOak.UpstreamNodePut(upstreamNodeConfigList)
+	if err != nil {
+		return
 	}
 
-	return err
+	return
 }
 
 func generateUpstreamNodeConfig(upstreamNodeInfo models.UpstreamNodes) (rpc.UpstreamNodeConfig, error) {

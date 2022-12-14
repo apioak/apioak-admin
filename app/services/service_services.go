@@ -597,7 +597,7 @@ func ServiceRelease(serviceId string) error {
 		}
 
 		routerModel.Release = utils.ReleaseStatusY
-		routerModel.RouterUpdate(defaultRouterInfo.ResID, routerModel)
+		// routerModel.RouterUpdate(defaultRouterInfo.ResID, routerModel)
 	}
 
 	return configReleaseErr

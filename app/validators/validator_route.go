@@ -29,7 +29,6 @@ type ValidatorRouterAddUpdate struct {
 	RouterName      string `json:"router_name" zh:"路由名称" en:"Router name" binding:"omitempty"`
 	RequestMethods string `json:"request_methods" zh:"请求方法" en:"Request method" binding:"required,min=3,CheckRouterRequestMethodOneOf"`
 	RouterPath      string `json:"router_path" zh:"路由路径" en:"Routing path" binding:"required,min=2,CheckRouterPathPrefix"`
-	Release        int    `json:"release" zh:"发布开关" en:"Release status enable" binding:"omitempty,oneof=1 2"`
 	Enable         int    `json:"enable" zh:"路由开关" en:"Routing enable" binding:"required,oneof=1 2"`
 	UpstreamAddUpdate
 }

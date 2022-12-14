@@ -5,6 +5,7 @@ import (
 	"apioak-admin/app/packages"
 	"apioak-admin/app/utils"
 	"errors"
+	"gorm.io/gorm"
 )
 
 type Users struct {
@@ -23,35 +24,38 @@ func (u *Users) TableName() string {
 
 var recursionTimesUsers = 1
 
-func (m *Users) ModelUniqueId() (string, error) {
-	generateId, generateIdErr := utils.IdGenerate(utils.IdTypeUser)
-	if generateIdErr != nil {
-		return "", generateIdErr
+func (m *Users) ModelUniqueId() (generateId string, err error) {
+	generateId, err = utils.IdGenerate(utils.IdTypeUser)
+	if err != nil {
+		return
 	}
 
-	result := packages.GetDb().
+	err = packages.GetDb().
 		Table(m.TableName()).
 		Where("res_id = ?", generateId).
 		Select("res_id").
-		First(m)
+		First(m).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		err = nil
+	}
 
-	if result.RowsAffected == 0 {
-		recursionTimesUsers = 1
-		return generateId, nil
+	if err == nil {
+		recursionTimesServices = 1
+		return
 	} else {
-		if recursionTimesUsers == utils.IdGenerateMaxTimes {
-			recursionTimesUsers = 1
-			return "", errors.New(enums.CodeMessages(enums.IdConflict))
+		if recursionTimesServices == utils.IdGenerateMaxTimes {
+			recursionTimesServices = 1
+			err = errors.New(enums.CodeMessages(enums.IdConflict))
+			return
 		}
 
-		recursionTimesUsers++
-		id, err := m.ModelUniqueId()
-
+		recursionTimesServices++
+		generateId, err = m.ModelUniqueId()
 		if err != nil {
-			return "", err
+			return
 		}
 
-		return id, nil
+		return
 	}
 }
 

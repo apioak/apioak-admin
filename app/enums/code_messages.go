@@ -23,6 +23,7 @@ const (
 	ToReleaseProhibitsOp = 107 // 待发布状态禁止该操作
 	ReleaseTypeError     = 108 // 发布类型错误
 	PublishError         = 109 // 发布失败
+	SyncError            = 110 // 同步失败
 
 	ServiceNull       = 10001 // 服务不存在
 	ServiceParamsNull = 10002 // 服务参数缺失
@@ -41,10 +42,10 @@ const (
 	RouterDefaultPathForbiddenPrefix = 10208 // [/*]默认路径暂不能作为路由开头
 	RouterDefaultPathNull            = 10209 // [/*]默认路径路由不存在
 
-	PluginTagExist   = 10301 // 插件标识已存在
-	PluginNull       = 10302 // 插件不存在
+	PluginTagExist    = 10301 // 插件标识已存在
+	PluginNull        = 10302 // 插件不存在
 	PluginRouterExist = 10303 // 插件已被路由绑定，暂不允许该操作
-	PluginTagNull    = 10304 // 插件标识不存在，请检查[插件信息 - 插件标识]
+	PluginTagNull     = 10304 // 插件标识不存在，请检查[插件信息 - 插件标识]
 
 	CertificateFormatError = 10401 // 证书格式错误
 	CertificateParseError  = 10402 // 证书解析失败
@@ -82,6 +83,7 @@ var ZhMapMessages = map[int]string{
 	ToReleaseProhibitsOp: "待发布状态禁止该操作",
 	ReleaseTypeError:     "发布类型错误",
 	PublishError:         "发布失败",
+	SyncError:            "同步失败",
 
 	ServiceNull:       "服务不存在",
 	ServiceParamsNull: "服务参数缺失",
@@ -100,10 +102,10 @@ var ZhMapMessages = map[int]string{
 	RouterDefaultPathForbiddenPrefix: "[/*]默认路径暂不能作为路由开头",
 	RouterDefaultPathNull:            "[/*]默认路径路由不存在",
 
-	PluginTagExist:   "插件标识已存在",
-	PluginNull:       "插件不存在",
+	PluginTagExist:    "插件标识已存在",
+	PluginNull:        "插件不存在",
 	PluginRouterExist: "插件已被路由绑定，暂不允许该操作",
-	PluginTagNull:    "插件标识不存在，请检查[插件信息 - 插件标识]",
+	PluginTagNull:     "插件标识不存在，请检查[插件信息 - 插件标识]",
 
 	CertificateFormatError: "证书格式错误",
 	CertificateParseError:  "证书解析失败",
@@ -141,6 +143,7 @@ var EnMapMessages = map[int]string{
 	ToReleaseProhibitsOp: "Pending status prohibits this operation",
 	ReleaseTypeError:     "Release type error",
 	PublishError:         "Publish error",
+	SyncError:            "Sync error",
 
 	ServiceNull:       "Service does not exist",
 	ServiceParamsNull: "Missing service parameters",
@@ -159,10 +162,10 @@ var EnMapMessages = map[int]string{
 	RouterDefaultPathForbiddenPrefix: "[/*]The default path cannot be used as the beginning of the router",
 	RouterDefaultPathNull:            "[/*]The default router router does not exist",
 
-	PluginTagExist:   "Plugin tag already exists",
-	PluginNull:       "Plugin does not exist",
+	PluginTagExist:    "Plugin tag already exists",
+	PluginNull:        "Plugin does not exist",
 	PluginRouterExist: "Plugin routing binding, operation is not allowed",
-	PluginTagNull:    "The plugin tag does not exist, please check [plugin information - plugin tag]",
+	PluginTagNull:     "The plugin tag does not exist, please check [plugin information - plugin tag]",
 
 	CertificateFormatError: "Incorrect certificate format",
 	CertificateParseError:  "Certificate parsing failed",

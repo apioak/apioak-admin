@@ -5,6 +5,7 @@ import (
 	"apioak-admin/app/packages"
 	"apioak-admin/app/utils"
 	"errors"
+	"fmt"
 	"gorm.io/gorm"
 )
 
@@ -20,43 +21,46 @@ type Upstreams struct {
 }
 
 // TableName sets the insert table name for this struct type
-func (u *Upstreams) TableName() string {
+func (u Upstreams) TableName() string {
 	return "oak_upstreams"
 }
 
-func (m *Upstreams) ModelUniqueId() (string, error) {
-	generateId, generateIdErr := utils.IdGenerate(utils.IdTypeUpstream)
-	if generateIdErr != nil {
-		return "", generateIdErr
+func (m *Upstreams) ModelUniqueId() (generateId string, err error) {
+	generateId, err = utils.IdGenerate(utils.IdTypeUpstream)
+	if err != nil {
+		return
 	}
 
-	result := packages.GetDb().
+	err = packages.GetDb().
 		Table(m.TableName()).
 		Where("res_id = ?", generateId).
 		Select("res_id").
-		First(m)
+		First(m).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		err = nil
+	}
 
-	if result.RowsAffected == 0 {
+	if err == nil {
 		recursionTimesServices = 1
-		return generateId, nil
+		return
 	} else {
 		if recursionTimesServices == utils.IdGenerateMaxTimes {
 			recursionTimesServices = 1
-			return "", errors.New(enums.CodeMessages(enums.IdConflict))
+			err = errors.New(enums.CodeMessages(enums.IdConflict))
+			return
 		}
 
 		recursionTimesServices++
-		id, err := m.ModelUniqueId()
-
+		generateId, err = m.ModelUniqueId()
 		if err != nil {
-			return "", err
+			return
 		}
 
-		return id, nil
+		return
 	}
 }
 
-func (m *Upstreams) UpstreamListByResIds(upstreamResIds []string) ([]Upstreams, error) {
+func (m Upstreams) UpstreamListByResIds(upstreamResIds []string) ([]Upstreams, error) {
 	upstreamList := make([]Upstreams, 0)
 
 	err := packages.GetDb().
@@ -71,10 +75,10 @@ func (m *Upstreams) UpstreamListByResIds(upstreamResIds []string) ([]Upstreams, 
 	return upstreamList, err
 }
 
-func (m *Upstreams) UpstreamDetailByResId(resIds string) (detail Upstreams, err error) {
+func (m Upstreams) UpstreamDetailByResId(resId string) (detail Upstreams, err error) {
 	err = packages.GetDb().
 		Table(m.TableName()).
-		Where("res_id = ?", resIds).
+		Where("res_id = ?", resId).
 		First(&detail).Error
 
 	if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -83,3 +87,17 @@ func (m *Upstreams) UpstreamDetailByResId(resIds string) (detail Upstreams, err 
 
 	return
 }
+
+func (m Upstreams) UpstreamUpdate(resIds string, upstreamData Upstreams) (err error) {
+
+	err = packages.GetDb().
+		Table(m.TableName()).
+		Where("res_id = ?", resIds).
+		Updates(&upstreamData).Error
+
+	fmt.Println("-------------", err, "---------")
+
+	return
+}
+
+

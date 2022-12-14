@@ -11,13 +11,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"gorm.io/gorm"
 	"strings"
 	"time"
 )
 
 func CheckRouterExist(routerResId string, serviceResId string) error {
 	routerModel := &models.Routers{}
-	routerInfo := routerModel.RouterInfoByResIdServiceResId(routerResId, serviceResId)
+	routerInfo := routerModel.RouterDetailByResIdServiceResId(routerResId, serviceResId)
 
 	if len(routerInfo.ResID) == 0 {
 		return errors.New(enums.CodeMessages(enums.RouterNull))
@@ -26,35 +27,9 @@ func CheckRouterExist(routerResId string, serviceResId string) error {
 	return nil
 }
 
-// func CheckRouterEnableChange(routerId string, enable int) error {
-// 	routerModel := &models.Routers{}
-// 	routerInfo := routerModel.RouterInfoByResIdServiceResId(routerId, "")
-//
-// 	if routerInfo.Enable == enable {
-// 		return errors.New(enums.CodeMessages(enums.SwitchNoChange))
-// 	}
-//
-// 	return nil
-// }
-//
-// func CheckRouterDelete(routerId string) error {
-// 	routerModel := &models.Routers{}
-// 	routerInfo := routerModel.RouterInfoByResIdServiceResId(routerId, "")
-//
-// 	if routerInfo.Release == utils.ReleaseStatusY {
-// 		if routerInfo.Enable == utils.EnableOn {
-// 			return errors.New(enums.CodeMessages(enums.SwitchONProhibitsOp))
-// 		}
-// 	} else if routerInfo.Release == utils.ReleaseStatusT {
-// 		return errors.New(enums.CodeMessages(enums.ToReleaseProhibitsOp))
-// 	}
-//
-// 	return nil
-// }
-
 func CheckRouterRelease(routerResId string) error {
 	routerModel := &models.Routers{}
-	routerInfo := routerModel.RouterInfoByResIdServiceResId(routerResId, "")
+	routerInfo := routerModel.RouterDetailByResIdServiceResId(routerResId, "")
 
 	if len(routerInfo.ResID) == 0 {
 		return errors.New(enums.CodeMessages(enums.RouterNull))
@@ -74,16 +49,6 @@ func CheckServiceRouterPath(path string) error {
 
 	if strings.Index(path, utils.DefaultRouterPath) == 0 {
 		return errors.New(enums.CodeMessages(enums.RouterDefaultPathForbiddenPrefix))
-	}
-
-	return nil
-}
-
-func CheckEditDefaultPathRouter(routerId string) error {
-	routerModel := models.Routers{}
-	routerInfo := routerModel.RouterInfoByResIdServiceResId(routerId, "")
-	if routerInfo.RouterPath == utils.DefaultRouterPath {
-		return errors.New(enums.CodeMessages(enums.RouterDefaultPathNoPermission))
 	}
 
 	return nil
@@ -130,10 +95,6 @@ func RouterCreate(routerData *validators.ValidatorRouterAddUpdate) error {
 		Release:        utils.ReleaseStatusU,
 	}
 
-	if routerData.Release == utils.ReleaseY {
-		createRouterData.Release = utils.ReleaseStatusY
-	}
-
 	createUpstreamData := models.Upstreams{
 		Algorithm:      routerData.LoadBalance,
 		ConnectTimeout: routerData.ConnectTimeout,
@@ -148,11 +109,11 @@ func RouterCreate(routerData *validators.ValidatorRouterAddUpdate) error {
 			if err != nil {
 				return err
 			}
-			ipTypeMap := models.IPTypeMap()
+			ipNameIdMap := utils.IpNameIdMap()
 
 			createUpstreamNodes = append(createUpstreamNodes, models.UpstreamNodes{
 				NodeIP:      upstreamNode.NodeIp,
-				IPType:      ipTypeMap[ipType],
+				IPType:      ipNameIdMap[ipType],
 				NodePort:    upstreamNode.NodePort,
 				NodeWeight:  upstreamNode.NodeWeight,
 				Health:      upstreamNode.Health,
@@ -170,101 +131,6 @@ func RouterCreate(routerData *validators.ValidatorRouterAddUpdate) error {
 	return nil
 }
 
-// func RouterCopy(routerData *validators.ValidatorRouterAddUpdate, sourceRouterId string) error {
-// 	routerPluginModel := models.RouterPlugins{}
-// 	routerPluginInfos := routerPluginModel.RouterPluginInfosByRouterId(sourceRouterId)
-//
-// 	createRouterData := models.Routers{
-// 		ServiceResID:   routerData.ServiceResID,
-// 		RequestMethods: routerData.RequestMethods,
-// 		RouterPath:      routerData.RouterPath,
-// 		Enable:         routerData.Enable,
-// 		Release:        utils.ReleaseStatusU,
-// 	}
-// 	if routerData.Release == utils.ReleaseY {
-// 		createRouterData.Release = utils.ReleaseStatusY
-// 	}
-//
-// 	routerId, err := createRouterData.RouterCopy(createRouterData, routerPluginInfos)
-// 	if err != nil {
-// 		return err
-// 	}
-//
-// 	if routerData.Release == utils.ReleaseY {
-// 		routerReleaseErr := ServiceRouterConfigRelease(utils.ReleaseTypePush, routerId)
-// 		if routerReleaseErr != nil {
-// 			routerModel := models.Routers{}
-// 			routerModel.Release = utils.ReleaseStatusU
-// 			routerUpdateErr := routerModel.RouterUpdate(routerId, routerModel)
-// 			if routerUpdateErr != nil {
-// 				return routerUpdateErr
-// 			}
-// 		}
-// 		return routerReleaseErr
-// 	}
-//
-// 	return nil
-// }
-
-// func RouterUpdate(routerId string, routerData *validators.ValidatorRouterAddUpdate) error {
-// 	routerModel := models.Routers{}
-// 	routerInfo, routerInfoErr := routerModel.RouterInfoById(routerId)
-// 	if routerInfoErr != nil {
-// 		return routerInfoErr
-// 	}
-//
-// 	updateRouterData := models.Routers{
-// 		RequestMethods: routerData.RequestMethods,
-// 		RouterPath:      routerData.RouterPath,
-// 		Enable:         routerData.Enable,
-// 	}
-// 	if len(routerData.RouterName) != 0 {
-// 		updateRouterData.RouterName = routerData.RouterName
-// 	}
-// 	if routerInfo.Release == utils.ReleaseStatusY {
-// 		updateRouterData.Release = utils.ReleaseStatusT
-// 	}
-//
-// 	if routerData.Release == utils.ReleaseY {
-// 		updateRouterData.Release = utils.ReleaseStatusY
-// 	}
-//
-// 	err := routerModel.RouterUpdate(routerId, updateRouterData)
-// 	if err != nil {
-// 		return err
-// 	}
-//
-// 	if routerData.Release == utils.ReleaseY {
-// 		configReleaseErr := ServiceRouterConfigRelease(utils.ReleaseTypePush, routerId)
-// 		if configReleaseErr != nil {
-// 			if routerInfo.Release != utils.ReleaseStatusU {
-// 				updateRouterData.Release = utils.ReleaseStatusT
-// 			}
-// 			routerModel.RouterUpdate(routerId, updateRouterData)
-//
-// 			return configReleaseErr
-// 		}
-// 	}
-//
-// 	return nil
-// }
-//
-// func RouterDelete(routerId string) error {
-// 	configReleaseErr := ServiceRouterConfigRelease(utils.ReleaseTypeDelete, routerId)
-// 	if configReleaseErr != nil {
-// 		return configReleaseErr
-// 	}
-//
-// 	routerModel := models.Routers{}
-// 	err := routerModel.RouterDelete(routerId)
-// 	if err != nil {
-// 		ServiceRouterConfigRelease(utils.ReleaseTypePush, routerId)
-// 		return err
-// 	}
-//
-// 	return nil
-// }
-
 type routerPlugin struct {
 	ID            string `json:"id"`
 	Name          string `json:"name"`
@@ -277,7 +143,7 @@ type routerPlugin struct {
 
 type RouterListItem struct {
 	ResID          string         `json:"res_id"`
-	ServiceResId   string         `json:"service_res_id"`
+	ServiceResID   string         `json:"service_res_id"`
 	ServiceName    string         `json:"service_name"`
 	RouterName     string         `json:"router_name"`
 	RequestMethods []string       `json:"request_methods"`
@@ -297,6 +163,7 @@ func (s *RouterListItem) RouterListPage(serviceResId string, param *validators.V
 		for _, routerInfo := range routerInfos {
 			routerListItem := RouterListItem{}
 			routerListItem.ResID = routerInfo.ResID
+			routerListItem.ServiceResID = routerInfo.ServiceResID
 			routerListItem.RouterName = routerInfo.RouterName
 			routerListItem.RequestMethods = strings.Split(routerInfo.RequestMethods, ",")
 			routerListItem.RouterPath = routerInfo.RouterPath
@@ -356,21 +223,205 @@ func (s *StructRouterInfo) RouterInfoByServiceRouterId(serviceResId string, rout
 	return
 }
 
-func ServiceRouterRelease(routerResIds []string, releaseType string) error {
-	releaseType = strings.ToLower(releaseType)
+func RouterUpdate(routerResId string, routerData validators.ValidatorRouterAddUpdate) (err error) {
+	routerModel := models.Routers{}
 
-	if (releaseType != utils.ReleaseTypePush) && (releaseType != utils.ReleaseTypeDelete) {
-		return errors.New(enums.CodeMessages(enums.ReleaseTypeError))
+	var routerDetail models.Routers
+	routerDetail, err = routerModel.RouterDetailByResId(routerResId)
+	if err != nil {
+		return
+	}
+
+	updateRouterData := make(map[string]interface{})
+	updateRouterData["request_methods"] = routerData.RequestMethods
+	updateRouterData["router_path"] = routerData.RouterPath
+	updateRouterData["enable"] = routerData.Enable
+
+	if len(routerData.RouterName) != 0 {
+		updateRouterData["router_name"] = routerData.RouterName
+	}
+	if routerDetail.Release == utils.ReleaseStatusY {
+		updateRouterData["release"] = utils.ReleaseStatusT
+	}
+
+	var upstreamResId string
+	err = packages.GetDb().Transaction(func(tx *gorm.DB) (err error) {
+
+		upstreamModel := models.Upstreams{}
+		upstreamNodeModel := models.UpstreamNodes{}
+
+		if len(routerData.UpstreamNodes) == 0 {
+			err = UpstreamRelease([]string{upstreamResId}, utils.ReleaseTypeDelete)
+			if err != nil {
+				return
+			}
+
+			if err = tx.Table(upstreamModel.TableName()).
+				Where("res_id = ?", routerDetail.UpstreamResID).
+				Delete(&upstreamModel).Error; err != nil {
+				return
+			}
+
+			if err = tx.Table(upstreamNodeModel.TableName()).
+				Where("upstream_res_id = ?", routerDetail.UpstreamResID).
+				Delete(&upstreamNodeModel).Error; err != nil {
+				return
+			}
+
+			upstreamResId = routerDetail.UpstreamResID
+			updateRouterData["upstream_res_id"] = ""
+		} else {
+			var upstreamInfo models.Upstreams
+			upstreamInfo, err = upstreamInfo.UpstreamDetailByResId(routerDetail.UpstreamResID)
+			if err != nil {
+				return
+			}
+
+			if len(upstreamInfo.ResID) == 0 {
+				upstreamResId, err = upstreamModel.ModelUniqueId()
+				if err != nil {
+					return
+				}
+
+				if err = tx.Table(upstreamModel.TableName()).
+					Create(&models.Upstreams{
+						ResID:          upstreamResId,
+						Name:           upstreamResId,
+						Algorithm:      routerData.LoadBalance,
+						ReadTimeout:    routerData.ReadTimeout,
+						WriteTimeout:   routerData.WriteTimeout,
+						ConnectTimeout: routerData.ConnectTimeout,
+					}).Error; err != nil {
+					return
+				}
+
+				updateRouterData["upstream_res_id"] = upstreamResId
+			} else {
+				if err = tx.Table(upstreamModel.TableName()).
+					Where("res_id = ?", upstreamInfo.ResID).
+					Updates(models.Upstreams{
+						Algorithm:      routerData.LoadBalance,
+						ReadTimeout:    routerData.ReadTimeout,
+						WriteTimeout:   routerData.WriteTimeout,
+						ConnectTimeout: routerData.ConnectTimeout,
+					}).Error; err != nil {
+					return
+				}
+
+				upstreamResId = routerDetail.UpstreamResID
+				updateRouterData["upstream_res_id"] = routerDetail.UpstreamResID
+			}
+
+			addNodeList, updateNodeList, delNodeResIds := DiffUpstreamNode(upstreamResId, routerData.UpstreamNodes)
+
+			if len(addNodeList) > 0 {
+				if err = tx.Create(&addNodeList).Error; err != nil {
+					return
+				}
+			}
+
+			if len(updateNodeList) > 0 {
+				for _, updateNodeInfo := range updateNodeList {
+					if err = tx.Table(upstreamNodeModel.TableName()).
+						Where("res_id = ?", updateNodeInfo.ResID).
+						Updates(&updateNodeInfo).Error; err != nil {
+						return
+					}
+				}
+			}
+
+			if len(delNodeResIds) > 0 {
+				if err = tx.Table(upstreamNodeModel.TableName()).
+					Where("res_id in ?", delNodeResIds).
+					Delete(&upstreamNodeModel).Error; err != nil {
+					return
+				}
+			}
+		}
+
+		if err = tx.Table(routerModel.TableName()).
+			Where("res_id = ?", routerResId).
+			Updates(&updateRouterData).Error; err != nil {
+			return
+		}
+
+		return
+	})
+
+	if err != nil {
+		return
+	}
+
+	err = UpstreamRelease([]string{upstreamResId}, utils.ReleaseTypePush)
+	if err != nil {
+		return
+	}
+
+	return
+}
+
+func filterPushedServiceRouterResIds(routerResIds []string) (opRoutersResIds []string, publishedRouterResIds []string, err error) {
+	if len(routerResIds) == 0 {
+		return
 	}
 
 	routerModel := models.Routers{}
-	routerList, err := routerModel.RouterListByRouterResIds(routerResIds)
+	routerList := make([]models.Routers, 0)
+	routerList, err = routerModel.RouterListByRouterResIds(routerResIds)
 	if err != nil {
-		return err
+		return
 	}
 
 	if len(routerList) == 0 {
-		return nil
+		return
+	}
+
+	serviceResIds := make([]string, 0)
+
+	for _, routerInfo := range routerList {
+		if len(routerInfo.ServiceResID) > 0 {
+			serviceResIds = append(serviceResIds, routerInfo.ServiceResID)
+
+			if routerInfo.Release != utils.ReleaseStatusU {
+				publishedRouterResIds = append(publishedRouterResIds, routerInfo.ResID)
+			}
+		}
+	}
+
+	publishedServiceResIdsMap := make(map[string]byte)
+	// @todo 根据服务ID获取已经发布的服务数据（如果没有已经发布的数据，则本次发布不允许，直接返回错误信息即可）
+
+	for _, routerInfo := range routerList {
+		_, ok := publishedServiceResIdsMap[routerInfo.ServiceResID]
+		if ok {
+			opRoutersResIds = append(opRoutersResIds, routerInfo.ResID)
+		}
+	}
+
+	return
+}
+
+func RouterUpstreamRelease(routerResIds []string, releaseType string) (err error) {
+	if len(routerResIds) == 0 {
+		return
+	}
+
+	releaseType = strings.ToLower(releaseType)
+
+	if (releaseType != utils.ReleaseTypePush) && (releaseType != utils.ReleaseTypeDelete) {
+		err = errors.New(enums.CodeMessages(enums.ReleaseTypeError))
+		return
+	}
+
+	routerModel := models.Routers{}
+	var routerList []models.Routers
+	routerList, err = routerModel.RouterListByRouterResIds(routerResIds)
+	if err != nil {
+		return
+	}
+
+	if len(routerList) == 0 {
+		return
 	}
 
 	serviceResIds := make([]string, 0)
@@ -401,14 +452,15 @@ func ServiceRouterRelease(routerResIds []string, releaseType string) error {
 	}
 
 	if len(toBeOpRouterList) == 0 {
-		return nil
+		return
 	}
 
 	routerConfigList := make([]rpc.RouterConfig, 0)
 	for _, toBeOpRouterInfo := range toBeOpRouterList {
-		routerConfig, routerConfigErr := generateRouterConfig(toBeOpRouterInfo)
-		if routerConfigErr != nil {
-			return routerConfigErr
+		var routerConfig rpc.RouterConfig
+		routerConfig, err = generateRouterConfig(toBeOpRouterInfo)
+		if err != nil {
+			return
 		}
 
 		if len(routerConfig.Name) == 0 {
@@ -419,39 +471,206 @@ func ServiceRouterRelease(routerResIds []string, releaseType string) error {
 	}
 
 	newApiOak := rpc.NewApiOak()
-
 	if releaseType == utils.ReleaseTypePush {
-		releaseUpstreamErr := RouterUpstreamRelease(toBeOpUpstreamResIds, releaseType)
-		if releaseUpstreamErr != nil {
-			return releaseUpstreamErr
+
+		err = UpstreamRelease(toBeOpUpstreamResIds, releaseType)
+		if err != nil {
+			return
 		}
 
-		routerPutErr := newApiOak.RouterPut(routerConfigList)
-		if routerPutErr != nil {
-			return routerPutErr
+		err = newApiOak.RouterPut(routerConfigList)
+		if err != nil {
+			return
 		}
 
 		for _, toBeOpRouterInfo := range toBeOpRouterList {
-			switchReleaseErr := routerModel.RouterSwitchRelease(toBeOpRouterInfo.ResID, utils.ReleaseStatusY)
-			if switchReleaseErr != nil {
-				return switchReleaseErr
+			err = routerModel.RouterSwitchRelease(toBeOpRouterInfo.ResID, utils.ReleaseStatusY)
+			if err != nil {
+				return
 			}
 		}
 
 	} else {
-		routerDeleteErr := newApiOak.RouterDelete(routerConfigList)
-		if routerDeleteErr != nil {
-			return routerDeleteErr
+		err = newApiOak.RouterDelete(routerResIds)
+		if err != nil {
+			return
 		}
 
-		releaseUpstreamErr := RouterUpstreamRelease(toBeOpUpstreamResIds, releaseType)
-		if releaseUpstreamErr != nil {
-			return releaseUpstreamErr
+		err = UpstreamRelease(toBeOpUpstreamResIds, releaseType)
+		if err != nil {
+			return
 		}
+	}
+
+	return
+}
+
+func RouterRelease(routerResIds []string, releaseType string) (err error) {
+	if len(routerResIds) == 0 {
+		return
+	}
+
+	releaseType = strings.ToLower(releaseType)
+
+	if (releaseType != utils.ReleaseTypePush) && (releaseType != utils.ReleaseTypeDelete) {
+		err = errors.New(enums.CodeMessages(enums.ReleaseTypeError))
+		return
+	}
+
+	opRouterResIds := make([]string, 0)
+	publishedRouterResIds := make([]string, 0)
+	opRouterResIds, publishedRouterResIds, err = filterPushedServiceRouterResIds(routerResIds)
+
+	routerModel := models.Routers{}
+	routerList := make([]models.Routers, 0)
+	routerList, err = routerModel.RouterListByRouterResIds(opRouterResIds)
+	if err != nil {
+		return
+	}
+
+	if len(routerList) == 0 {
+		return
+	}
+
+	newApiOak := rpc.NewApiOak()
+	if releaseType == utils.ReleaseTypePush {
+
+		routerConfigList := make([]rpc.RouterConfig, 0)
+		for _, routerInfo := range routerList {
+			var routerConfig rpc.RouterConfig
+			routerConfig, err = generateRouterConfig(routerInfo)
+			if err != nil {
+				return
+			}
+
+			if len(routerConfig.Name) == 0 {
+				continue
+			}
+
+			routerConfigList = append(routerConfigList, routerConfig)
+		}
+
+		err = newApiOak.RouterPut(routerConfigList)
+		if err != nil {
+			return
+		}
+
+	} else {
+		err = newApiOak.RouterDelete(publishedRouterResIds)
+	}
+
+	return
+}
+
+func generateRouterConfig(routerInfo models.Routers) (rpc.RouterConfig, error) {
+	routerConfig := rpc.RouterConfig{}
+
+	routerConfig.Name = routerInfo.ResID
+	routerConfig.Methods = strings.Split(routerInfo.RequestMethods, ",")
+	routerConfig.Paths = append(routerConfig.Paths, routerInfo.RouterPath)
+	routerConfig.Enabled = false
+	if routerInfo.Enable == utils.EnableOn {
+		routerConfig.Enabled = true
+	}
+	routerConfig.Headers = make(map[string]string)
+	routerConfig.Service.Name = routerInfo.ServiceResID
+	routerConfig.Upstream.Name = routerInfo.UpstreamResID
+
+	// @todo 根据路由res_id获取插件列表数据进行补充插件数据
+	routerConfig.Plugins = make([]rpc.ConfigObjectName, 0)
+
+	return routerConfig, nil
+}
+
+func RouterDelete(routerId string) error {
+	configReleaseErr := ServiceRouterConfigRelease(utils.ReleaseTypeDelete, routerId)
+	if configReleaseErr != nil {
+		return configReleaseErr
+	}
+
+	routerModel := models.Routers{}
+	err := routerModel.RouterDelete(routerId)
+	if err != nil {
+		ServiceRouterConfigRelease(utils.ReleaseTypePush, routerId)
+		return err
 	}
 
 	return nil
 }
+
+// ---------------------------------------------------------------
+
+func CheckEditDefaultPathRouter(routerId string) error {
+	routerModel := models.Routers{}
+	routerInfo := routerModel.RouterDetailByResIdServiceResId(routerId, "")
+	if routerInfo.RouterPath == utils.DefaultRouterPath {
+		return errors.New(enums.CodeMessages(enums.RouterDefaultPathNoPermission))
+	}
+
+	return nil
+}
+
+// func RouterCopy(routerData *validators.ValidatorRouterAddUpdate, sourceRouterId string) error {
+// 	routerPluginModel := models.RouterPlugins{}
+// 	routerPluginInfos := routerPluginModel.RouterPluginInfosByRouterId(sourceRouterId)
+//
+// 	createRouterData := models.Routers{
+// 		ServiceResID:   routerData.ServiceResID,
+// 		RequestMethods: routerData.RequestMethods,
+// 		RouterPath:      routerData.RouterPath,
+// 		Enable:         routerData.Enable,
+// 		Release:        utils.ReleaseStatusU,
+// 	}
+// 	if routerData.Release == utils.ReleaseY {
+// 		createRouterData.Release = utils.ReleaseStatusY
+// 	}
+//
+// 	routerId, err := createRouterData.RouterCopy(createRouterData, routerPluginInfos)
+// 	if err != nil {
+// 		return err
+// 	}
+//
+// 	if routerData.Release == utils.ReleaseY {
+// 		routerReleaseErr := ServiceRouterConfigRelease(utils.ReleaseTypePush, routerId)
+// 		if routerReleaseErr != nil {
+// 			routerModel := models.Routers{}
+// 			routerModel.Release = utils.ReleaseStatusU
+// 			routerUpdateErr := routerModel.RouterUpdate(routerId, routerModel)
+// 			if routerUpdateErr != nil {
+// 				return routerUpdateErr
+// 			}
+// 		}
+// 		return routerReleaseErr
+// 	}
+//
+// 	return nil
+// }
+
+// func CheckRouterEnableChange(routerId string, enable int) error {
+// 	routerModel := &models.Routers{}
+// 	routerInfo := routerModel.RouterDetailByResIdServiceResId(routerId, "")
+//
+// 	if routerInfo.Enable == enable {
+// 		return errors.New(enums.CodeMessages(enums.SwitchNoChange))
+// 	}
+//
+// 	return nil
+// }
+//
+// func CheckRouterDelete(routerId string) error {
+// 	routerModel := &models.Routers{}
+// 	routerInfo := routerModel.RouterDetailByResIdServiceResId(routerId, "")
+//
+// 	if routerInfo.Release == utils.ReleaseStatusY {
+// 		if routerInfo.Enable == utils.EnableOn {
+// 			return errors.New(enums.CodeMessages(enums.SwitchONProhibitsOp))
+// 		}
+// 	} else if routerInfo.Release == utils.ReleaseStatusT {
+// 		return errors.New(enums.CodeMessages(enums.ToReleaseProhibitsOp))
+// 	}
+//
+// 	return nil
+// }
 
 func ServiceRouterConfigRelease(releaseType string, id string) error {
 
@@ -488,26 +707,6 @@ func ServiceRouterConfigRelease(releaseType string, id string) error {
 	}
 
 	return nil
-}
-
-func generateRouterConfig(routerInfo models.Routers) (rpc.RouterConfig, error) {
-	routerConfig := rpc.RouterConfig{}
-
-	routerConfig.Name = routerInfo.ResID
-	routerConfig.Methods = strings.Split(routerInfo.RequestMethods, ",")
-	routerConfig.Paths = append(routerConfig.Paths, routerInfo.RouterPath)
-	routerConfig.Enabled = false
-	if routerInfo.Enable == utils.EnableOn {
-		routerConfig.Enabled = true
-	}
-	routerConfig.Headers = make(map[string]string)
-	routerConfig.Service.Name = routerInfo.ServiceResID
-	routerConfig.Upstream.Name = routerInfo.UpstreamResID
-
-	// @todo 根据路由res_id获取插件列表数据进行补充插件数据
-	routerConfig.Plugins = make([]rpc.ConfigObjectName, 0)
-
-	return routerConfig, nil
 }
 
 type RouterAddPluginInfo struct {

@@ -81,18 +81,20 @@ func (r *Routers) RouterInfosByServiceRouterPath(
 	return routersInfos, err
 }
 
-func (r *Routers) RouterInfoById(routerId string) (Routers, error) {
-	routerInfo := Routers{}
-	err := packages.GetDb().
+func (r *Routers) RouterDetailByResId(routerResId string) (routerDetail Routers, err error) {
+	err = packages.GetDb().
 		Table(r.TableName()).
-		Where("res_id = ?", routerId).
-		First(&routerInfo).Error
+		Where("res_id = ?", routerResId).
+		First(&routerDetail).Error
 
-	return routerInfo, err
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		err = nil
+	}
+
+	return
 }
 
-func (r *Routers) RouterInfoByResIdServiceResId(routerResId string, serviceResId string) Routers {
-	routerInfo := Routers{}
+func (r *Routers) RouterDetailByResIdServiceResId(routerResId string, serviceResId string) (routerDetail Routers) {
 	db := packages.GetDb().
 		Table(r.TableName()).
 		Where("res_id = ?", routerResId)
@@ -101,9 +103,9 @@ func (r *Routers) RouterInfoByResIdServiceResId(routerResId string, serviceResId
 		db = db.Where("service_res_id = ?", serviceResId)
 	}
 
-	db.First(&routerInfo)
+	db.First(&routerDetail)
 
-	return routerInfo
+	return
 }
 
 func (r *Routers) RouterListByRouterResIds(routerResIds []string) ([]Routers, error) {
@@ -219,17 +221,13 @@ func (r *Routers) RouterAdd(routerData Routers, upstreamData Upstreams, upstream
 	return routerResId, tx.Commit().Error
 }
 
-func (r *Routers) RouterUpdate(id string, routerData Routers) error {
-	updateErr := packages.GetDb().
+func (r *Routers) RouterUpdate(resId string, routerData map[string]interface{}) (err error) {
+	err = packages.GetDb().
 		Table(r.TableName()).
-		Where("res_id = ?", id).
+		Where("res_id = ?", resId).
 		Updates(&routerData).Error
 
-	if updateErr != nil {
-		return updateErr
-	}
-
-	return nil
+	return
 }
 
 // func (r *Routers) RouterCopy(routerData Routers, routerPlugins []RouterPlugins) (string, error) {
@@ -428,7 +426,7 @@ func (r *Routers) RouterSwitchEnable(id string, enable int) error {
 		return errors.New(enums.CodeMessages(enums.ServiceParamsNull))
 	}
 
-	routerInfo, routerInfoErr := r.RouterInfoById(id)
+	routerInfo, routerInfoErr := r.RouterDetailByResId(id)
 	if routerInfoErr != nil {
 		return routerInfoErr
 	}
