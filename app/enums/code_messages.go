@@ -43,10 +43,13 @@ const (
 	RouterDefaultPathForbiddenPrefix = 10208 // [/*]默认路径暂不能作为路由开头
 	RouterDefaultPathNull            = 10209 // [/*]默认路径路由不存在
 
-	PluginTagExist   = 10301 // 插件标识已存在
-	PluginNull       = 10302 // 插件不存在
+	PluginTagExist    = 10301 // 插件标识已存在
+	PluginNull        = 10302 // 插件不存在
 	PluginRouterExist = 10303 // 插件已被路由绑定，暂不允许该操作
-	PluginTagNull    = 10304 // 插件标识不存在，请检查[插件信息 - 插件标识]
+	PluginTagNull     = 10304 // 插件标识不存在，请检查[插件信息 - 插件标识]
+
+	PluginConfigNull        = 10351 // 插件配置不存在
+	PluginConfigFormatError = 10352 // 插件配置格式错误
 
 	CertificateFormatError = 10401 // 证书格式错误
 	CertificateParseError  = 10402 // 证书解析失败
@@ -104,10 +107,12 @@ var ZhMapMessages = map[int]string{
 	RouterDefaultPathForbiddenPrefix: "[/*]默认路径暂不能作为路由开头",
 	RouterDefaultPathNull:            "[/*]默认路径路由不存在",
 
-	PluginTagExist:   "插件标识已存在",
-	PluginNull:       "插件不存在",
-	PluginRouterExist: "插件已被路由绑定，暂不允许该操作",
-	PluginTagNull:    "插件标识不存在，请检查[插件信息 - 插件标识]",
+	PluginTagExist:          "插件标识已存在",
+	PluginNull:              "插件不存在",
+	PluginRouterExist:       "插件已被路由绑定，暂不允许该操作",
+	PluginTagNull:           "插件标识不存在，请检查[插件信息 - 插件标识]",
+	PluginConfigNull:        "插件配置不存在",
+	PluginConfigFormatError: "插件配置格式错误",
 
 	CertificateFormatError: "证书格式错误",
 	CertificateParseError:  "证书解析失败",
@@ -165,10 +170,12 @@ var EnMapMessages = map[int]string{
 	RouterDefaultPathForbiddenPrefix: "[/*]The default path cannot be used as the beginning of the router",
 	RouterDefaultPathNull:            "[/*]The default router router does not exist",
 
-	PluginTagExist:   "Plugin tag already exists",
-	PluginNull:       "Plugin does not exist",
-	PluginRouterExist: "Plugin routing binding, operation is not allowed",
-	PluginTagNull:    "The plugin tag does not exist, please check [plugin information - plugin tag]",
+	PluginTagExist:          "Plugin tag already exists",
+	PluginNull:              "Plugin does not exist",
+	PluginRouterExist:       "Plugin routing binding, operation is not allowed",
+	PluginTagNull:           "The plugin tag does not exist, please check [plugin information - plugin tag]",
+	PluginConfigNull:        "Plugin config does not exist",
+	PluginConfigFormatError: "Plugin config format error",
 
 	CertificateFormatError: "Incorrect certificate format",
 	CertificateParseError:  "Certificate parsing failed",

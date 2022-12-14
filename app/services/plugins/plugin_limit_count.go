@@ -46,20 +46,21 @@ func (limitCountConfig PluginLimitCountConfig) PluginConfigDefault() interface{}
 	return pluginLimitCount
 }
 
-func (limitCountConfig PluginLimitCountConfig) PluginConfigParse(configInfo interface{}) interface{} {
+func (limitCountConfig PluginLimitCountConfig) PluginConfigParse(configInfo interface{}) (interface{}, error) {
 	pluginLimitCount := PluginLimitCount{
 		TimeWindow: -9999999,
 		Count:      -9999999,
 	}
 
-	configInfoJson, _ := json.Marshal(configInfo)
-	_ = json.Unmarshal(configInfoJson, &pluginLimitCount)
+	configInfoJson := []byte(fmt.Sprint(configInfo))
 
-	return pluginLimitCount
+	err := json.Unmarshal(configInfoJson, &pluginLimitCount)
+
+	return pluginLimitCount, err
 }
 
 func (limitCountConfig PluginLimitCountConfig) PluginConfigCheck(configInfo interface{}) error {
-	limitCount := limitCountConfig.PluginConfigParse(configInfo)
+	limitCount, _ := limitCountConfig.PluginConfigParse(configInfo)
 	pluginLimitCount := limitCount.(PluginLimitCount)
 
 	return limitCountConfig.configValidator(pluginLimitCount)

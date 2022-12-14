@@ -16,22 +16,28 @@ var (
 	}
 )
 
-type ValidatorPluginAdd struct {
-	PluginKey   string `json:"plugin_key" zh:"插件标识" en:"Plugin key" binding:"required,min=1,max=30,CheckPluginKeyOneOf"`
-	Icon        string `json:"icon" zh:"插件ICON" en:"Plugin icon" binding:"required,min=1,max=30"`
-	Type        int    `json:"type" zh:"插件类型" en:"Plugin type" binding:"required,CheckPluginTypeOneOf"`
-	Description string `json:"description" zh:"插件描述" en:"Plugin description" binding:"omitempty,max=150"`
+type ValidatorPluginConfigAdd struct {
+	Name     string      `json:"name" zh:"插件名称" en:"Plugin name" binding:"omitempty,min=1,max=30"`
+	PluginID string      `json:"plugin_id" zh:"插件ID" en:"Plugin ID" binding:"required"`
+	Type     int         `json:"type" zh:"资源类型" en:"Resource type" binding:"omitempty,oneof=1 2"`
+	TargetID string      `json:"target_id" zh:"资源ID" en:"Resource ID" binding:"required"`
+	Enable   int         `json:"enable" zh:"插件开关" en:"Plugin enable" binding:"omitempty"`
+	Config   interface{} `json:"config" zh:"插件配置" en:"Plugin config" binding:"omitempty"`
 }
 
-type ValidatorPluginUpdate struct {
-	Icon        string `json:"icon" zh:"插件ICON" en:"Plugin icon" binding:"required,min=1,max=30"`
-	Description string `json:"description" zh:"插件描述" en:"Plugin description" binding:"omitempty,max=150"`
+type ValidatorPluginConfigUpdate struct {
+	PluginConfigId string      `json:"plugin_config_id" zh:"插件配置ID" en:"Plugin config ID" binding:"required"`
+	Name           string      `json:"name" zh:"插件名称" en:"Plugin name" binding:"omitempty,min=1,max=30"`
+	Config         interface{} `json:"config" zh:"插件配置" en:"Plugin config" binding:"omitempty"`
 }
 
-type PluginList struct {
-	Type   int    `form:"type" json:"type" zh:"插件类型" en:"Plugin type" binding:"omitempty,CheckPluginTypeOneOf"`
-	Search string `form:"search" json:"search" zh:"搜索内容" en:"Search content" binding:"omitempty"`
-	BaseListPage
+type ValidatorPluginConfigSwitchEnable struct {
+	PluginConfigId string `json:"plugin_config_id" zh:"插件配置ID" en:"Plugin config ID" binding:"required"`
+	Enable         int    `json:"enable" zh:"插件开关" en:"plugin enable" binding:"required,oneof=1 2"`
+}
+
+type ValidatorPluginConfigList struct {
+	Type int `form:"type" json:"type" zh:"资源类型" en:"Resource type" binding:"omitempty,oneof=1 2"`
 }
 
 func CheckPluginTypeOneOf(fl validator.FieldLevel) bool {
@@ -86,15 +92,4 @@ func CheckPluginKeyOneOf(fl validator.FieldLevel) bool {
 	}
 
 	return true
-}
-
-func GetPluginAddAttributesDefault(pluginAdd *ValidatorPluginAdd) {
-	pluginAdd.PluginKey = strings.TrimSpace(pluginAdd.PluginKey)
-	pluginAdd.Icon = strings.TrimSpace(pluginAdd.Icon)
-	pluginAdd.Description = strings.TrimSpace(pluginAdd.Description)
-}
-
-func GetPluginUpdateAttributesDefault(pluginUpdate *ValidatorPluginUpdate) {
-	pluginUpdate.Icon = strings.TrimSpace(pluginUpdate.Icon)
-	pluginUpdate.Description = strings.TrimSpace(pluginUpdate.Description)
 }

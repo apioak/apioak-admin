@@ -88,7 +88,11 @@ func (r *Routers) RouterInfoById(routerId string) (Routers, error) {
 		Where("res_id = ?", routerId).
 		First(&routerInfo).Error
 
-	return routerInfo, err
+	if err != nil && err != gorm.ErrRecordNotFound {
+		return routerInfo, err
+	}
+
+	return routerInfo, nil
 }
 
 func (r *Routers) RouterInfoByResIdServiceResId(routerResId string, serviceResId string) Routers {

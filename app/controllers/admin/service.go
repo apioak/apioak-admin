@@ -2,6 +2,7 @@ package admin
 
 import (
 	"apioak-admin/app/enums"
+	"apioak-admin/app/models"
 	"apioak-admin/app/packages"
 	"apioak-admin/app/services"
 	"apioak-admin/app/utils"
@@ -196,6 +197,125 @@ func ServiceSwitchRelease(c *gin.Context) {
 	}
 
 	err = services.NewServicesService().ServiceRelease(serviceId)
+	if err != nil {
+		utils.Error(c, err.Error())
+		return
+	}
+
+	utils.Ok(c)
+}
+
+func ServicePluginConfigList(c *gin.Context) {
+	serviceID := strings.TrimSpace(c.Param("service_id"))
+
+	if serviceID == "" {
+		utils.Error(c, enums.CodeMessages(enums.ParamsError))
+		return
+	}
+
+	var request = &validators.ValidatorPluginConfigList{
+		Type: models.PluginConfigsTypeService,
+	}
+	if msg, err := packages.ParseRequestParams(c, request); err != nil {
+		utils.Error(c, msg)
+		return
+	}
+
+	res, err := services.NewPluginsService().PluginConfigList(request.Type, serviceID)
+
+	if err != nil {
+		utils.Error(c, err.Error())
+		return
+	}
+	utils.Ok(c, res)
+}
+
+func ServicePluginConfigInfo(c *gin.Context) {
+	pluginConfigID := strings.TrimSpace(c.Param("plugin_config_res_id"))
+
+	if pluginConfigID == "" {
+		utils.Error(c, enums.CodeMessages(enums.ParamsError))
+		return
+	}
+
+	res, err := services.NewPluginsService().PluginConfigInfoByResId(pluginConfigID)
+	if err != nil {
+		utils.Error(c, err.Error())
+		return
+	}
+
+	utils.Ok(c, res)
+}
+
+func ServicePluginConfigAdd(c *gin.Context) {
+	var request = &validators.ValidatorPluginConfigAdd{
+		Type: models.PluginConfigsTypeService,
+	}
+	if msg, err := packages.ParseRequestParams(c, request); err != nil {
+		utils.Error(c, msg)
+		return
+	}
+	pluginConfigResId, err := services.NewPluginsService().PluginConfigAdd(request)
+	if err != nil {
+		utils.Error(c, err.Error())
+		return
+	}
+
+	utils.Ok(c, map[string]string{
+		"res_id": pluginConfigResId,
+	})
+
+}
+
+func ServicePluginConfigUpdate(c *gin.Context) {
+	pluginConfigID := strings.TrimSpace(c.Param("plugin_config_res_id"))
+
+	var request = &validators.ValidatorPluginConfigUpdate{
+		PluginConfigId: pluginConfigID,
+	}
+	if msg, err := packages.ParseRequestParams(c, request); err != nil {
+		utils.Error(c, msg)
+		return
+	}
+
+	err := services.NewPluginsService().PluginConfigUpdate(request)
+	if err != nil {
+		utils.Error(c, err.Error())
+		return
+	}
+
+	utils.Ok(c)
+}
+
+func ServicePluginConfigSwitchEnable(c *gin.Context) {
+	pluginConfigID := strings.TrimSpace(c.Param("plugin_config_res_id"))
+
+	var request = &validators.ValidatorPluginConfigSwitchEnable{
+		PluginConfigId: pluginConfigID,
+	}
+	if msg, err := packages.ParseRequestParams(c, request); err != nil {
+		utils.Error(c, msg)
+		return
+	}
+
+	err := services.NewPluginsService().PluginConfigSwitchEnable(pluginConfigID, request.Enable)
+	if err != nil {
+		utils.Error(c, err.Error())
+		return
+	}
+
+	utils.Ok(c)
+}
+
+func ServicePluginConfigDelete(c *gin.Context) {
+	pluginConfigID := strings.TrimSpace(c.Param("plugin_config_res_id"))
+
+	if pluginConfigID == "" {
+		utils.Error(c, enums.CodeMessages(enums.ParamsError))
+		return
+	}
+
+	err := services.NewPluginsService().PluginConfigDelete(pluginConfigID)
 	if err != nil {
 		utils.Error(c, err.Error())
 		return

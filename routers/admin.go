@@ -36,8 +36,16 @@ func RouterRegister(routerEngine *gin.Engine) {
 			service.PUT("/update/name/:id", admin.ServiceUpdateName)
 			service.PUT("/switch/enable/:id", admin.ServiceSwitchEnable)
 			service.PUT("/switch/release/:id", admin.ServiceSwitchRelease)
-			//service.PUT("/switch/websocket/:id", admin.ServiceSwitchWebsocket)
-			//service.PUT("/switch/health-check/:id", admin.ServiceSwitchHealthCheck)
+		}
+
+		servicePlugin := adminRouter.Group("service/plugin")
+		{
+			servicePlugin.POST("/add", admin.ServicePluginConfigAdd)
+			servicePlugin.GET("/list/:service_id", admin.ServicePluginConfigList)
+			servicePlugin.GET("/info/:plugin_config_res_id", admin.ServicePluginConfigInfo)
+			servicePlugin.PUT("/update/:plugin_config_res_id", admin.ServicePluginConfigUpdate)
+			servicePlugin.DELETE("/delete/:plugin_config_res_id", admin.ServicePluginConfigDelete)
+			servicePlugin.PUT("/switch/enable/:plugin_config_res_id", admin.ServicePluginConfigSwitchEnable)
 		}
 
 		// router

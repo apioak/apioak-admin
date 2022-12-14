@@ -20,11 +20,6 @@ type Services struct {
 	ModelTime
 }
 
-type ServiceDomain struct {
-	Services
-	Domains []ServiceDomains `gorm:"foreignKey:ServiceID"` //domains
-}
-
 // TableName sets the insert table name for this struct type
 func (s *Services) TableName() string {
 	return "oak_services"
@@ -248,9 +243,9 @@ func (s *Services) ServiceInfosLikeResIdName(resIdOrName string) ([]Services, er
 	return service, nil
 }
 
-func (s *Services) ServiceUpdateColumns(id string, params map[string]interface{}) error {
+func (s *Services) ServiceUpdateColumns(serviceId string, params map[string]interface{}) error {
 
-	err := packages.GetDb().Table(s.TableName()).Where("res_id = ?", id).Updates(params).Error
+	err := packages.GetDb().Table(s.TableName()).Where("res_id = ?", serviceId).Updates(params).Error
 
 	if err != nil {
 		return err

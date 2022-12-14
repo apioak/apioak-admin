@@ -42,19 +42,20 @@ func (jwtAuthConfig PluginJwtAuthConfig) PluginConfigDefault() interface{} {
 	return pluginJwtAuth
 }
 
-func (jwtAuthConfig PluginJwtAuthConfig) PluginConfigParse(configInfo interface{}) interface{} {
+func (jwtAuthConfig PluginJwtAuthConfig) PluginConfigParse(configInfo interface{}) (interface{}, error) {
+
 	pluginJwtAuth := PluginJwtAuth{
 		Secret: "",
 	}
+	configInfoJson := []byte(fmt.Sprint(configInfo))
 
-	configInfoJson, _ := json.Marshal(configInfo)
-	_ = json.Unmarshal(configInfoJson, &pluginJwtAuth)
+	err := json.Unmarshal(configInfoJson, &pluginJwtAuth)
 
-	return pluginJwtAuth
+	return pluginJwtAuth, err
 }
 
 func (jwtAuthConfig PluginJwtAuthConfig) PluginConfigCheck(configInfo interface{}) error {
-	jwtAuth := jwtAuthConfig.PluginConfigParse(configInfo)
+	jwtAuth, _ := jwtAuthConfig.PluginConfigParse(configInfo)
 	pluginJwtAuth := jwtAuth.(PluginJwtAuth)
 
 	return jwtAuthConfig.configValidator(pluginJwtAuth)

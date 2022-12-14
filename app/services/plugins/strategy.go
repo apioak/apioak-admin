@@ -9,7 +9,7 @@ import (
 
 type PluginStrategy interface {
 	PluginConfigDefault() interface{}
-	PluginConfigParse(config interface{}) interface{}
+	PluginConfigParse(config interface{}) (interface{}, error)
 	PluginConfigCheck(config interface{}) error
 }
 
@@ -36,7 +36,7 @@ func (p PluginContext) StrategyPluginFormatDefault() interface{} {
 	return p.Strategy.PluginConfigDefault()
 }
 
-func (p PluginContext) StrategyPluginParse(config interface{}) interface{} {
+func (p PluginContext) StrategyPluginParse(config interface{}) (interface{}, error) {
 	return p.Strategy.PluginConfigParse(config)
 }
 
