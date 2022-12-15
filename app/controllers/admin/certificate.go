@@ -2,7 +2,6 @@ package admin
 
 import (
 	"apioak-admin/app/enums"
-	"apioak-admin/app/models"
 	"apioak-admin/app/packages"
 	"apioak-admin/app/services"
 	"apioak-admin/app/utils"
@@ -12,17 +11,16 @@ import (
 )
 
 func CertificateAdd(c *gin.Context) {
-	var bindParams = validators.CertificateAddUpdate{
-		IsRelease: utils.ReleaseN,
-	}
-	if msg, err := packages.ParseRequestParams(c, &bindParams); err != nil {
+
+	var request = &validators.CertificateAddUpdate{}
+	if msg, err := packages.ParseRequestParams(c, request); err != nil {
 		utils.Error(c, msg)
 		return
 	}
+	err := services.NewCertificateService().CertificateAdd(request)
 
-	addErr := services.CertificateAdd(&bindParams)
-	if addErr != nil {
-		utils.Error(c, addErr.Error())
+	if err != nil {
+		utils.Error(c, err.Error())
 		return
 	}
 
@@ -30,25 +28,17 @@ func CertificateAdd(c *gin.Context) {
 }
 
 func CertificateUpdate(c *gin.Context) {
-	id := strings.TrimSpace(c.Param("id"))
+	resID := strings.TrimSpace(c.Param("id"))
 
-	checkCertificateNull := services.CheckCertificateNull(id)
-	if checkCertificateNull != nil {
-		utils.Error(c, checkCertificateNull.Error())
-		return
-	}
-
-	var bindParams = validators.CertificateAddUpdate{
-		IsRelease: utils.ReleaseN,
-	}
-	if msg, err := packages.ParseRequestParams(c, &bindParams); err != nil {
+	var bindParams = &validators.CertificateAddUpdate{}
+	if msg, err := packages.ParseRequestParams(c, bindParams); err != nil {
 		utils.Error(c, msg)
 		return
 	}
 
-	updateErr := services.CertificateUpdate(id, &bindParams)
-	if updateErr != nil {
-		utils.Error(c, updateErr.Error())
+	err := services.NewCertificateService().CertificateUpdate(resID, bindParams)
+	if err != nil {
+		utils.Error(c, err.Error())
 		return
 	}
 
@@ -56,18 +46,20 @@ func CertificateUpdate(c *gin.Context) {
 }
 
 func CertificateInfo(c *gin.Context) {
-	id := strings.TrimSpace(c.Param("id"))
+	resID := strings.TrimSpace(c.Param("id"))
 
-	checkCertificateNull := services.CheckCertificateNull(id)
-	if checkCertificateNull != nil {
-		utils.Error(c, checkCertificateNull.Error())
+	if resID == "" {
+		utils.Error(c, enums.CodeMessages(enums.ParamsError))
 		return
 	}
 
-	certificateContent := services.CertificateContent{}
-	certificateContentInfo := certificateContent.CertificateContentInfo(id)
+	res, err := services.NewCertificateService().CertificateInfo(resID)
 
-	utils.Ok(c, certificateContentInfo)
+	if err != nil {
+		utils.Error(c, err.Error())
+	}
+
+	utils.Ok(c, res)
 }
 
 func CertificateList(c *gin.Context) {
@@ -77,46 +69,26 @@ func CertificateList(c *gin.Context) {
 		return
 	}
 
-	certificateInfo := services.CertificateInfo{}
-	certificateList, total, err := certificateInfo.CertificateListPage(&bindParams)
+	list, total, err := services.NewCertificateService().CertificateListPage(&bindParams)
 	if err != nil {
 		utils.Error(c, err.Error())
 		return
 	}
 
-	result := utils.ResultPage{}
-	result.Param = bindParams
-	result.Page = bindParams.Page
-	result.PageSize = bindParams.PageSize
-	result.Total = total
-	result.Data = certificateList
-
-	utils.Ok(c, result)
+	utils.Ok(c, utils.ResultPage{
+		Param:    bindParams,
+		Page:     bindParams.Page,
+		PageSize: bindParams.PageSize,
+		Total:    total,
+		Data:     list,
+	})
 }
 
 func CertificateDelete(c *gin.Context) {
-	id := strings.TrimSpace(c.Param("id"))
+	resID := strings.TrimSpace(c.Param("id"))
 
-	checkCertificateNull := services.CheckCertificateNull(id)
-	if checkCertificateNull != nil {
-		utils.Error(c, checkCertificateNull.Error())
-		return
-	}
-
-	checkCertificateDeleteErr := services.CheckCertificateDelete(id)
-	if checkCertificateDeleteErr != nil {
-		utils.Error(c, checkCertificateDeleteErr.Error())
-		return
-	}
-
-	checkCertificateDomainExistErr := services.CheckCertificateDomainExistById(id)
-	if checkCertificateDomainExistErr != nil {
-		utils.Error(c, checkCertificateDomainExistErr.Error())
-		return
-	}
-
-	deleteErr := services.CertificateDelete(id)
-	if deleteErr != nil {
+	err := services.NewCertificateService().CertificateDelete(resID)
+	if err != nil {
 		utils.Error(c, enums.CodeMessages(enums.Error))
 		return
 	}
@@ -125,7 +97,7 @@ func CertificateDelete(c *gin.Context) {
 }
 
 func CertificateSwitchEnable(c *gin.Context) {
-	id := strings.TrimSpace(c.Param("id"))
+	resID := strings.TrimSpace(c.Param("id"))
 
 	var bindParams = validators.CertificateSwitchEnable{}
 	if msg, err := packages.ParseRequestParams(c, &bindParams); err != nil {
@@ -133,54 +105,9 @@ func CertificateSwitchEnable(c *gin.Context) {
 		return
 	}
 
-	checkCertificateNullErr := services.CheckCertificateNull(id)
-	if checkCertificateNullErr != nil {
-		utils.Error(c, checkCertificateNullErr.Error())
-		return
-	}
-
-	checkCertificateEnableChangeErr := services.CheckCertificateEnableChange(id, bindParams.IsEnable)
-	if checkCertificateEnableChangeErr != nil {
-		utils.Error(c, checkCertificateEnableChangeErr.Error())
-		return
-	}
-
-	if bindParams.IsEnable == utils.EnableOff {
-		checkCertificateDomainExistErr := services.CheckCertificateDomainExistById(id)
-		if checkCertificateDomainExistErr != nil {
-			utils.Error(c, checkCertificateDomainExistErr.Error())
-			return
-		}
-	}
-
-	certificatesModel := models.Certificates{}
-	updateErr := certificatesModel.CertificateSwitchEnable(id, bindParams.IsEnable)
-	if updateErr != nil {
-		utils.Error(c, updateErr.Error())
-		return
-	}
-
-	utils.Ok(c)
-}
-
-func CertificateSwitchRelease(c *gin.Context) {
-	id := strings.TrimSpace(c.Param("id"))
-
-	checkCertificateNullErr := services.CheckCertificateNull(id)
-	if checkCertificateNullErr != nil {
-		utils.Error(c, checkCertificateNullErr.Error())
-		return
-	}
-
-	checkCertificateReleaseErr := services.CheckCertificateRelease(id)
-	if checkCertificateReleaseErr != nil {
-		utils.Error(c, checkCertificateReleaseErr.Error())
-		return
-	}
-
-	certificateReleaseErr := services.CertificateRelease(id)
-	if certificateReleaseErr != nil {
-		utils.Error(c, certificateReleaseErr.Error())
+	err := services.NewCertificateService().CertificateSwitchEnable(resID, bindParams.Enable)
+	if err != nil {
+		utils.Error(c, err.Error())
 		return
 	}
 

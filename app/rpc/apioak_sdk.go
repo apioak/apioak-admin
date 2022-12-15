@@ -30,6 +30,8 @@ var (
 	routerUri       = "/apioak/admin/routers"
 	upstreamUri     = "/apioak/admin/upstreams"
 	upstreamNodeUri = "/apioak/admin/upstream/nodes"
+	serviceUri      = "/apioak/admin/services"
+	certificateUri  = "/apioak/admin/certificates"
 )
 
 func NewApiOak() *ApiOak {
@@ -85,13 +87,17 @@ func (m *ApiOak) commonPut(resName string, uri string, data interface{}, params 
 
 	getUri := uri + "/" + resName
 
+	if len(m.Domain) > 0 {
+		headers.Set("Host", m.Domain)
+	}
+
 	var httpResp utils.HttpResp
 	httpResp, err = utils.Get(getUri, params, headers, timeOut)
 	if err != nil {
 		return
 	}
 
-	if httpResp.StatusCode == 404 {
+	if httpResp.StatusCode == 404 || httpResp.StatusCode == 500 {
 		httpResp, err = utils.PostJson(uri, data, headers, timeOut)
 		if err != nil {
 			return
@@ -472,4 +478,86 @@ func (m *ApiOak) RouterDelete(routerResIds []string) (err error) {
 	}
 
 	return
+}
+
+type CertificateInfoResponse struct {
+	ID   string   `json:"id"`
+	Name string   `json:"name"`
+	Sni  []string `json:"sni"`
+	Cert string   `json:"cert"`
+	Key  string   `json:"key"`
+}
+
+func (m *ApiOak) CertificateInfo(resID string) (CertificateInfoResponse, error) {
+
+	var params = url.Values{}
+	var headers = http.Header{}
+	if len(m.Domain) > 0 {
+		headers.Set("Host", m.Domain)
+	}
+
+	uri := m.Address + certificateUri + "/" + resID
+
+	httpResp, err := utils.Get(uri, params, headers, timeOut)
+	if err != nil || httpResp.StatusCode != 200 {
+		packages.Log.Error("Failed to obtain the data side certificate information", err)
+		return CertificateInfoResponse{}, err
+	}
+
+	var body CertificateInfoResponse
+	err = json.Unmarshal(httpResp.Body, &body)
+
+	if err != nil {
+		packages.Log.Error("Failed to parse data side certificate information", err)
+		return CertificateInfoResponse{}, err
+	}
+
+	return body, nil
+
+}
+
+func (m *ApiOak) CertificateDelete(resID string) error {
+	var params = url.Values{}
+	var headers = http.Header{}
+
+	uri := m.Address + certificateUri + "/" + resID
+
+	httpResp, err := utils.Get(uri, params, headers, timeOut)
+	if err != nil {
+		packages.Log.Error("[delete]:Failed to obtain the data side certificate information", err)
+		return errors.New(err.Error())
+	}
+
+	if httpResp.StatusCode != 200 {
+		return nil
+	}
+
+	dHttpResp, err := utils.Delete(uri, params, headers, timeOut)
+
+	if err != nil || dHttpResp.StatusCode != 200 {
+		packages.Log.Error("[delete]:Failed to delete the data side certificate information", err)
+		return errors.New(err.Error())
+	}
+
+	return nil
+}
+
+type CertificateReleaseRequest struct {
+	Name string   `json:"name"`
+	Sni  []string `json:"snis"`
+	Cert string   `json:"cert"`
+	Key  string   `json:"key"`
+}
+
+func (m *ApiOak) CertificateRelease(request *CertificateReleaseRequest) error {
+
+	resName := request.Name
+	uri := m.Address + certificateUri
+	err := m.commonPut(resName, uri, request, url.Values{}, http.Header{})
+
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

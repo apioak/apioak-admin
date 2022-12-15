@@ -365,7 +365,6 @@ func HealthTypeNameMap() (healthNameMap map[int]string) {
 	return
 }
 
-
 func InterceptSni(domains []string) ([]string, error) {
 	domainSniInfos := make([]string, 0)
 	if len(domains) == 0 {
