@@ -401,16 +401,16 @@ func (r *Routers) RouterListPage(serviceResId string, param *validators.Validato
 	return
 }
 
-func (r *Routers) RouterUpdateName(id string, name string) error {
-	id = strings.TrimSpace(id)
+func (r *Routers) RouterUpdateName(resId string, name string) error {
+	resId = strings.TrimSpace(resId)
 	name = strings.TrimSpace(name)
-	if (len(id) == 0) || (len(name) == 0) {
+	if (len(resId) == 0) || (len(name) == 0) {
 		return errors.New(enums.CodeMessages(enums.ServiceParamsNull))
 	}
 
 	updateErr := packages.GetDb().
 		Table(r.TableName()).
-		Where("res_id = ?", id).
+		Where("res_id = ?", resId).
 		Update("router_name", name).Error
 
 	if updateErr != nil {

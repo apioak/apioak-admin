@@ -2,6 +2,7 @@ package admin
 
 import (
 	"apioak-admin/app/enums"
+	"apioak-admin/app/models"
 	"apioak-admin/app/packages"
 	"apioak-admin/app/services"
 	"apioak-admin/app/utils"
@@ -151,6 +152,38 @@ func RouterUpdate(c *gin.Context) {
 	utils.Ok(c)
 }
 
+func RouterUpdateName(c *gin.Context) {
+	serviceResId := strings.TrimSpace(c.Param("service_res_id"))
+	routerResId := strings.TrimSpace(c.Param("router_res_id"))
+
+	var bindParams = validators.RouterUpdateName{}
+	if msg, err := packages.ParseRequestParams(c, &bindParams); err != nil {
+		utils.Error(c, msg)
+		return
+	}
+
+	checkServiceExistErr := services.CheckServiceExist(serviceResId)
+	if checkServiceExistErr != nil {
+		utils.Error(c, checkServiceExistErr.Error())
+		return
+	}
+
+	checkExistRouteErr := services.CheckRouterExist(routerResId, serviceResId)
+	if checkExistRouteErr != nil {
+		utils.Error(c, checkExistRouteErr.Error())
+		return
+	}
+
+	routerModel := models.Routers{}
+	updateErr := routerModel.RouterUpdateName(routerResId, bindParams.Name)
+	if updateErr != nil {
+		utils.Error(c, updateErr.Error())
+		return
+	}
+
+	utils.Ok(c)
+}
+
 func RouterSwitchRelease(c *gin.Context) {
 	serviceResId := strings.TrimSpace(c.Param("service_res_id"))
 	routerResId := strings.TrimSpace(c.Param("router_res_id"))
@@ -264,38 +297,6 @@ func RouterSwitchRelease(c *gin.Context) {
 // 	createErr := services.RouteCopy(&bindParams, sourceRouteId)
 // 	if createErr != nil {
 // 		utils.Error(c, createErr.Error())
-// 		return
-// 	}
-//
-// 	utils.Ok(c)
-// }
-
-// func RouteUpdateName(c *gin.Context) {
-// 	serviceId := strings.TrimSpace(c.Param("service_id"))
-// 	routeId := strings.TrimSpace(c.Param("route_id"))
-//
-// 	var bindParams = validators.RouteUpdateName{}
-// 	if msg, err := packages.ParseRequestParams(c, &bindParams); err != nil {
-// 		utils.Error(c, msg)
-// 		return
-// 	}
-//
-// 	checkServiceExistErr := services.CheckServiceExist(serviceId)
-// 	if checkServiceExistErr != nil {
-// 		utils.Error(c, checkServiceExistErr.Error())
-// 		return
-// 	}
-//
-// 	checkExistRouteErr := services.CheckRouteExist(routeId, serviceId)
-// 	if checkExistRouteErr != nil {
-// 		utils.Error(c, checkExistRouteErr.Error())
-// 		return
-// 	}
-//
-// 	routeModel := models.Routes{}
-// 	updateErr := routeModel.RouteUpdateName(routeId, bindParams.Name)
-// 	if updateErr != nil {
-// 		utils.Error(c, updateErr.Error())
 // 		return
 // 	}
 //
