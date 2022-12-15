@@ -11,13 +11,13 @@ import (
 )
 
 type Certificates struct {
-	ID            string    `gorm:"column:id;primary_key"` //Certificate id
-	Sni           string    `gorm:"column:sni"`            //SNI
-	Certificate   string    `gorm:"column:certificate"`    //Certificate content
-	PrivateKey    string    `gorm:"column:private_key"`    //Private key content
-	IsEnable      int       `gorm:"column:is_enable"`      //Certificate enable  1:on  2:off
-	ReleaseStatus int       `gorm:"column:release_status"` //Certificates release status 1:unpublished  2:to be published  3:published
-	ExpiredAt     time.Time `gorm:"column:expired_at"`     //Expiration time
+	ID          string    `gorm:"column:id;primary_key"` //Certificate id
+	Sni         string    `gorm:"column:sni"`            //SNI
+	Certificate string    `gorm:"column:certificate"`    //Certificate content
+	PrivateKey  string    `gorm:"column:private_key"`    //Private key content
+	Enable      int       `gorm:"column:enable"`         //Certificate enable  1:on  2:off
+	Release     int       `gorm:"column:release"`        //Certificates release status 1:unpublished  2:to be published  3:published
+	ExpiredAt   time.Time `gorm:"column:expired_at"`     //Expiration time
 	ModelTime
 }
 
@@ -154,8 +154,8 @@ func (c *Certificates) CertificateDelete(id string) error {
 
 func (c *Certificates) CertificateSwitchEnable(id string, enable int) error {
 	certificateInfo := c.CertificateInfoById(id)
-	releaseStatus := certificateInfo.ReleaseStatus
-	if certificateInfo.ReleaseStatus == utils.ReleaseStatusY {
+	releaseStatus := certificateInfo.Release
+	if certificateInfo.Release == utils.ReleaseStatusY {
 		releaseStatus = utils.ReleaseStatusT
 	}
 
@@ -163,8 +163,8 @@ func (c *Certificates) CertificateSwitchEnable(id string, enable int) error {
 		Table(c.TableName()).
 		Where("id = ?", id).
 		Updates(Certificates{
-			IsEnable:      enable,
-			ReleaseStatus: releaseStatus}).Error
+			Enable:  enable,
+			Release: releaseStatus}).Error
 
 	if updateErr != nil {
 		return updateErr

@@ -64,11 +64,11 @@ func CheckCertificateDelete(id string) error {
 	certificatesModel := models.Certificates{}
 	certificateInfo := certificatesModel.CertificateInfoById(id)
 
-	if certificateInfo.ReleaseStatus == utils.ReleaseStatusY {
-		if certificateInfo.IsEnable == utils.EnableOn {
+	if certificateInfo.Release == utils.ReleaseStatusY {
+		if certificateInfo.Enable == utils.EnableOn {
 			return errors.New(enums.CodeMessages(enums.SwitchONProhibitsOp))
 		}
-	} else if certificateInfo.ReleaseStatus == utils.ReleaseStatusT {
+	} else if certificateInfo.Release == utils.ReleaseStatusT {
 		return errors.New(enums.CodeMessages(enums.ToReleaseProhibitsOp))
 	}
 
@@ -78,7 +78,7 @@ func CheckCertificateDelete(id string) error {
 func CheckCertificateEnableChange(id string, enable int) error {
 	certificatesModel := models.Certificates{}
 	certificateInfo := certificatesModel.CertificateInfoById(id)
-	if certificateInfo.IsEnable == enable {
+	if certificateInfo.Enable == enable {
 		return errors.New(enums.CodeMessages(enums.SwitchNoChange))
 	}
 
@@ -88,7 +88,7 @@ func CheckCertificateEnableChange(id string, enable int) error {
 func CheckCertificateRelease(id string) error {
 	certificatesModel := models.Certificates{}
 	certificateInfo := certificatesModel.CertificateInfoById(id)
-	if certificateInfo.ReleaseStatus == utils.ReleaseStatusY {
+	if certificateInfo.Release == utils.ReleaseStatusY {
 		return errors.New(enums.CodeMessages(enums.SwitchPublished))
 	}
 
@@ -124,16 +124,16 @@ func CertificateAdd(certificateData *validators.CertificateAddUpdate) error {
 	}
 
 	certificatesModel := models.Certificates{
-		Certificate:   certificateData.Certificate,
-		PrivateKey:    certificateData.PrivateKey,
-		ExpiredAt:     certificateInfo.NotAfter,
-		IsEnable:      certificateData.IsEnable,
-		ReleaseStatus: utils.ReleaseStatusU,
-		Sni:           certificateInfo.CommonName,
+		Certificate: certificateData.Certificate,
+		PrivateKey:  certificateData.PrivateKey,
+		ExpiredAt:   certificateInfo.NotAfter,
+		Enable:      certificateData.IsEnable,
+		Release:     utils.ReleaseStatusU,
+		Sni:         certificateInfo.CommonName,
 	}
 
 	if certificateData.IsRelease == utils.ReleaseY {
-		certificatesModel.ReleaseStatus = utils.ReleaseStatusY
+		certificatesModel.Release = utils.ReleaseStatusY
 	}
 
 	certificateId, addErr := certificatesModel.CertificatesAdd(&certificatesModel)
@@ -144,7 +144,7 @@ func CertificateAdd(certificateData *validators.CertificateAddUpdate) error {
 	if certificateData.IsRelease == utils.ReleaseY {
 		configReleaseErr := CertificateConfigRelease(utils.ReleaseTypePush, certificateId)
 		if configReleaseErr != nil {
-			certificatesModel.ReleaseStatus = utils.ReleaseStatusU
+			certificatesModel.Release = utils.ReleaseStatusU
 			certificatesModel.CertificatesUpdate(certificateId, &certificatesModel)
 			return configReleaseErr
 		}
@@ -179,14 +179,14 @@ func CertificateUpdate(id string, certificateData *validators.CertificateAddUpda
 	certificatesModel.Certificate = certificateData.Certificate
 	certificatesModel.PrivateKey = certificateData.PrivateKey
 	certificatesModel.ExpiredAt = certificateInfo.NotAfter
-	certificatesModel.IsEnable = certificateData.IsEnable
+	certificatesModel.Enable = certificateData.IsEnable
 	certificatesModel.Sni = certificateInfo.CommonName
-	if certificateExistInfo.ReleaseStatus == utils.ReleaseStatusY {
-		certificatesModel.ReleaseStatus = utils.ReleaseStatusT
+	if certificateExistInfo.Release == utils.ReleaseStatusY {
+		certificatesModel.Release = utils.ReleaseStatusT
 	}
 
 	if certificateData.IsRelease == utils.ReleaseY {
-		certificatesModel.ReleaseStatus = utils.ReleaseStatusY
+		certificatesModel.Release = utils.ReleaseStatusY
 	}
 
 	updateErr := certificatesModel.CertificatesUpdate(id, &certificatesModel)
@@ -197,8 +197,8 @@ func CertificateUpdate(id string, certificateData *validators.CertificateAddUpda
 	if certificateData.IsRelease == utils.ReleaseY {
 		configReleaseErr := CertificateConfigRelease(utils.ReleaseTypePush, id)
 		if configReleaseErr != nil {
-			if certificateExistInfo.ReleaseStatus != utils.ReleaseStatusU {
-				certificatesModel.ReleaseStatus = utils.ReleaseStatusT
+			if certificateExistInfo.Release != utils.ReleaseStatusU {
+				certificatesModel.Release = utils.ReleaseStatusT
 			}
 			certificatesModel.CertificatesUpdate(id, &certificatesModel)
 			return configReleaseErr
@@ -230,18 +230,18 @@ func (c *CertificateContent) CertificateContentInfo(id string) CertificateConten
 	certificateContent.ID = certificateInfo.ID
 	certificateContent.Certificate = certificateInfo.Certificate
 	certificateContent.PrivateKey = certificateInfo.PrivateKey
-	certificateContent.IsEnable = certificateInfo.IsEnable
-	certificateContent.ReleaseStatus = certificateInfo.ReleaseStatus
+	certificateContent.IsEnable = certificateInfo.Enable
+	certificateContent.ReleaseStatus = certificateInfo.Release
 
 	return certificateContent
 }
 
 type CertificateInfo struct {
-	ID            string `json:"id"`
-	Sni           string `json:"sni"`
-	ExpiredAt     int64  `json:"expired_at"`
-	IsEnable      int    `json:"is_enable"`
-	ReleaseStatus int    `json:"release_status"`
+	ID        string `json:"id"`
+	Sni       string `json:"sni"`
+	ExpiredAt int64  `json:"expired_at"`
+	Enable    int    `json:"enable"`
+	Release   int    `json:"release"`
 }
 
 func (c *CertificateInfo) CertificateListPage(param *validators.CertificateList) ([]CertificateInfo, int, error) {
@@ -255,8 +255,8 @@ func (c *CertificateInfo) CertificateListPage(param *validators.CertificateList)
 			certificateInfo.ID = certificateListInfo.ID
 			certificateInfo.Sni = certificateListInfo.Sni
 			certificateInfo.ExpiredAt = certificateListInfo.ExpiredAt.Unix()
-			certificateInfo.IsEnable = certificateListInfo.IsEnable
-			certificateInfo.ReleaseStatus = certificateListInfo.ReleaseStatus
+			certificateInfo.Enable = certificateListInfo.Enable
+			certificateInfo.Release = certificateListInfo.Release
 
 			certificateList = append(certificateList, certificateInfo)
 		}
@@ -291,7 +291,7 @@ func CertificateRelease(id string) error {
 
 	configReleaseErr := CertificateConfigRelease(utils.ReleaseTypePush, id)
 	if configReleaseErr != nil {
-		certificatesModel.CertificateSwitchRelease(id, certificateInfo.ReleaseStatus)
+		certificatesModel.CertificateSwitchRelease(id, certificateInfo.Release)
 		return configReleaseErr
 	}
 
@@ -351,7 +351,7 @@ func generateCertificateConfig(id string) (CertificateConfig, error) {
 
 	certificateConfig.ID = certificateInfo.ID
 	certificateConfig.Sni = certificateInfo.Sni
-	certificateConfig.IsEnable = certificateInfo.IsEnable
+	certificateConfig.IsEnable = certificateInfo.Enable
 	certificateConfig.Pem = certificateInfo.Certificate
 	certificateConfig.Key = certificateInfo.PrivateKey
 

@@ -25,12 +25,14 @@ const (
 	PublishError         = 109 // 发布失败
 	SyncError            = 110 // 同步失败
 
-	ServiceNull       = 10001 // 服务不存在
-	ServiceParamsNull = 10002 // 服务参数缺失
+	ServiceNull          = 10001 // 服务不存在
+	ServiceParamsNull    = 10002 // 服务参数缺失
+	ServiceBindingRouter = 10003 // 当前服务已绑定路由,禁止删除
 
 	ServiceDomainExist       = 10101 // [%s]服务域名已存在
 	ServiceDomainFormatError = 10102 // 服务域名格式错误
 	ServiceDomainSslNull     = 10104 // [%s]服务域名证书缺失
+	ServiceDomainNotFound    = 10105 // 服务域名不存在
 
 	RouterDefaultPathNoPermission    = 10201 // [/*]默认路径暂无权限操作
 	RouterPathExist                  = 10202 // 路由路径已存在
@@ -46,6 +48,9 @@ const (
 	PluginNull        = 10302 // 插件不存在
 	PluginRouterExist = 10303 // 插件已被路由绑定，暂不允许该操作
 	PluginTagNull     = 10304 // 插件标识不存在，请检查[插件信息 - 插件标识]
+
+	PluginConfigNull        = 10351 // 插件配置不存在
+	PluginConfigFormatError = 10352 // 插件配置格式错误
 
 	CertificateFormatError = 10401 // 证书格式错误
 	CertificateParseError  = 10402 // 证书解析失败
@@ -85,12 +90,14 @@ var ZhMapMessages = map[int]string{
 	PublishError:         "发布失败",
 	SyncError:            "同步失败",
 
-	ServiceNull:       "服务不存在",
-	ServiceParamsNull: "服务参数缺失",
+	ServiceNull:          "服务不存在",
+	ServiceParamsNull:    "服务参数缺失",
+	ServiceBindingRouter: "当前服务已绑定路由,禁止删除",
 
 	ServiceDomainExist:       "[%s]域名已存在",
 	ServiceDomainFormatError: "服务域名格式错误",
 	ServiceDomainSslNull:     "[%s]服务域名证书缺失",
+	ServiceDomainNotFound:    "服务域名不存在",
 
 	RouterDefaultPathNoPermission:    "[/*]默认路径暂无权限操作",
 	RouterPathExist:                  "[%s]路由路径已存在",
@@ -102,10 +109,12 @@ var ZhMapMessages = map[int]string{
 	RouterDefaultPathForbiddenPrefix: "[/*]默认路径暂不能作为路由开头",
 	RouterDefaultPathNull:            "[/*]默认路径路由不存在",
 
-	PluginTagExist:    "插件标识已存在",
-	PluginNull:        "插件不存在",
-	PluginRouterExist: "插件已被路由绑定，暂不允许该操作",
-	PluginTagNull:     "插件标识不存在，请检查[插件信息 - 插件标识]",
+	PluginTagExist:          "插件标识已存在",
+	PluginNull:              "插件不存在",
+	PluginRouterExist:       "插件已被路由绑定，暂不允许该操作",
+	PluginTagNull:           "插件标识不存在，请检查[插件信息 - 插件标识]",
+	PluginConfigNull:        "插件配置不存在",
+	PluginConfigFormatError: "插件配置格式错误",
 
 	CertificateFormatError: "证书格式错误",
 	CertificateParseError:  "证书解析失败",
@@ -145,12 +154,14 @@ var EnMapMessages = map[int]string{
 	PublishError:         "Publish error",
 	SyncError:            "Sync error",
 
-	ServiceNull:       "Service does not exist",
-	ServiceParamsNull: "Missing service parameters",
+	ServiceNull:          "Service does not exist",
+	ServiceParamsNull:    "Missing service parameters",
+	ServiceBindingRouter: "The current service has bound a route, and deletion is prohibited",
 
 	ServiceDomainExist:       "[%s]Domain name already exists",
 	ServiceDomainFormatError: "Service domain name format error",
 	ServiceDomainSslNull:     "[%s]Service domain name certificate is missing",
+	ServiceDomainNotFound:    "Service domain is missing",
 
 	RouterDefaultPathNoPermission:    "[/*]The default path does not have permission to operate temporarily",
 	RouterPathExist:                  "[%s]Routing path already exists",
@@ -162,10 +173,12 @@ var EnMapMessages = map[int]string{
 	RouterDefaultPathForbiddenPrefix: "[/*]The default path cannot be used as the beginning of the router",
 	RouterDefaultPathNull:            "[/*]The default router router does not exist",
 
-	PluginTagExist:    "Plugin tag already exists",
-	PluginNull:        "Plugin does not exist",
-	PluginRouterExist: "Plugin routing binding, operation is not allowed",
-	PluginTagNull:     "The plugin tag does not exist, please check [plugin information - plugin tag]",
+	PluginTagExist:          "Plugin tag already exists",
+	PluginNull:              "Plugin does not exist",
+	PluginRouterExist:       "Plugin routing binding, operation is not allowed",
+	PluginTagNull:           "The plugin tag does not exist, please check [plugin information - plugin tag]",
+	PluginConfigNull:        "Plugin config does not exist",
+	PluginConfigFormatError: "Plugin config format error",
 
 	CertificateFormatError: "Incorrect certificate format",
 	CertificateParseError:  "Certificate parsing failed",

@@ -789,3 +789,7 @@ type RouterPluginInfo struct {
 //
 // 	return routerPluginList
 // }
+
+func RouterInfoByResId(resId string) (models.Routers, error) {
+	return (&models.Routers{}).RouterDetailByResId(resId)
+}
