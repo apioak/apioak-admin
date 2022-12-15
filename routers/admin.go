@@ -49,18 +49,18 @@ func RouterRegister(routerEngine *gin.Engine) {
 		}
 
 		// router
-		route := adminRouter.Group("router")
+		router := adminRouter.Group("router")
 		{
 			// router
-			route.POST("/add", admin.RouterAdd)
-			route.GET("/list", admin.RouterList)
-			route.GET("/info/:service_res_id/:router_res_id", admin.RouterInfo)
-			route.PUT("/update/:service_res_id/:router_res_id", admin.RouterUpdate)
-			route.PUT("/update/name/:service_res_id/:router_res_id", admin.RouterUpdateName)
-			route.PUT("/switch/enable/:service_res_id/:router_res_id", admin.RouterSwitchEnable)
-			route.PUT("/switch/release/:service_res_id/:router_res_id", admin.RouterSwitchRelease)
+			router.POST("/add", admin.RouterAdd)
+			router.GET("/list", admin.RouterList)
+			router.GET("/info/:service_res_id/:router_res_id", admin.RouterInfo)
+			router.PUT("/update/:service_res_id/:router_res_id", admin.RouterUpdate)
+			router.PUT("/update/name/:service_res_id/:router_res_id", admin.RouterUpdateName)
+			router.PUT("/switch/enable/:service_res_id/:router_res_id", admin.RouterSwitchEnable)
+			router.PUT("/switch/release/:service_res_id/:router_res_id", admin.RouterSwitchRelease)
+			router.DELETE("/delete/:service_res_id/:router_res_id", admin.RouterDelete)
 
-			// route.DELETE("/delete/:service_id/:route_id", admin.RouteDelete)
 			// route.POST("/copy/:service_id/:source_route_id", admin.RouteCopy)
 
 			// router plugin

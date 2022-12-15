@@ -95,21 +95,6 @@ func CheckRouterEnableChange(routerId string, enable int) error {
 	return nil
 }
 
-// func CheckRouterDelete(routerId string) error {
-// 	routerModel := &models.Routers{}
-// 	routerInfo := routerModel.RouterDetailByResIdServiceResId(routerId, "")
-//
-// 	if routerInfo.Release == utils.ReleaseStatusY {
-// 		if routerInfo.Enable == utils.EnableOn {
-// 			return errors.New(enums.CodeMessages(enums.SwitchONProhibitsOp))
-// 		}
-// 	} else if routerInfo.Release == utils.ReleaseStatusT {
-// 		return errors.New(enums.CodeMessages(enums.ToReleaseProhibitsOp))
-// 	}
-//
-// 	return nil
-// }
-
 func RouterCreate(routerData *validators.ValidatorRouterAddUpdate) error {
 	createRouterData := models.Routers{
 		ServiceResID:   routerData.ServiceResID,
@@ -618,20 +603,54 @@ func CheckEditDefaultPathRouter(routerId string) error {
 	return nil
 }
 
-func RouterDelete(routerId string) error {
-	configReleaseErr := ServiceRouterConfigRelease(utils.ReleaseTypeDelete, routerId)
-	if configReleaseErr != nil {
-		return configReleaseErr
-	}
-
+func RouterDelete(routerResId string) (err error) {
 	routerModel := models.Routers{}
-	err := routerModel.RouterDelete(routerId)
+
+	var routerDetail models.Routers
+	routerDetail, err = routerModel.RouterDetailByResId(routerResId)
 	if err != nil {
-		ServiceRouterConfigRelease(utils.ReleaseTypePush, routerId)
-		return err
+		return
 	}
 
-	return nil
+	if routerDetail.ResID != routerResId {
+		return
+	}
+
+	err = packages.GetDb().Transaction(func(tx *gorm.DB) (err error) {
+		if err = tx.Table(routerModel.TableName()).
+			Where("res_id = ?", routerResId).
+			Delete(&routerModel).Error; err != nil {
+			return
+		}
+
+		upstreamModel := models.Upstreams{}
+		if err = tx.Table(upstreamModel.TableName()).
+			Where("res_id = ?", routerDetail.UpstreamResID).
+			Delete(&upstreamModel).Error; err != nil {
+			return
+		}
+
+		upstreamNodeModel := models.UpstreamNodes{}
+		if err = tx.Table(upstreamNodeModel.TableName()).
+			Where("upstream_res_id = ?", routerDetail.UpstreamResID).
+			Delete(&upstreamNodeModel).Error; err != nil {
+			return
+		}
+
+		return
+	})
+
+	err = RouterRelease([]string{routerResId}, utils.ReleaseTypeDelete)
+	if err != nil {
+		return
+	}
+
+	err = UpstreamRelease([]string{routerDetail.UpstreamResID}, utils.ReleaseTypePush)
+	if err != nil {
+		return
+	}
+
+	return
 }
 
 // ---------------------------------------------------------------

@@ -228,6 +228,37 @@ func RouterSwitchEnable(c *gin.Context) {
 	utils.Ok(c)
 }
 
+func RouterDelete(c *gin.Context) {
+	serviceResId := strings.TrimSpace(c.Param("service_res_id"))
+	routeResId := strings.TrimSpace(c.Param("router_res_id"))
+
+	checkServiceExistErr := services.CheckServiceExist(serviceResId)
+	if checkServiceExistErr != nil {
+		utils.Error(c, checkServiceExistErr.Error())
+		return
+	}
+
+	checkExistRouteErr := services.CheckRouterExist(routeResId, serviceResId)
+	if checkExistRouteErr != nil {
+		utils.Error(c, checkExistRouteErr.Error())
+		return
+	}
+
+	checkEditDefaultPathRouteErr := services.CheckEditDefaultPathRouter(routeResId)
+	if checkEditDefaultPathRouteErr != nil {
+		utils.Error(c, checkEditDefaultPathRouteErr.Error())
+		return
+	}
+
+	deleteErr := services.RouterDelete(routeResId)
+	if deleteErr != nil {
+		utils.Error(c, enums.CodeMessages(enums.Error))
+		return
+	}
+
+	utils.Ok(c)
+}
+
 
 func RouterSwitchRelease(c *gin.Context) {
 	serviceResId := strings.TrimSpace(c.Param("service_res_id"))
@@ -266,42 +297,6 @@ func RouterSwitchRelease(c *gin.Context) {
 
 
 
-// func RouteDelete(c *gin.Context) {
-// 	serviceId := strings.TrimSpace(c.Param("service_id"))
-// 	routeId := strings.TrimSpace(c.Param("route_id"))
-//
-// 	checkServiceExistErr := services.CheckServiceExist(serviceId)
-// 	if checkServiceExistErr != nil {
-// 		utils.Error(c, checkServiceExistErr.Error())
-// 		return
-// 	}
-//
-// 	checkExistRouteErr := services.CheckRouteExist(routeId, serviceId)
-// 	if checkExistRouteErr != nil {
-// 		utils.Error(c, checkExistRouteErr.Error())
-// 		return
-// 	}
-//
-// 	checkEditDefaultPathRouteErr := services.CheckEditDefaultPathRoute(routeId)
-// 	if checkEditDefaultPathRouteErr != nil {
-// 		utils.Error(c, checkEditDefaultPathRouteErr.Error())
-// 		return
-// 	}
-//
-// 	checkRouteDeleteErr := services.CheckRouteDelete(routeId)
-// 	if checkRouteDeleteErr != nil {
-// 		utils.Error(c, checkRouteDeleteErr.Error())
-// 		return
-// 	}
-//
-// 	deleteErr := services.RouteDelete(routeId)
-// 	if deleteErr != nil {
-// 		utils.Error(c, enums.CodeMessages(enums.Error))
-// 		return
-// 	}
-//
-// 	utils.Ok(c)
-// }
 
 // func RouteCopy(c *gin.Context) {
 // 	var bindParams = validators.ValidatorRouterAddUpdate{
