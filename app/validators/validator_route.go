@@ -26,9 +26,9 @@ var (
 type ValidatorRouterAddUpdate struct {
 	ServiceResID   string `json:"service_res_id" zh:"所属服务" en:"Belonging service" binding:"omitempty"`
 	UpstreamResID  string `json:"upstream_res_id" zh:"上游服务" en:"Upstream service" binding:"omitempty"`
-	RouterName      string `json:"router_name" zh:"路由名称" en:"Router name" binding:"omitempty"`
+	RouterName     string `json:"router_name" zh:"路由名称" en:"Router name" binding:"omitempty"`
 	RequestMethods string `json:"request_methods" zh:"请求方法" en:"Request method" binding:"required,min=3,CheckRouterRequestMethodOneOf"`
-	RouterPath      string `json:"router_path" zh:"路由路径" en:"Routing path" binding:"required,min=2,CheckRouterPathPrefix"`
+	RouterPath     string `json:"router_path" zh:"路由路径" en:"Routing path" binding:"required,min=2,CheckRouterPathPrefix"`
 	Enable         int    `json:"enable" zh:"路由开关" en:"Routing enable" binding:"required,oneof=1 2"`
 	UpstreamAddUpdate
 }
@@ -46,7 +46,7 @@ type RouterUpdateName struct {
 }
 
 type RouterSwitchEnable struct {
-	IsEnable int `json:"is_enable" zh:"路由开关" en:"Router enable" binding:"required,oneof=1 2"`
+	Enable int `json:"enable" zh:"路由开关" en:"Router enable" binding:"required,oneof=1 2"`
 }
 
 type RouterSwitchRelease struct {

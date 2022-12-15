@@ -184,6 +184,51 @@ func RouterUpdateName(c *gin.Context) {
 	utils.Ok(c)
 }
 
+func RouterSwitchEnable(c *gin.Context) {
+	serviceResId := strings.TrimSpace(c.Param("service_res_id"))
+	routeResId := strings.TrimSpace(c.Param("route_res_id"))
+
+	var bindParams = validators.RouterSwitchEnable{}
+	if msg, err := packages.ParseRequestParams(c, &bindParams); err != nil {
+		utils.Error(c, msg)
+		return
+	}
+
+	checkServiceExistErr := services.CheckServiceExist(serviceResId)
+	if checkServiceExistErr != nil {
+		utils.Error(c, checkServiceExistErr.Error())
+		return
+	}
+
+	checkExistRouteErr := services.CheckRouterExist(routeResId, serviceResId)
+	if checkExistRouteErr != nil {
+		utils.Error(c, checkExistRouteErr.Error())
+		return
+	}
+
+	checkEditDefaultPathRouteErr := services.CheckEditDefaultPathRouter(routeResId)
+	if checkEditDefaultPathRouteErr != nil {
+		utils.Error(c, checkEditDefaultPathRouteErr.Error())
+		return
+	}
+
+	checkRouteEnableChangeErr := services.CheckRouterEnableChange(routeResId, bindParams.Enable)
+	if checkRouteEnableChangeErr != nil {
+		utils.Error(c, checkRouteEnableChangeErr.Error())
+		return
+	}
+
+	routerModel := models.Routers{}
+	updateErr := routerModel.RouterSwitchEnable(routeResId, bindParams.Enable)
+	if updateErr != nil {
+		utils.Error(c, updateErr.Error())
+		return
+	}
+
+	utils.Ok(c)
+}
+
+
 func RouterSwitchRelease(c *gin.Context) {
 	serviceResId := strings.TrimSpace(c.Param("service_res_id"))
 	routerResId := strings.TrimSpace(c.Param("router_res_id"))
@@ -303,49 +348,6 @@ func RouterSwitchRelease(c *gin.Context) {
 // 	utils.Ok(c)
 // }
 
-// func RouteSwitchEnable(c *gin.Context) {
-// 	serviceId := strings.TrimSpace(c.Param("service_id"))
-// 	routeId := strings.TrimSpace(c.Param("route_id"))
-//
-// 	var bindParams = validators.RouteSwitchEnable{}
-// 	if msg, err := packages.ParseRequestParams(c, &bindParams); err != nil {
-// 		utils.Error(c, msg)
-// 		return
-// 	}
-//
-// 	checkServiceExistErr := services.CheckServiceExist(serviceId)
-// 	if checkServiceExistErr != nil {
-// 		utils.Error(c, checkServiceExistErr.Error())
-// 		return
-// 	}
-//
-// 	checkExistRouteErr := services.CheckRouteExist(routeId, serviceId)
-// 	if checkExistRouteErr != nil {
-// 		utils.Error(c, checkExistRouteErr.Error())
-// 		return
-// 	}
-//
-// 	checkEditDefaultPathRouteErr := services.CheckEditDefaultPathRoute(routeId)
-// 	if checkEditDefaultPathRouteErr != nil {
-// 		utils.Error(c, checkEditDefaultPathRouteErr.Error())
-// 		return
-// 	}
-//
-// 	checkRouteEnableChangeErr := services.CheckRouteEnableChange(routeId, bindParams.IsEnable)
-// 	if checkRouteEnableChangeErr != nil {
-// 		utils.Error(c, checkRouteEnableChangeErr.Error())
-// 		return
-// 	}
-//
-// 	routeModel := models.Routes{}
-// 	updateErr := routeModel.RouteSwitchEnable(routeId, bindParams.IsEnable)
-// 	if updateErr != nil {
-// 		utils.Error(c, updateErr.Error())
-// 		return
-// 	}
-//
-// 	utils.Ok(c)
-// }
 
 
 // func RoutePluginList(c *gin.Context) {

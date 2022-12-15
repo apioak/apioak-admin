@@ -84,6 +84,32 @@ func CheckExistServiceRouterPath(serviceResId string, path string, filterRouterR
 	return nil
 }
 
+func CheckRouterEnableChange(routerId string, enable int) error {
+	routerModel := &models.Routers{}
+	routerInfo := routerModel.RouterDetailByResIdServiceResId(routerId, "")
+
+	if routerInfo.Enable == enable {
+		return errors.New(enums.CodeMessages(enums.SwitchNoChange))
+	}
+
+	return nil
+}
+
+// func CheckRouterDelete(routerId string) error {
+// 	routerModel := &models.Routers{}
+// 	routerInfo := routerModel.RouterDetailByResIdServiceResId(routerId, "")
+//
+// 	if routerInfo.Release == utils.ReleaseStatusY {
+// 		if routerInfo.Enable == utils.EnableOn {
+// 			return errors.New(enums.CodeMessages(enums.SwitchONProhibitsOp))
+// 		}
+// 	} else if routerInfo.Release == utils.ReleaseStatusT {
+// 		return errors.New(enums.CodeMessages(enums.ToReleaseProhibitsOp))
+// 	}
+//
+// 	return nil
+// }
+
 func RouterCreate(routerData *validators.ValidatorRouterAddUpdate) error {
 	createRouterData := models.Routers{
 		ServiceResID:   routerData.ServiceResID,
@@ -582,6 +608,16 @@ func generateRouterConfig(routerInfo models.Routers) (rpc.RouterConfig, error) {
 	return routerConfig, nil
 }
 
+func CheckEditDefaultPathRouter(routerId string) error {
+	routerModel := models.Routers{}
+	routerInfo := routerModel.RouterDetailByResIdServiceResId(routerId, "")
+	if routerInfo.RouterPath == utils.DefaultRouterPath {
+		return errors.New(enums.CodeMessages(enums.RouterDefaultPathNoPermission))
+	}
+
+	return nil
+}
+
 func RouterDelete(routerId string) error {
 	configReleaseErr := ServiceRouterConfigRelease(utils.ReleaseTypeDelete, routerId)
 	if configReleaseErr != nil {
@@ -599,16 +635,6 @@ func RouterDelete(routerId string) error {
 }
 
 // ---------------------------------------------------------------
-
-func CheckEditDefaultPathRouter(routerId string) error {
-	routerModel := models.Routers{}
-	routerInfo := routerModel.RouterDetailByResIdServiceResId(routerId, "")
-	if routerInfo.RouterPath == utils.DefaultRouterPath {
-		return errors.New(enums.CodeMessages(enums.RouterDefaultPathNoPermission))
-	}
-
-	return nil
-}
 
 // func RouterCopy(routerData *validators.ValidatorRouterAddUpdate, sourceRouterId string) error {
 // 	routerPluginModel := models.RouterPlugins{}
@@ -646,31 +672,7 @@ func CheckEditDefaultPathRouter(routerId string) error {
 // 	return nil
 // }
 
-// func CheckRouterEnableChange(routerId string, enable int) error {
-// 	routerModel := &models.Routers{}
-// 	routerInfo := routerModel.RouterDetailByResIdServiceResId(routerId, "")
-//
-// 	if routerInfo.Enable == enable {
-// 		return errors.New(enums.CodeMessages(enums.SwitchNoChange))
-// 	}
-//
-// 	return nil
-// }
-//
-// func CheckRouterDelete(routerId string) error {
-// 	routerModel := &models.Routers{}
-// 	routerInfo := routerModel.RouterDetailByResIdServiceResId(routerId, "")
-//
-// 	if routerInfo.Release == utils.ReleaseStatusY {
-// 		if routerInfo.Enable == utils.EnableOn {
-// 			return errors.New(enums.CodeMessages(enums.SwitchONProhibitsOp))
-// 		}
-// 	} else if routerInfo.Release == utils.ReleaseStatusT {
-// 		return errors.New(enums.CodeMessages(enums.ToReleaseProhibitsOp))
-// 	}
-//
-// 	return nil
-// }
+
 
 func ServiceRouterConfigRelease(releaseType string, id string) error {
 
