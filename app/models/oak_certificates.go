@@ -6,17 +6,18 @@ import (
 	"apioak-admin/app/utils"
 	"apioak-admin/app/validators"
 	"errors"
+	"gorm.io/gorm"
 	"strings"
 	"time"
 )
 
 type Certificates struct {
-	ID          string    `gorm:"column:id;primary_key"` //Certificate id
+	ID          int       `gorm:"column:id;primary_key"` //Certificate id
+	ResID       string    `gorm:"column:res_id"`         //SNI
 	Sni         string    `gorm:"column:sni"`            //SNI
 	Certificate string    `gorm:"column:certificate"`    //Certificate content
 	PrivateKey  string    `gorm:"column:private_key"`    //Private key content
 	Enable      int       `gorm:"column:enable"`         //Certificate enable  1:on  2:off
-	Release     int       `gorm:"column:release"`        //Certificates release status 1:unpublished  2:to be published  3:published
 	ExpiredAt   time.Time `gorm:"column:expired_at"`     //Expiration time
 	ModelTime
 }
@@ -36,8 +37,8 @@ func (m *Certificates) ModelUniqueId() (string, error) {
 
 	result := packages.GetDb().
 		Table(m.TableName()).
-		Where("id = ?", generateId).
-		Select("id").
+		Where("res_id = ?", generateId).
+		Select("res_id").
 		First(m)
 
 	if result.RowsAffected == 0 {
@@ -50,73 +51,68 @@ func (m *Certificates) ModelUniqueId() (string, error) {
 		}
 
 		recursionTimesCertificates++
-		id, err := m.ModelUniqueId()
+		resID, err := m.ModelUniqueId()
 
 		if err != nil {
 			return "", err
 		}
 
-		return id, nil
+		return resID, nil
 	}
 }
 
-func (c *Certificates) CertificatesAdd(certificatesData *Certificates) (string, error) {
-	certificatesId, certificatesIdUniqueErr := c.ModelUniqueId()
-	if certificatesIdUniqueErr != nil {
-		return certificatesId, certificatesIdUniqueErr
+func (c *Certificates) CertificatesAdd(tx *gorm.DB, certificatesData *Certificates) (string, error) {
+	certificatesId, err := c.ModelUniqueId()
+	if err != nil {
+		return certificatesId, err
 	}
-	certificatesData.ID = certificatesId
 
-	err := packages.GetDb().
-		Table(c.TableName()).
-		Create(certificatesData).Error
+	certificatesData.ResID = certificatesId
+
+	err = tx.Table(c.TableName()).Create(certificatesData).Error
 
 	return certificatesId, err
 }
 
-func (c *Certificates) CertificatesUpdate(id string, certificatesData *Certificates) error {
-	updateError := packages.GetDb().
-		Table(c.TableName()).
-		Where("id = ?", id).
-		Updates(certificatesData).Error
+func (c *Certificates) CertificatesUpdate(tx *gorm.DB, resID string, certificatesData *Certificates) error {
 
-	return updateError
+	return tx.Table(c.TableName()).Where("res_id = ?", resID).Updates(certificatesData).Error
+
 }
 
-func (c *Certificates) CertificateInfoById(id string) Certificates {
+func (c *Certificates) CertificateInfoById(resID string) (Certificates, error) {
 	certificateInfo := Certificates{}
-	packages.GetDb().
-		Table(c.TableName()).
-		Where("id = ?", id).
-		First(&certificateInfo)
+	err := packages.GetDb().Table(c.TableName()).Where("res_id = ?", resID).First(&certificateInfo).Error
 
-	return certificateInfo
-}
-
-func (c *Certificates) CertificateInfoBySni(sni string, filterId string) Certificates {
-	certificateInfo := Certificates{}
-	db := packages.GetDb().
-		Table(c.TableName()).
-		Where("sni = ?", sni)
-
-	if len(filterId) != 0 {
-		db = db.Where("id != ?", filterId)
+	if err != nil {
+		return certificateInfo, err
 	}
 
-	db.First(&certificateInfo)
+	return certificateInfo, nil
+}
 
-	return certificateInfo
+func (c *Certificates) EnableCertificateInfoBySni(sni string, filterId string) (Certificates, error) {
+	certificateInfo := Certificates{}
+	db := packages.GetDb().Table(c.TableName()).Where("sni = ?", sni)
+
+	if filterId != "" {
+		db = db.Where("res_id != ?", filterId)
+	}
+
+	err := db.Where("enable = ?", utils.EnableOn).First(&certificateInfo).Error
+
+	if err != nil && err != gorm.ErrRecordNotFound {
+		return certificateInfo, err
+	}
+	return certificateInfo, nil
 }
 
 func (c *Certificates) CertificateListPage(param *validators.CertificateList) (list []Certificates, total int, listError error) {
 	tx := packages.GetDb().
 		Table(c.TableName())
 
-	if param.IsEnable != 0 {
-		tx = tx.Where("is_enable = ?", param.IsEnable)
-	}
-	if param.ReleaseStatus != 0 {
-		tx = tx.Where("release_status = ?", param.ReleaseStatus)
+	if param.Enable != 0 {
+		tx = tx.Where("enable = ?", param.Enable)
 	}
 
 	param.Search = strings.TrimSpace(param.Search)
@@ -125,7 +121,7 @@ func (c *Certificates) CertificateListPage(param *validators.CertificateList) (l
 		tx = tx.Where(
 			packages.GetDb().Table(c.TableName()).
 				Where("sni LIKE ?", search).
-				Or("id LIKE ?", search))
+				Or("res_id LIKE ?", search))
 	}
 
 	countError := ListCount(tx, &total)
@@ -139,63 +135,39 @@ func (c *Certificates) CertificateListPage(param *validators.CertificateList) (l
 	return
 }
 
-func (c *Certificates) CertificateDelete(id string) error {
-	deleteErr := packages.GetDb().
-		Table(c.TableName()).
-		Where("id = ?", id).
-		Delete(c).Error
+func (c *Certificates) CertificateDelete(tx *gorm.DB, resID string) error {
+	err := tx.Model(&Certificates{}).
+		Where("res_id = ?", resID).
+		Delete(&Certificates{}).Error
 
-	if deleteErr != nil {
-		return deleteErr
+	if err != nil {
+		return err
 	}
 
 	return nil
 }
 
-func (c *Certificates) CertificateSwitchEnable(id string, enable int) error {
-	certificateInfo := c.CertificateInfoById(id)
-	releaseStatus := certificateInfo.Release
-	if certificateInfo.Release == utils.ReleaseStatusY {
-		releaseStatus = utils.ReleaseStatusT
+func (c *Certificates) CertificateSwitchEnable(tx *gorm.DB, resID string, enable int) error {
+
+	updateParam := Certificates{
+		Enable: enable,
 	}
+	err := tx.Table(c.TableName()).Where("res_id = ?", resID).Updates(updateParam).Error
 
-	updateErr := packages.GetDb().
-		Table(c.TableName()).
-		Where("id = ?", id).
-		Updates(Certificates{
-			Enable:  enable,
-			Release: releaseStatus}).Error
-
-	if updateErr != nil {
-		return updateErr
-	}
-
-	return nil
-}
-
-func (c *Certificates) CertificateSwitchRelease(id string, release int) error {
-	updateErr := packages.GetDb().
-		Table(c.TableName()).
-		Where("id = ?", id).
-		Update("release_status", release).Error
-
-	if updateErr != nil {
-		return updateErr
+	if err != nil {
+		return err
 	}
 
 	return nil
 }
 
 func (c *Certificates) CertificateInfoByDomainSniInfos(domains []string) []Certificates {
-	certificateInfos := make([]Certificates, 0)
+	certificateInfos := []Certificates{}
 	if len(domains) == 0 {
 		return certificateInfos
 	}
 
-	packages.GetDb().
-		Table(c.TableName()).
-		Where("sni In ?", domains).
-		Find(&certificateInfos)
+	packages.GetDb().Table(c.TableName()).Where("sni In ?", domains).Find(&certificateInfos)
 
 	return certificateInfos
 }

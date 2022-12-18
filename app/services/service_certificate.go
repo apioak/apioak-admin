@@ -4,356 +4,293 @@ import (
 	"apioak-admin/app/enums"
 	"apioak-admin/app/models"
 	"apioak-admin/app/packages"
+	"apioak-admin/app/rpc"
 	"apioak-admin/app/utils"
 	"apioak-admin/app/validators"
-	"context"
-	"encoding/json"
 	"errors"
-	"strings"
-	"time"
+	"fmt"
+	"gorm.io/gorm"
+	"sync"
 )
 
-func CheckCertificateNull(id string) error {
-	certificatesModel := models.Certificates{}
-	certificateInfo := certificatesModel.CertificateInfoById(id)
-	if certificateInfo.ID != id {
-		return errors.New(enums.CodeMessages(enums.CertificateNull))
-	}
-
-	return nil
+type CertificateService struct {
 }
 
-func CheckCertificateExistBySni(sni string, filterId string) error {
-	certificatesModel := models.Certificates{}
-	certificateInfo := certificatesModel.CertificateInfoBySni(sni, filterId)
-	if certificateInfo.Sni == sni {
-		return errors.New(enums.CodeMessages(enums.CertificateExist))
-	}
+var (
+	certificateService *CertificateService
+	certificateOnce    sync.Once
+)
 
-	return nil
+func NewCertificateService() *CertificateService {
+
+	certificateOnce.Do(func() {
+		certificateService = &CertificateService{}
+	})
+
+	return certificateService
 }
 
-func CheckCertificateDomainExist(sni string) error {
-	searchSni := strings.Replace(sni, "*.", "", 1)
+func (s *CertificateService) syncDataSideCertificate(tx *gorm.DB, new *models.Certificates, filterID string) error {
 
-	serviceDomainsModel := models.ServiceDomains{}
-	domainList := serviceDomainsModel.DomainListByLikeSni(searchSni)
-	if len(domainList) != 0 {
-		return errors.New(enums.CodeMessages(enums.CertificateDomainExist))
+	existSniCertificate, err := (&models.Certificates{}).EnableCertificateInfoBySni(new.Sni, filterID)
+	if err != nil {
+		return err
 	}
 
-	return nil
-}
+	tmpDeleteRes := false
+	// 相同域名的证书已启用时需要将已启用的证书关闭，并同步至数据面
+	if existSniCertificate.Enable == utils.EnableOn {
+		// 修改控制面旧证书启用状态
+		err := (&models.Certificates{}).CertificateSwitchEnable(tx, existSniCertificate.ResID, utils.EnableOff)
 
-func CheckCertificateDomainExistById(id string) error {
-	certificatesModel := models.Certificates{}
-	certificateInfo := certificatesModel.CertificateInfoById(id)
-	if certificateInfo.ID != id {
-		return errors.New(enums.CodeMessages(enums.CertificateNull))
-	}
-
-	checkCertificateDomainExistErr := CheckCertificateDomainExist(certificateInfo.Sni)
-	if checkCertificateDomainExistErr != nil {
-		return checkCertificateDomainExistErr
-	}
-
-	return nil
-}
-
-func CheckCertificateDelete(id string) error {
-	certificatesModel := models.Certificates{}
-	certificateInfo := certificatesModel.CertificateInfoById(id)
-
-	if certificateInfo.Release == utils.ReleaseStatusY {
-		if certificateInfo.Enable == utils.EnableOn {
-			return errors.New(enums.CodeMessages(enums.SwitchONProhibitsOp))
+		if err != nil {
+			return nil
 		}
-	} else if certificateInfo.Release == utils.ReleaseStatusT {
-		return errors.New(enums.CodeMessages(enums.ToReleaseProhibitsOp))
-	}
-
-	return nil
-}
-
-func CheckCertificateEnableChange(id string, enable int) error {
-	certificatesModel := models.Certificates{}
-	certificateInfo := certificatesModel.CertificateInfoById(id)
-	if certificateInfo.Enable == enable {
-		return errors.New(enums.CodeMessages(enums.SwitchNoChange))
-	}
-
-	return nil
-}
-
-func CheckCertificateRelease(id string) error {
-	certificatesModel := models.Certificates{}
-	certificateInfo := certificatesModel.CertificateInfoById(id)
-	if certificateInfo.Release == utils.ReleaseStatusY {
-		return errors.New(enums.CodeMessages(enums.SwitchPublished))
-	}
-
-	return nil
-}
-
-func decodeCertificateData(certificateContent string) (string, error) {
-	certificateInfo := ""
-	type contentStruct struct {
-		Content string `json:"content"`
-	}
-
-	contentInfo := contentStruct{}
-	contentInfoErr := json.Unmarshal([]byte(certificateContent), &contentInfo)
-	if contentInfoErr != nil {
-		return certificateInfo, contentInfoErr
-	}
-
-	certificateInfo = contentInfo.Content
-
-	return certificateInfo, nil
-}
-
-func CertificateAdd(certificateData *validators.CertificateAddUpdate) error {
-	certificateInfo, certificateInfoErr := utils.DiscernCertificate(&certificateData.Certificate)
-	if certificateInfoErr != nil {
-		return certificateInfoErr
-	}
-
-	checkCertificateExistErr := CheckCertificateExistBySni(certificateInfo.CommonName, "")
-	if checkCertificateExistErr != nil {
-		return checkCertificateExistErr
-	}
-
-	certificatesModel := models.Certificates{
-		Certificate: certificateData.Certificate,
-		PrivateKey:  certificateData.PrivateKey,
-		ExpiredAt:   certificateInfo.NotAfter,
-		Enable:      certificateData.IsEnable,
-		Release:     utils.ReleaseStatusU,
-		Sni:         certificateInfo.CommonName,
-	}
-
-	if certificateData.IsRelease == utils.ReleaseY {
-		certificatesModel.Release = utils.ReleaseStatusY
-	}
-
-	certificateId, addErr := certificatesModel.CertificatesAdd(&certificatesModel)
-	if addErr != nil {
-		return addErr
-	}
-
-	if certificateData.IsRelease == utils.ReleaseY {
-		configReleaseErr := CertificateConfigRelease(utils.ReleaseTypePush, certificateId)
-		if configReleaseErr != nil {
-			certificatesModel.Release = utils.ReleaseStatusU
-			certificatesModel.CertificatesUpdate(certificateId, &certificatesModel)
-			return configReleaseErr
+		// 同步数据面旧证书启用状态
+		err = rpc.NewApiOak().CertificateDelete(existSniCertificate.ResID)
+		if err != nil {
+			return nil
 		}
-
-		return configReleaseErr
+		tmpDeleteRes = true
 	}
 
-	return nil
-}
-
-func CertificateUpdate(id string, certificateData *validators.CertificateAddUpdate) error {
-	certificateInfo, certificateInfoErr := utils.DiscernCertificate(&certificateData.Certificate)
-	if certificateInfoErr != nil {
-		return certificateInfoErr
+	// 新增数据面证书信息
+	request := &rpc.CertificateReleaseRequest{
+		Name: new.ResID,
+		Sni:  []string{new.Sni},
+		Cert: new.Certificate,
+		Key:  new.PrivateKey,
 	}
-
-	certificatesModel := models.Certificates{}
-	certificateExistInfo := certificatesModel.CertificateInfoById(id)
-
-	if certificateInfo.CommonName != certificateExistInfo.Sni {
-		checkCertificateDomainExistErr := CheckCertificateDomainExist(certificateExistInfo.Sni)
-		if checkCertificateDomainExistErr != nil {
-			return checkCertificateDomainExistErr
-		}
-	}
-
-	checkCertificateExistErr := CheckCertificateExistBySni(certificateInfo.CommonName, id)
-	if checkCertificateExistErr != nil {
-		return checkCertificateExistErr
-	}
-
-	certificatesModel.Certificate = certificateData.Certificate
-	certificatesModel.PrivateKey = certificateData.PrivateKey
-	certificatesModel.ExpiredAt = certificateInfo.NotAfter
-	certificatesModel.Enable = certificateData.IsEnable
-	certificatesModel.Sni = certificateInfo.CommonName
-	if certificateExistInfo.Release == utils.ReleaseStatusY {
-		certificatesModel.Release = utils.ReleaseStatusT
-	}
-
-	if certificateData.IsRelease == utils.ReleaseY {
-		certificatesModel.Release = utils.ReleaseStatusY
-	}
-
-	updateErr := certificatesModel.CertificatesUpdate(id, &certificatesModel)
-	if updateErr != nil {
-		return updateErr
-	}
-
-	if certificateData.IsRelease == utils.ReleaseY {
-		configReleaseErr := CertificateConfigRelease(utils.ReleaseTypePush, id)
-		if configReleaseErr != nil {
-			if certificateExistInfo.Release != utils.ReleaseStatusU {
-				certificatesModel.Release = utils.ReleaseStatusT
+	err = rpc.NewApiOak().CertificateRelease(request)
+	if err != nil {
+		// 同步删除过数据面旧证书信息时需要回滚，控制面数据根据事务自动回滚
+		if tmpDeleteRes != false {
+			request := &rpc.CertificateReleaseRequest{
+				Name: existSniCertificate.ResID,
+				Sni:  []string{existSniCertificate.Sni},
+				Cert: existSniCertificate.Certificate,
+				Key:  existSniCertificate.PrivateKey,
 			}
-			certificatesModel.CertificatesUpdate(id, &certificatesModel)
-			return configReleaseErr
+			err = rpc.NewApiOak().CertificateRelease(request)
+			if err != nil {
+				packages.Log.Error("rollback old data side certificate error")
+				return err
+			}
 		}
-
-		return configReleaseErr
+		return err
 	}
 
 	return nil
 }
 
-type CertificateContent struct {
-	ID            string `json:"id"`
-	Certificate   string `json:"certificate"`
-	PrivateKey    string `json:"private_key"`
-	IsEnable      int    `json:"is_enable"`
-	ReleaseStatus int    `json:"release_status"`
-}
+//CertificateAdd
+func (s *CertificateService) CertificateAdd(request *validators.CertificateAddUpdate) error {
+	certificateInfo, err := utils.DiscernCertificate(&request.Certificate)
+	if err != nil {
+		return err
+	}
+	err = packages.GetDb().Transaction(func(tx *gorm.DB) error {
 
-func (c *CertificateContent) CertificateContentInfo(id string) CertificateContent {
-	certificateContent := CertificateContent{}
+		certificates := &models.Certificates{
+			Certificate: request.Certificate,
+			PrivateKey:  request.PrivateKey,
+			ExpiredAt:   certificateInfo.NotAfter,
+			Enable:      request.Enable,
+			Sni:         request.Sni,
+		}
 
-	certificatesModel := models.Certificates{}
-	certificateInfo := certificatesModel.CertificateInfoById(id)
-	if certificateInfo.ID != id {
-		return certificateContent
+		resID, err := (&models.Certificates{}).CertificatesAdd(tx, certificates)
+
+		if err != nil {
+			return err
+		}
+		certificates.ResID = resID
+		// 当前证书设置为启用状态
+		if request.Enable == utils.EnableOn {
+			err = s.syncDataSideCertificate(tx, certificates, "")
+
+			fmt.Println(err)
+			if err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return err
 	}
 
-	certificateContent.ID = certificateInfo.ID
-	certificateContent.Certificate = certificateInfo.Certificate
-	certificateContent.PrivateKey = certificateInfo.PrivateKey
-	certificateContent.IsEnable = certificateInfo.Enable
-	certificateContent.ReleaseStatus = certificateInfo.Release
+	return nil
+}
 
-	return certificateContent
+// CertificateUpdate
+func (s *CertificateService) CertificateUpdate(resID string, request *validators.CertificateAddUpdate) error {
+
+	certificates, err := (&models.Certificates{}).CertificateInfoById(resID)
+
+	if err != nil {
+		return errors.New(enums.CodeMessages(enums.CertificateNull))
+	}
+
+	discernCertificateInfo, err := utils.DiscernCertificate(&request.Certificate)
+	if err != nil {
+		return err
+	}
+
+	err = packages.GetDb().Transaction(func(tx *gorm.DB) error {
+
+		certificates.Certificate = request.Certificate
+		certificates.PrivateKey = request.PrivateKey
+		certificates.ExpiredAt = discernCertificateInfo.NotAfter
+		certificates.Enable = request.Enable
+		certificates.Sni = request.Sni
+
+		err = (&models.Certificates{}).CertificatesUpdate(tx, resID, &certificates)
+
+		if err != nil {
+			return err
+		}
+
+		if request.Enable == utils.EnableOn {
+			err = s.syncDataSideCertificate(tx, &certificates, certificates.ResID)
+
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+
+	return nil
 }
 
 type CertificateInfo struct {
-	ID        string `json:"id"`
+	ResID       string `json:"resId"`
+	Certificate string `json:"certificate"`
+	PrivateKey  string `json:"private_key"`
+	Enable      int    `json:"enable"`
+}
+
+// CertificateInfo
+func (s *CertificateService) CertificateInfo(id string) (CertificateInfo, error) {
+
+	certificatesModel := models.Certificates{}
+
+	certificateInfo, err := certificatesModel.CertificateInfoById(id)
+
+	if err != nil {
+		return CertificateInfo{}, errors.New(enums.CodeMessages(enums.CertificateNull))
+	}
+
+	return CertificateInfo{
+		ResID:       certificateInfo.ResID,
+		Certificate: certificateInfo.Certificate,
+		PrivateKey:  certificateInfo.PrivateKey,
+		Enable:      certificateInfo.Enable,
+	}, nil
+
+}
+
+type CertificateItem struct {
+	ResID     string `json:"resId"`
 	Sni       string `json:"sni"`
 	ExpiredAt int64  `json:"expired_at"`
 	Enable    int    `json:"enable"`
-	Release   int    `json:"release"`
 }
 
-func (c *CertificateInfo) CertificateListPage(param *validators.CertificateList) ([]CertificateInfo, int, error) {
+// CertificateListPage
+func (s *CertificateService) CertificateListPage(param *validators.CertificateList) ([]CertificateItem, int, error) {
 	certificatesModel := models.Certificates{}
-	certificateListInfos, total, certificateListInfosErr := certificatesModel.CertificateListPage(param)
+	certificateList, total, err := certificatesModel.CertificateListPage(param)
 
-	certificateList := make([]CertificateInfo, 0)
-	if len(certificateListInfos) != 0 {
-		for _, certificateListInfo := range certificateListInfos {
-			certificateInfo := CertificateInfo{}
-			certificateInfo.ID = certificateListInfo.ID
-			certificateInfo.Sni = certificateListInfo.Sni
-			certificateInfo.ExpiredAt = certificateListInfo.ExpiredAt.Unix()
-			certificateInfo.Enable = certificateListInfo.Enable
-			certificateInfo.Release = certificateListInfo.Release
+	if err != nil {
+		return []CertificateItem{}, 0, err
+	}
 
-			certificateList = append(certificateList, certificateInfo)
+	if len(certificateList) == 0 {
+		return []CertificateItem{}, 0, nil
+	}
+	list := []CertificateItem{}
+
+	for _, v := range certificateList {
+		list = append(list, CertificateItem{
+			ResID:     v.ResID,
+			Sni:       v.Sni,
+			ExpiredAt: v.ExpiredAt.Unix(),
+			Enable:    v.Enable,
+		})
+	}
+
+	return list, total, nil
+}
+
+// CertificateDelete
+func (s *CertificateService) CertificateDelete(resID string) error {
+
+	_, err := (&models.Certificates{}).CertificateInfoById(resID)
+
+	if err != nil {
+		return errors.New(enums.CodeMessages(enums.CertificateNull))
+	}
+
+	err = packages.GetDb().Transaction(func(tx *gorm.DB) error {
+
+		err := (&models.Certificates{}).CertificateDelete(tx, resID)
+
+		if err != nil {
+			return err
 		}
-	}
 
-	return certificateList, total, certificateListInfosErr
-}
+		err = rpc.NewApiOak().CertificateDelete(resID)
 
-func CertificateDelete(id string) error {
-	configReleaseErr := CertificateConfigRelease(utils.ReleaseTypeDelete, id)
-	if configReleaseErr != nil {
-		return configReleaseErr
-	}
-
-	certificatesModel := models.Certificates{}
-	deleteErr := certificatesModel.CertificateDelete(id)
-	if deleteErr != nil {
-		CertificateConfigRelease(utils.ReleaseTypePush, id)
-		return deleteErr
+		if err != nil {
+			return err
+		}
+		return nil
+	})
+	if err != nil {
+		return err
 	}
 
 	return nil
 }
 
-func CertificateRelease(id string) error {
-	certificatesModel := models.Certificates{}
-	certificateInfo := certificatesModel.CertificateInfoById(id)
-	updateErr := certificatesModel.CertificateSwitchRelease(id, utils.ReleaseStatusY)
-	if updateErr != nil {
-		return updateErr
+// CertificateSwitchEnable
+func (s *CertificateService) CertificateSwitchEnable(resID string, enable int) error {
+
+	certificates, err := (&models.Certificates{}).CertificateInfoById(resID)
+
+	if err != nil {
+		return errors.New(enums.CodeMessages(enums.CertificateNull))
 	}
 
-	configReleaseErr := CertificateConfigRelease(utils.ReleaseTypePush, id)
-	if configReleaseErr != nil {
-		certificatesModel.CertificateSwitchRelease(id, certificateInfo.Release)
-		return configReleaseErr
-	}
+	err = packages.GetDb().Transaction(func(tx *gorm.DB) error {
+		err = (&models.Certificates{}).CertificateSwitchEnable(tx, resID, enable)
 
+		if err != nil {
+			return err
+		}
+
+		if enable == utils.EnableOn {
+			err = s.syncDataSideCertificate(tx, &certificates, certificates.ResID)
+
+			if err != nil {
+				return err
+			}
+		} else {
+			err = rpc.NewApiOak().CertificateDelete(resID)
+
+			if err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
+	if err != nil {
+		return err
+	}
 	return nil
-}
-
-func CertificateConfigRelease(releaseType string, certificateId string) error {
-	certificateConfig, certificateConfigErr := generateCertificateConfig(certificateId)
-	if certificateConfigErr != nil {
-		return certificateConfigErr
-	}
-
-	certificateConfigJson, certificateConfigJsonErr := json.Marshal(certificateConfig)
-	if certificateConfigJsonErr != nil {
-		return certificateConfigJsonErr
-	}
-	certificateConfigStr := string(certificateConfigJson)
-
-	etcdKey := utils.EtcdKey(utils.EtcdKeyTypeCertificate, certificateId)
-	if len(etcdKey) == 0 {
-		return errors.New(enums.CodeMessages(enums.EtcdKeyNull))
-	}
-
-	etcdClient := packages.GetEtcdClient()
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*utils.EtcdTimeOut)
-	defer cancel()
-
-	var respErr error
-	if strings.ToLower(releaseType) == utils.ReleaseTypePush {
-		_, respErr = etcdClient.Put(ctx, etcdKey, certificateConfigStr)
-	} else if strings.ToLower(releaseType) == utils.ReleaseTypePush {
-		_, respErr = etcdClient.Delete(ctx, etcdKey)
-	}
-
-	if respErr != nil {
-		return errors.New(enums.CodeMessages(enums.EtcdUnavailable))
-	}
-
-	return nil
-}
-
-type CertificateConfig struct {
-	ID       string `json:"id"`
-	Sni      string `json:"sni"`
-	IsEnable int    `json:"is_enable"`
-	Pem      string `json:"pem"`
-	Key      string `json:"key"`
-}
-
-func generateCertificateConfig(id string) (CertificateConfig, error) {
-	certificateConfig := CertificateConfig{}
-	certificateModel := models.Certificates{}
-	certificateInfo := certificateModel.CertificateInfoById(id)
-	if len(certificateInfo.ID) == 0 {
-		return certificateConfig, errors.New(enums.CodeMessages(enums.CertificateNull))
-	}
-
-	certificateConfig.ID = certificateInfo.ID
-	certificateConfig.Sni = certificateInfo.Sni
-	certificateConfig.IsEnable = certificateInfo.Enable
-	certificateConfig.Pem = certificateInfo.Certificate
-	certificateConfig.Key = certificateInfo.PrivateKey
-
-	return certificateConfig, nil
 }
