@@ -5,7 +5,6 @@ import (
 	"apioak-admin/app/packages"
 	"apioak-admin/app/utils"
 	"errors"
-	"fmt"
 	"gorm.io/gorm"
 )
 
@@ -89,13 +88,10 @@ func (m Upstreams) UpstreamDetailByResId(resId string) (detail Upstreams, err er
 }
 
 func (m Upstreams) UpstreamUpdate(resIds string, upstreamData Upstreams) (err error) {
-
 	err = packages.GetDb().
 		Table(m.TableName()).
 		Where("res_id = ?", resIds).
 		Updates(&upstreamData).Error
-
-	fmt.Println("-------------", err, "---------")
 
 	return
 }

@@ -230,63 +230,6 @@ func (r *Routers) RouterUpdate(resId string, routerData map[string]interface{}) 
 	return
 }
 
-// func (r *Routers) RouterCopy(routerData Routers, routerPlugins []RouterPlugins) (string, error) {
-// 	tx := packages.GetDb().Begin()
-// 	defer func() {
-// 		if r := recover(); r != nil {
-// 			tx.Rollback()
-// 		}
-// 	}()
-//
-// 	if err := tx.Error; err != nil {
-// 		return "", err
-// 	}
-//
-// 	routerId, routerIdUniqueErr := r.ModelUniqueId()
-// 	if routerIdUniqueErr != nil {
-// 		return routerId, routerIdUniqueErr
-// 	}
-//
-// 	routerData.ResID = routerId
-// 	routerData.RouterName = routerId
-//
-// 	addErr := tx.
-// 		Table(r.TableName()).
-// 		Create(&routerData).Error
-//
-// 	if addErr != nil {
-// 		tx.Rollback()
-// 		return routerId, addErr
-// 	}
-//
-// 	if len(routerPlugins) != 0 {
-// 		routerPluginModel := RouterPlugins{}
-// 		for k, _ := range routerPlugins {
-// 			routerPluginId, routerPluginIdErr := routerPluginModel.ModelUniqueId()
-// 			if routerPluginIdErr != nil {
-// 				tx.Rollback()
-// 				return routerId, routerPluginIdErr
-// 			}
-// 			±
-// 			routerPlugins[k].ID = routerPluginId
-// 			routerPlugins[k].RouterID = routerId
-// 			routerPlugins[k].ReleaseStatus = utils.ReleaseStatusU
-// 			routerPlugins[k].CreatedAt = time.Now()
-// 			routerPlugins[k].UpdatedAt = time.Now()
-// 		}
-//
-// 		addRouterPluginErr := tx.
-// 			Table(routerPluginModel.TableName()).
-// 			Create(&routerPlugins).Error
-//
-// 		if addRouterPluginErr != nil {
-// 			tx.Rollback()
-// 			return routerId, addRouterPluginErr
-// 		}
-// 	}
-//
-// 	return routerId, tx.Commit().Error
-// }
 
 func (r *Routers) RouterDelete(id string) error {
 

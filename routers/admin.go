@@ -56,12 +56,12 @@ func RouterRegister(routerEngine *gin.Engine) {
 			router.GET("/list", admin.RouterList)
 			router.GET("/info/:service_res_id/:router_res_id", admin.RouterInfo)
 			router.PUT("/update/:service_res_id/:router_res_id", admin.RouterUpdate)
+			router.DELETE("/delete/:service_res_id/:router_res_id", admin.RouterDelete)
 			router.PUT("/update/name/:service_res_id/:router_res_id", admin.RouterUpdateName)
 			router.PUT("/switch/enable/:service_res_id/:router_res_id", admin.RouterSwitchEnable)
 			router.PUT("/switch/release/:service_res_id/:router_res_id", admin.RouterSwitchRelease)
-			router.DELETE("/delete/:service_res_id/:router_res_id", admin.RouterDelete)
+			router.POST("/copy/:service_res_id/:router_res_id", admin.RouterCopy)
 
-			// route.POST("/copy/:service_id/:source_route_id", admin.RouteCopy)
 
 			// router plugin
 			// route.GET("/plugin/list/:service_id/:route_id", admin.RouterPluginList)

@@ -40,7 +40,7 @@ func RouterAdd(c *gin.Context) {
 		return
 	}
 
-	createErr := services.RouterCreate(&bindParams)
+	_, createErr := services.RouterCreate(&bindParams)
 	if createErr != nil {
 		utils.Error(c, createErr.Error())
 		return
@@ -186,7 +186,7 @@ func RouterUpdateName(c *gin.Context) {
 
 func RouterSwitchEnable(c *gin.Context) {
 	serviceResId := strings.TrimSpace(c.Param("service_res_id"))
-	routeResId := strings.TrimSpace(c.Param("route_res_id"))
+	routerResId := strings.TrimSpace(c.Param("router_res_id"))
 
 	var bindParams = validators.RouterSwitchEnable{}
 	if msg, err := packages.ParseRequestParams(c, &bindParams); err != nil {
@@ -200,26 +200,26 @@ func RouterSwitchEnable(c *gin.Context) {
 		return
 	}
 
-	checkExistRouteErr := services.CheckRouterExist(routeResId, serviceResId)
+	checkExistRouteErr := services.CheckRouterExist(routerResId, serviceResId)
 	if checkExistRouteErr != nil {
 		utils.Error(c, checkExistRouteErr.Error())
 		return
 	}
 
-	checkEditDefaultPathRouteErr := services.CheckEditDefaultPathRouter(routeResId)
+	checkEditDefaultPathRouteErr := services.CheckEditDefaultPathRouter(routerResId)
 	if checkEditDefaultPathRouteErr != nil {
 		utils.Error(c, checkEditDefaultPathRouteErr.Error())
 		return
 	}
 
-	checkRouteEnableChangeErr := services.CheckRouterEnableChange(routeResId, bindParams.Enable)
+	checkRouteEnableChangeErr := services.CheckRouterEnableChange(routerResId, bindParams.Enable)
 	if checkRouteEnableChangeErr != nil {
 		utils.Error(c, checkRouteEnableChangeErr.Error())
 		return
 	}
 
 	routerModel := models.Routers{}
-	updateErr := routerModel.RouterSwitchEnable(routeResId, bindParams.Enable)
+	updateErr := routerModel.RouterSwitchEnable(routerResId, bindParams.Enable)
 	if updateErr != nil {
 		utils.Error(c, updateErr.Error())
 		return
@@ -259,7 +259,6 @@ func RouterDelete(c *gin.Context) {
 	utils.Ok(c)
 }
 
-
 func RouterSwitchRelease(c *gin.Context) {
 	serviceResId := strings.TrimSpace(c.Param("service_res_id"))
 	routerResId := strings.TrimSpace(c.Param("router_res_id"))
@@ -293,325 +292,29 @@ func RouterSwitchRelease(c *gin.Context) {
 	utils.Ok(c)
 }
 
-// ------------------------------------------------------------------------------------------
+func RouterCopy(c *gin.Context) {
+	serviceResId := strings.TrimSpace(c.Param("service_res_id"))
+	routerResId := strings.TrimSpace(c.Param("router_res_id"))
+
+	checkServiceExistErr := services.CheckServiceExist(serviceResId)
+	if checkServiceExistErr != nil {
+		utils.Error(c, checkServiceExistErr.Error())
+		return
+	}
+
+	checkExistRouterErr := services.CheckRouterExist(routerResId, serviceResId)
+	if checkExistRouterErr != nil {
+		utils.Error(c, checkExistRouterErr.Error())
+		return
+	}
+
+	err := services.RouterCopy(routerResId)
+	if err != nil {
+		utils.Error(c, err.Error())
+		return
+	}
+
+	utils.Ok(c)
+}
 
 
-
-
-// func RouteCopy(c *gin.Context) {
-// 	var bindParams = validators.ValidatorRouterAddUpdate{
-// 		Release: utils.ReleaseN,
-// 	}
-// 	if msg, err := packages.ParseRequestParams(c, &bindParams); err != nil {
-// 		utils.Error(c, msg)
-// 		return
-// 	}
-// 	validators.GetRouterAttributesDefault(&bindParams)
-//
-// 	if bindParams.RoutePath == utils.DefaultRoutePath {
-// 		utils.Error(c, enums.CodeMessages(enums.RouteDefaultPathNoPermission))
-// 		return
-// 	}
-//
-// 	serviceId := strings.TrimSpace(c.Param("service_id"))
-// 	sourceRouteId := strings.TrimSpace(c.Param("source_route_id"))
-//
-// 	checkServiceExistErr := services.CheckServiceExist(serviceId)
-// 	if checkServiceExistErr != nil {
-// 		utils.Error(c, checkServiceExistErr.Error())
-// 		return
-// 	}
-//
-// 	checkExistRouteErr := services.CheckRouteExist(sourceRouteId, serviceId)
-// 	if checkExistRouteErr != nil {
-// 		utils.Error(c, checkExistRouteErr.Error())
-// 		return
-// 	}
-//
-// 	err := services.CheckExistServiceRoutePath(bindParams.ServiceResID, bindParams.RoutePath, []string{})
-// 	if err != nil {
-// 		utils.Error(c, err.Error())
-// 		return
-// 	}
-//
-// 	createErr := services.RouteCopy(&bindParams, sourceRouteId)
-// 	if createErr != nil {
-// 		utils.Error(c, createErr.Error())
-// 		return
-// 	}
-//
-// 	utils.Ok(c)
-// }
-
-
-
-// func RoutePluginList(c *gin.Context) {
-// 	serviceId := strings.TrimSpace(c.Param("service_id"))
-// 	routeId := strings.TrimSpace(c.Param("route_id"))
-//
-// 	checkServiceExistErr := services.CheckServiceExist(serviceId)
-// 	if checkServiceExistErr != nil {
-// 		utils.Error(c, checkServiceExistErr.Error())
-// 		return
-// 	}
-//
-// 	checkExistRouteErr := services.CheckRouteExist(routeId, serviceId)
-// 	if checkExistRouteErr != nil {
-// 		utils.Error(c, checkExistRouteErr.Error())
-// 		return
-// 	}
-//
-// 	routePluginInfo := services.RoutePluginInfo{}
-// 	routePluginInfoList := routePluginInfo.RoutePluginList(routeId)
-//
-// 	utils.Ok(c, routePluginInfoList)
-// }
-//
-// func RoutePluginAdd(c *gin.Context) {
-// 	serviceId := strings.TrimSpace(c.Param("service_id"))
-// 	routeId := strings.TrimSpace(c.Param("route_id"))
-// 	pluginId := strings.TrimSpace(c.Param("plugin_id"))
-//
-// 	var bindParams = validators.RoutePluginAddUpdate{}
-// 	if msg, err := packages.ParseRequestParams(c, &bindParams); err != nil {
-// 		utils.Error(c, msg)
-// 		return
-// 	}
-// 	bindParams.RouteID = routeId
-// 	bindParams.PluginID = pluginId
-//
-// 	checkServiceExistErr := services.CheckServiceExist(serviceId)
-// 	if checkServiceExistErr != nil {
-// 		utils.Error(c, checkServiceExistErr.Error())
-// 		return
-// 	}
-//
-// 	checkExistRouteErr := services.CheckRouteExist(routeId, serviceId)
-// 	if checkExistRouteErr != nil {
-// 		utils.Error(c, checkExistRouteErr.Error())
-// 		return
-// 	}
-//
-// 	checkPluginExistErr := services.CheckPluginExist(pluginId)
-// 	if checkPluginExistErr != nil {
-// 		utils.Error(c, checkPluginExistErr.Error())
-// 		return
-// 	}
-//
-// 	checkRoutePluginExistErr := services.CheckRoutePluginExistByRoutePluginId(routeId, pluginId)
-// 	if checkRoutePluginExistErr != nil {
-// 		utils.Error(c, checkRoutePluginExistErr.Error())
-// 		return
-// 	}
-//
-// 	checkPluginConfigErr := services.CheckPluginConfig(pluginId, &bindParams)
-// 	if checkPluginConfigErr != nil {
-// 		utils.Error(c, checkPluginConfigErr.Error())
-// 		return
-// 	}
-//
-// 	addErr := services.RoutePluginCreate(&bindParams)
-// 	if addErr != nil {
-// 		utils.Error(c, addErr.Error())
-// 		return
-// 	}
-//
-// 	utils.Ok(c)
-// }
-//
-// func RoutePluginUpdate(c *gin.Context) {
-// 	routeId := strings.TrimSpace(c.Param("route_id"))
-// 	pluginId := strings.TrimSpace(c.Param("plugin_id"))
-// 	routePluginId := strings.TrimSpace(c.Param("route_plugin_id"))
-//
-// 	var bindParams = validators.RoutePluginAddUpdate{}
-// 	if msg, err := packages.ParseRequestParams(c, &bindParams); err != nil {
-// 		utils.Error(c, msg)
-// 		return
-// 	}
-//
-// 	checkExistRouteErr := services.CheckRouteExist(routeId, "")
-// 	if checkExistRouteErr != nil {
-// 		utils.Error(c, checkExistRouteErr.Error())
-// 		return
-// 	}
-//
-// 	checkPluginExistErr := services.CheckPluginExist(pluginId)
-// 	if checkPluginExistErr != nil {
-// 		utils.Error(c, checkPluginExistErr.Error())
-// 		return
-// 	}
-//
-// 	checkRoutePluginExist := services.CheckRoutePluginExist(routePluginId, routeId, pluginId)
-// 	if checkRoutePluginExist != nil {
-// 		utils.Error(c, checkRoutePluginExist.Error())
-// 		return
-// 	}
-//
-// 	checkPluginConfigErr := services.CheckPluginConfig(pluginId, &bindParams)
-// 	if checkPluginConfigErr != nil {
-// 		utils.Error(c, checkPluginConfigErr.Error())
-// 		return
-// 	}
-//
-// 	updateErr := services.RoutePluginUpdate(routePluginId, &bindParams)
-// 	if updateErr != nil {
-// 		utils.Error(c, updateErr.Error())
-// 		return
-// 	}
-//
-// 	utils.Ok(c)
-// }
-//
-// func RoutePluginDelete(c *gin.Context) {
-// 	routeId := strings.TrimSpace(c.Param("route_id"))
-// 	pluginId := strings.TrimSpace(c.Param("plugin_id"))
-// 	routePluginId := strings.TrimSpace(c.Param("route_plugin_id"))
-//
-// 	checkExistRouteErr := services.CheckRouteExist(routeId, "")
-// 	if checkExistRouteErr != nil {
-// 		utils.Error(c, checkExistRouteErr.Error())
-// 		return
-// 	}
-//
-// 	checkPluginExistErr := services.CheckPluginExist(pluginId)
-// 	if checkPluginExistErr != nil {
-// 		utils.Error(c, checkPluginExistErr.Error())
-// 		return
-// 	}
-//
-// 	checkRoutePluginExist := services.CheckRoutePluginExist(routePluginId, routeId, pluginId)
-// 	if checkRoutePluginExist != nil {
-// 		utils.Error(c, checkRoutePluginExist.Error())
-// 		return
-// 	}
-//
-// 	checkRoutePluginDeleteErr := services.CheckRoutePluginDelete(routePluginId)
-// 	if checkRoutePluginDeleteErr != nil {
-// 		utils.Error(c, checkRoutePluginDeleteErr.Error())
-// 		return
-// 	}
-//
-// 	deleteErr := services.RoutePluginDelete(routePluginId)
-// 	if deleteErr != nil {
-// 		utils.Error(c, enums.CodeMessages(enums.Error))
-// 		return
-// 	}
-//
-// 	utils.Ok(c)
-// }
-//
-// func RoutePluginSwitchEnable(c *gin.Context) {
-// 	routeId := strings.TrimSpace(c.Param("route_id"))
-// 	pluginId := strings.TrimSpace(c.Param("plugin_id"))
-// 	routePluginId := strings.TrimSpace(c.Param("route_plugin_id"))
-//
-// 	var bindParams = validators.RoutePluginSwitchEnable{}
-// 	if msg, err := packages.ParseRequestParams(c, &bindParams); err != nil {
-// 		utils.Error(c, msg)
-// 		return
-// 	}
-//
-// 	checkExistRouteErr := services.CheckRouteExist(routeId, "")
-// 	if checkExistRouteErr != nil {
-// 		utils.Error(c, checkExistRouteErr.Error())
-// 		return
-// 	}
-//
-// 	checkPluginExistErr := services.CheckPluginExist(pluginId)
-// 	if checkPluginExistErr != nil {
-// 		utils.Error(c, checkPluginExistErr.Error())
-// 		return
-// 	}
-//
-// 	checkRoutePluginExist := services.CheckRoutePluginExist(routePluginId, routeId, pluginId)
-// 	if checkRoutePluginExist != nil {
-// 		utils.Error(c, checkRoutePluginExist.Error())
-// 		return
-// 	}
-//
-// 	checkRoutePluginEnableChange := services.CheckRoutePluginEnableChange(routePluginId, bindParams.IsEnable)
-// 	if checkRoutePluginEnableChange != nil {
-// 		utils.Error(c, checkRoutePluginEnableChange.Error())
-// 		return
-// 	}
-//
-// 	routePluginModel := models.RoutePlugins{}
-// 	updateErr := routePluginModel.RoutePluginSwitchEnable(routePluginId, bindParams.IsEnable)
-// 	if updateErr != nil {
-// 		utils.Error(c, updateErr.Error())
-// 		return
-// 	}
-//
-// 	utils.Ok(c)
-// }
-//
-// func RoutePluginSwitchRelease(c *gin.Context) {
-// 	routeId := strings.TrimSpace(c.Param("route_id"))
-// 	pluginId := strings.TrimSpace(c.Param("plugin_id"))
-// 	routePluginId := strings.TrimSpace(c.Param("route_plugin_id"))
-//
-// 	checkExistRouteErr := services.CheckRouteExist(routeId, "")
-// 	if checkExistRouteErr != nil {
-// 		utils.Error(c, checkExistRouteErr.Error())
-// 		return
-// 	}
-//
-// 	checkPluginExistErr := services.CheckPluginExist(pluginId)
-// 	if checkPluginExistErr != nil {
-// 		utils.Error(c, checkPluginExistErr.Error())
-// 		return
-// 	}
-//
-// 	checkRoutePluginExist := services.CheckRoutePluginExist(routePluginId, routeId, pluginId)
-// 	if checkRoutePluginExist != nil {
-// 		utils.Error(c, checkRoutePluginExist.Error())
-// 		return
-// 	}
-//
-// 	checkRoutePluginReleaseErr := services.CheckRoutePluginRelease(routePluginId)
-// 	if checkRoutePluginReleaseErr != nil {
-// 		utils.Error(c, checkRoutePluginReleaseErr.Error())
-// 		return
-// 	}
-//
-// 	routePluginReleaseErr := services.RoutePluginRelease(routePluginId)
-// 	if routePluginReleaseErr != nil {
-// 		utils.Error(c, routePluginReleaseErr.Error())
-// 		return
-// 	}
-//
-// 	utils.Ok(c)
-// }
-//
-// func RoutePluginInfo(c *gin.Context) {
-// 	routeId := strings.TrimSpace(c.Param("route_id"))
-// 	pluginId := strings.TrimSpace(c.Param("plugin_id"))
-// 	routePluginId := strings.TrimSpace(c.Param("route_plugin_id"))
-//
-// 	checkExistRouteErr := services.CheckRouteExist(routeId, "")
-// 	if checkExistRouteErr != nil {
-// 		utils.Error(c, checkExistRouteErr.Error())
-// 		return
-// 	}
-//
-// 	checkPluginExistErr := services.CheckPluginExist(pluginId)
-// 	if checkPluginExistErr != nil {
-// 		utils.Error(c, checkPluginExistErr.Error())
-// 		return
-// 	}
-//
-// 	checkRoutePluginExist := services.CheckRoutePluginExist(routePluginId, routeId, pluginId)
-// 	if checkRoutePluginExist != nil {
-// 		utils.Error(c, checkRoutePluginExist.Error())
-// 		return
-// 	}
-//
-// 	routePluginConfigInfo, routePluginConfigInfoErr := services.RoutePluginConfigInfo(routePluginId)
-// 	if routePluginConfigInfoErr != nil {
-// 		utils.Error(c, routePluginConfigInfoErr.Error())
-// 		return
-// 	}
-//
-// 	utils.Ok(c, routePluginConfigInfo)
-// }

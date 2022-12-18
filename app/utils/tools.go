@@ -33,6 +33,11 @@ func createRandomString(len int) string {
 	return container
 }
 
+func RandomStrGenerate(len int) string {
+	randomId := createRandomString(len)
+	return strings.ToLower(randomId)
+}
+
 func IdGenerate(idType string) (string, error) {
 	randomId := createRandomString(IdLength)
 

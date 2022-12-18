@@ -30,7 +30,6 @@ func NewServicesService() *ServicesService {
 }
 
 func CheckServiceExist(serviceResId string) error {
-	return nil
 	serviceModel := &models.Services{}
 	_, err := serviceModel.ServiceInfoById(serviceResId)
 
