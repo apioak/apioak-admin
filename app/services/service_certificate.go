@@ -8,7 +8,6 @@ import (
 	"apioak-admin/app/utils"
 	"apioak-admin/app/validators"
 	"errors"
-	"fmt"
 	"gorm.io/gorm"
 	"sync"
 )
@@ -30,7 +29,7 @@ func NewCertificateService() *CertificateService {
 	return certificateService
 }
 
-func (s *CertificateService) syncDataSideCertificate(tx *gorm.DB, new *models.Certificates, filterID string) error {
+func syncDataSideCertificate(tx *gorm.DB, new *models.Certificates, filterID string) error {
 
 	existSniCertificate, err := (&models.Certificates{}).EnableCertificateInfoBySni(new.Sni, filterID)
 	if err != nil {
@@ -55,23 +54,23 @@ func (s *CertificateService) syncDataSideCertificate(tx *gorm.DB, new *models.Ce
 	}
 
 	// 新增数据面证书信息
-	request := &rpc.CertificateReleaseRequest{
+	request := &rpc.CertificatePutRequest{
 		Name: new.ResID,
 		Sni:  []string{new.Sni},
 		Cert: new.Certificate,
 		Key:  new.PrivateKey,
 	}
-	err = rpc.NewApiOak().CertificateRelease(request)
+	err = rpc.NewApiOak().CertificatePut(request)
 	if err != nil {
 		// 同步删除过数据面旧证书信息时需要回滚，控制面数据根据事务自动回滚
 		if tmpDeleteRes != false {
-			request := &rpc.CertificateReleaseRequest{
+			request := &rpc.CertificatePutRequest{
 				Name: existSniCertificate.ResID,
 				Sni:  []string{existSniCertificate.Sni},
 				Cert: existSniCertificate.Certificate,
 				Key:  existSniCertificate.PrivateKey,
 			}
-			err = rpc.NewApiOak().CertificateRelease(request)
+			err = rpc.NewApiOak().CertificatePut(request)
 			if err != nil {
 				packages.Log.Error("rollback old data side certificate error")
 				return err
@@ -107,9 +106,8 @@ func (s *CertificateService) CertificateAdd(request *validators.CertificateAddUp
 		certificates.ResID = resID
 		// 当前证书设置为启用状态
 		if request.Enable == utils.EnableOn {
-			err = s.syncDataSideCertificate(tx, certificates, "")
+			err = syncDataSideCertificate(tx, certificates, "")
 
-			fmt.Println(err)
 			if err != nil {
 				return err
 			}
@@ -154,7 +152,7 @@ func (s *CertificateService) CertificateUpdate(resID string, request *validators
 		}
 
 		if request.Enable == utils.EnableOn {
-			err = s.syncDataSideCertificate(tx, &certificates, certificates.ResID)
+			err = syncDataSideCertificate(tx, &certificates, certificates.ResID)
 
 			if err != nil {
 				return err
@@ -274,7 +272,7 @@ func (s *CertificateService) CertificateSwitchEnable(resID string, enable int) e
 		}
 
 		if enable == utils.EnableOn {
-			err = s.syncDataSideCertificate(tx, &certificates, certificates.ResID)
+			err = syncDataSideCertificate(tx, &certificates, certificates.ResID)
 
 			if err != nil {
 				return err

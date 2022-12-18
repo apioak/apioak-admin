@@ -30,22 +30,22 @@ func RouterRegister(routerEngine *gin.Engine) {
 		{
 			service.POST("/add", admin.ServiceAdd)
 			service.GET("/list", admin.ServiceList)
-			service.GET("/info/:id", admin.ServiceInfo)
-			service.PUT("/update/:id", admin.ServiceUpdate)
-			service.DELETE("/delete/:id", admin.ServiceDelete)
-			service.PUT("/update/name/:id", admin.ServiceUpdateName)
-			service.PUT("/switch/enable/:id", admin.ServiceSwitchEnable)
-			service.PUT("/switch/release/:id", admin.ServiceSwitchRelease)
+			service.GET("/info/:res_id", admin.ServiceInfo)
+			service.PUT("/update/:res_id", admin.ServiceUpdate)
+			service.DELETE("/delete/:res_id", admin.ServiceDelete)
+			service.PUT("/update/name/:res_id", admin.ServiceUpdateName)
+			service.PUT("/switch/enable/:res_id", admin.ServiceSwitchEnable)
+			service.PUT("/switch/release/:res_id", admin.ServiceSwitchRelease)
 		}
 
-		servicePlugin := adminRouter.Group("service/plugin")
+		servicePlugin := adminRouter.Group("service/plugin/config")
 		{
 			servicePlugin.POST("/add", admin.ServicePluginConfigAdd)
-			servicePlugin.GET("/list/:service_id", admin.ServicePluginConfigList)
-			servicePlugin.GET("/info/:plugin_config_res_id", admin.ServicePluginConfigInfo)
-			servicePlugin.PUT("/update/:plugin_config_res_id", admin.ServicePluginConfigUpdate)
-			servicePlugin.DELETE("/delete/:plugin_config_res_id", admin.ServicePluginConfigDelete)
-			servicePlugin.PUT("/switch/enable/:plugin_config_res_id", admin.ServicePluginConfigSwitchEnable)
+			servicePlugin.GET("/list/:service_res_id", admin.ServicePluginConfigList)
+			servicePlugin.GET("/info/:res_id", admin.ServicePluginConfigInfo)
+			servicePlugin.PUT("/update/:res_id", admin.ServicePluginConfigUpdate)
+			servicePlugin.DELETE("/delete/:res_id", admin.ServicePluginConfigDelete)
+			servicePlugin.PUT("/switch/enable/:res_id", admin.ServicePluginConfigSwitchEnable)
 		}
 
 		// router

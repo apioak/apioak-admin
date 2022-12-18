@@ -41,7 +41,7 @@ func ServiceAdd(c *gin.Context) {
 }
 
 func ServiceUpdate(c *gin.Context) {
-	serviceId := strings.TrimSpace(c.Param("id"))
+	serviceId := strings.TrimSpace(c.Param("res_id"))
 
 	var bindParams = &validators.ServiceAddUpdate{
 		Release: utils.ReleaseN,
@@ -78,7 +78,7 @@ func ServiceUpdate(c *gin.Context) {
 
 func ServiceInfo(c *gin.Context) {
 
-	serviceId := strings.TrimSpace(c.Param("id"))
+	serviceId := strings.TrimSpace(c.Param("res_id"))
 
 	if serviceId == "" {
 		utils.Error(c, enums.CodeMessages(enums.ParamsError))
@@ -122,7 +122,7 @@ func ServiceList(c *gin.Context) {
 }
 
 func ServiceDelete(c *gin.Context) {
-	serviceId := strings.TrimSpace(c.Param("id"))
+	serviceId := strings.TrimSpace(c.Param("res_id"))
 
 	err := services.CheckServiceExist(serviceId)
 	if err != nil {
@@ -140,7 +140,7 @@ func ServiceDelete(c *gin.Context) {
 }
 
 func ServiceUpdateName(c *gin.Context) {
-	serviceId := strings.TrimSpace(c.Param("id"))
+	serviceId := strings.TrimSpace(c.Param("res_id"))
 
 	var request = &validators.ServiceUpdateName{}
 	if msg, err := packages.ParseRequestParams(c, request); err != nil {
@@ -164,7 +164,7 @@ func ServiceUpdateName(c *gin.Context) {
 }
 
 func ServiceSwitchEnable(c *gin.Context) {
-	serviceId := strings.TrimSpace(c.Param("id"))
+	serviceId := strings.TrimSpace(c.Param("res_id"))
 
 	var bindParams = validators.ServiceSwitchEnable{}
 	if msg, err := packages.ParseRequestParams(c, &bindParams); err != nil {
@@ -188,7 +188,7 @@ func ServiceSwitchEnable(c *gin.Context) {
 }
 
 func ServiceSwitchRelease(c *gin.Context) {
-	serviceId := strings.TrimSpace(c.Param("id"))
+	serviceId := strings.TrimSpace(c.Param("res_id"))
 
 	err := services.CheckServiceExist(serviceId)
 	if err != nil {
@@ -206,7 +206,7 @@ func ServiceSwitchRelease(c *gin.Context) {
 }
 
 func ServicePluginConfigList(c *gin.Context) {
-	serviceID := strings.TrimSpace(c.Param("service_id"))
+	serviceID := strings.TrimSpace(c.Param("service_res_id"))
 
 	if serviceID == "" {
 		utils.Error(c, enums.CodeMessages(enums.ParamsError))
@@ -231,7 +231,7 @@ func ServicePluginConfigList(c *gin.Context) {
 }
 
 func ServicePluginConfigInfo(c *gin.Context) {
-	pluginConfigID := strings.TrimSpace(c.Param("plugin_config_res_id"))
+	pluginConfigID := strings.TrimSpace(c.Param("res_id"))
 
 	if pluginConfigID == "" {
 		utils.Error(c, enums.CodeMessages(enums.ParamsError))
@@ -268,7 +268,7 @@ func ServicePluginConfigAdd(c *gin.Context) {
 }
 
 func ServicePluginConfigUpdate(c *gin.Context) {
-	pluginConfigID := strings.TrimSpace(c.Param("plugin_config_res_id"))
+	pluginConfigID := strings.TrimSpace(c.Param("res_id"))
 
 	var request = &validators.ValidatorPluginConfigUpdate{
 		PluginConfigId: pluginConfigID,
@@ -288,7 +288,7 @@ func ServicePluginConfigUpdate(c *gin.Context) {
 }
 
 func ServicePluginConfigSwitchEnable(c *gin.Context) {
-	pluginConfigID := strings.TrimSpace(c.Param("plugin_config_res_id"))
+	pluginConfigID := strings.TrimSpace(c.Param("res_id"))
 
 	var request = &validators.ValidatorPluginConfigSwitchEnable{
 		PluginConfigId: pluginConfigID,
@@ -308,7 +308,7 @@ func ServicePluginConfigSwitchEnable(c *gin.Context) {
 }
 
 func ServicePluginConfigDelete(c *gin.Context) {
-	pluginConfigID := strings.TrimSpace(c.Param("plugin_config_res_id"))
+	pluginConfigID := strings.TrimSpace(c.Param("res_id"))
 
 	if pluginConfigID == "" {
 		utils.Error(c, enums.CodeMessages(enums.ParamsError))

@@ -31,6 +31,7 @@ var (
 	upstreamUri     = "/apioak/admin/upstreams"
 	upstreamNodeUri = "/apioak/admin/upstream/nodes"
 	serviceUri      = "/apioak/admin/services"
+	pluginUri       = "/apioak/admin/plugins"
 	certificateUri  = "/apioak/admin/certificates"
 )
 
@@ -480,7 +481,7 @@ func (m *ApiOak) RouterDelete(routerResIds []string) (err error) {
 	return
 }
 
-type CertificateInfoResponse struct {
+type CertificateGetResponse struct {
 	ID   string   `json:"id"`
 	Name string   `json:"name"`
 	Sni  []string `json:"sni"`
@@ -488,7 +489,7 @@ type CertificateInfoResponse struct {
 	Key  string   `json:"key"`
 }
 
-func (m *ApiOak) CertificateInfo(resID string) (CertificateInfoResponse, error) {
+func (m *ApiOak) CertificateGet(resID string) (CertificateGetResponse, error) {
 
 	var params = url.Values{}
 	var headers = http.Header{}
@@ -501,15 +502,15 @@ func (m *ApiOak) CertificateInfo(resID string) (CertificateInfoResponse, error) 
 	httpResp, err := utils.Get(uri, params, headers, timeOut)
 	if err != nil || httpResp.StatusCode != 200 {
 		packages.Log.Error("Failed to obtain the data side certificate information", err)
-		return CertificateInfoResponse{}, err
+		return CertificateGetResponse{}, err
 	}
 
-	var body CertificateInfoResponse
+	var body CertificateGetResponse
 	err = json.Unmarshal(httpResp.Body, &body)
 
 	if err != nil {
 		packages.Log.Error("Failed to parse data side certificate information", err)
-		return CertificateInfoResponse{}, err
+		return CertificateGetResponse{}, err
 	}
 
 	return body, nil
@@ -542,17 +543,194 @@ func (m *ApiOak) CertificateDelete(resID string) error {
 	return nil
 }
 
-type CertificateReleaseRequest struct {
+type CertificatePutRequest struct {
 	Name string   `json:"name"`
 	Sni  []string `json:"snis"`
 	Cert string   `json:"cert"`
 	Key  string   `json:"key"`
 }
 
-func (m *ApiOak) CertificateRelease(request *CertificateReleaseRequest) error {
+func (m *ApiOak) CertificatePut(request *CertificatePutRequest) error {
 
 	resName := request.Name
 	uri := m.Address + certificateUri
+	err := m.commonPut(resName, uri, request, url.Values{}, http.Header{})
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+type ServiceResponse struct {
+	ID        string             `json:"id"`
+	Name      string             `json:"name"`
+	Protocols []string           `json:"protocols"`
+	Hosts     []string           `json:"hosts"`
+	Ports     []string           `json:"ports"`
+	Plugins   []ConfigObjectName `json:"plugins"`
+	Enabled   bool               `json:"enabled"`
+}
+
+func (m *ApiOak) ServiceGet(resID string) (ServiceResponse, error) {
+
+	var params = url.Values{}
+	var headers = http.Header{}
+	if len(m.Domain) > 0 {
+		headers.Set("Host", m.Domain)
+	}
+
+	uri := m.Address + serviceUri + "/" + resID
+
+	httpResp, err := utils.Get(uri, params, headers, timeOut)
+	if err != nil {
+		packages.Log.Error("Failed to obtain the data side service information", err)
+		return ServiceResponse{}, err
+	}
+
+	if httpResp.StatusCode == 500 {
+		return ServiceResponse{}, errors.New(enums.CodeMessages(enums.SyncError))
+	} else if httpResp.StatusCode == 200 {
+		var body ServiceResponse
+		err = json.Unmarshal(httpResp.Body, &body)
+
+		if err != nil {
+			packages.Log.Error("Failed to parse data side service information", err)
+			return ServiceResponse{}, err
+		}
+		return body, nil
+	} else {
+		return ServiceResponse{}, nil
+	}
+}
+
+func (m *ApiOak) ServiceDelete(resID string) error {
+	var params = url.Values{}
+	var headers = http.Header{}
+
+	uri := m.Address + serviceUri + "/" + resID
+
+	httpResp, err := utils.Get(uri, params, headers, timeOut)
+	if err != nil {
+		packages.Log.Error("[delete]:Failed to obtain the data side service information", err)
+		return errors.New(err.Error())
+	}
+
+	if httpResp.StatusCode == 404 {
+		return nil
+	}
+
+	dHttpResp, err := utils.Delete(uri, params, headers, timeOut)
+
+	if err != nil || dHttpResp.StatusCode != 200 {
+		packages.Log.Error("[delete]:Failed to delete the data side service information", err)
+		return errors.New(err.Error())
+	}
+
+	return nil
+}
+
+type ServicePutRequest struct {
+	Name      string             `json:"name"`
+	Protocols []string           `json:"protocols"`
+	Hosts     []string           `json:"hosts"`
+	Ports     []int              `json:"ports"`
+	Plugins   []ConfigObjectName `json:"plugins"`
+	Enabled   bool               `json:"enabled"`
+}
+
+func (m *ApiOak) ServicePut(request *ServicePutRequest) error {
+
+	resName := request.Name
+	uri := m.Address + serviceUri
+	err := m.commonPut(resName, uri, request, url.Values{}, http.Header{})
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+type PluginResponse struct {
+	ID        string             `json:"id"`
+	Name      string             `json:"name"`
+	Protocols []string           `json:"protocols"`
+	Hosts     []string           `json:"hosts"`
+	Ports     []string           `json:"ports"`
+	Plugins   []ConfigObjectName `json:"plugins"`
+	Enabled   bool               `json:"enabled"`
+}
+
+func (m *ApiOak) PluginGet(resID string) (PluginResponse, error) {
+
+	var params = url.Values{}
+	var headers = http.Header{}
+	if len(m.Domain) > 0 {
+		headers.Set("Host", m.Domain)
+	}
+
+	uri := m.Address + pluginUri + "/" + resID
+
+	httpResp, err := utils.Get(uri, params, headers, timeOut)
+	if err != nil {
+		packages.Log.Error("Failed to obtain the data side plugin information", err)
+		return PluginResponse{}, err
+	}
+
+	if httpResp.StatusCode == 500 {
+		return PluginResponse{}, errors.New(enums.CodeMessages(enums.SyncError))
+	} else if httpResp.StatusCode == 200 {
+		var body PluginResponse
+		err = json.Unmarshal(httpResp.Body, &body)
+
+		if err != nil {
+			packages.Log.Error("Failed to parse data side plugin information", err)
+			return PluginResponse{}, err
+		}
+		return body, nil
+	} else {
+		return PluginResponse{}, nil
+	}
+}
+
+func (m *ApiOak) PluginDelete(resID string) error {
+	var params = url.Values{}
+	var headers = http.Header{}
+
+	uri := m.Address + pluginUri + "/" + resID
+
+	httpResp, err := utils.Get(uri, params, headers, timeOut)
+	if err != nil {
+		packages.Log.Error("[delete]:Failed to obtain the data side plugin information", err)
+		return errors.New(err.Error())
+	}
+
+	if httpResp.StatusCode != 200 {
+		return nil
+	}
+
+	dHttpResp, err := utils.Delete(uri, params, headers, timeOut)
+
+	if err != nil || dHttpResp.StatusCode != 200 {
+		packages.Log.Error("[delete]:Failed to delete the data side plugin information", err)
+		return errors.New(err.Error())
+	}
+
+	return nil
+}
+
+type PluginPutRequest struct {
+	Name   string      `json:"name"`
+	Key    string      `json:"key"`
+	Config interface{} `json:"config"`
+}
+
+func (m *ApiOak) PluginPut(request *PluginPutRequest) error {
+
+	resName := request.Name
+	uri := m.Address + pluginUri
 	err := m.commonPut(resName, uri, request, url.Values{}, http.Header{})
 
 	if err != nil {

@@ -24,6 +24,7 @@ const (
 	ReleaseTypeError     = 108 // 发布类型错误
 	PublishError         = 109 // 发布失败
 	SyncError            = 110 // 同步失败
+	DataSideResourceNull = 111 // 远程数据资源不存在
 
 	ServiceNull          = 10001 // 服务不存在
 	ServiceParamsNull    = 10002 // 服务参数缺失

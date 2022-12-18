@@ -4,11 +4,13 @@ import (
 	"apioak-admin/app/enums"
 	"apioak-admin/app/models"
 	"apioak-admin/app/packages"
+	"apioak-admin/app/rpc"
 	"apioak-admin/app/services/plugins"
+	"apioak-admin/app/utils"
 	"apioak-admin/app/validators"
 	"encoding/json"
 	"errors"
-	"fmt"
+	"gorm.io/gorm"
 	"reflect"
 	"sync"
 )
@@ -89,7 +91,7 @@ func (s *PluginsService) PluginConfigList(resType int, resId string) (*PluginCon
 	res := &PluginConfigListResponse{
 		List: []PluginConfigListItem{},
 	}
-	pluginConfigs, err := (&models.PluginConfigs{}).PluginConfigList(resType, resId)
+	pluginConfigs, err := (&models.PluginConfigs{}).PluginConfigList(packages.GetDb(), resType, resId, 0)
 
 	if err != nil {
 		return res, err
@@ -170,7 +172,6 @@ func (s *PluginsService) PluginConfigInfoByResId(resId string) (*PluginConfigLis
 	}
 	configContext, err := plugins.NewPluginContext(plugin.PluginKey)
 
-	fmt.Println(err, plugin.PluginKey)
 	if err == nil {
 		res.Config, _ = configContext.StrategyPluginParse(pluginConfig.Config)
 	}
@@ -209,11 +210,6 @@ func (s *PluginsService) PluginConfigAdd(request *validators.ValidatorPluginConf
 	if reflect.ValueOf(request.Config).IsNil() {
 		request.Config = pluginContext.StrategyPluginFormatDefault()
 	} else {
-		err = pluginContext.StrategyPluginCheck(request.Config)
-
-		if err != nil {
-			return "", err
-		}
 		request.Config, _ = pluginContext.StrategyPluginParse(request.Config)
 	}
 
@@ -264,12 +260,11 @@ func (s *PluginsService) PluginConfigUpdate(request *validators.ValidatorPluginC
 	if reflect.ValueOf(request.Config).IsNil() {
 		request.Config = pluginContext.StrategyPluginFormatDefault()
 	} else {
-		err = pluginContext.StrategyPluginCheck(request.Config)
+		request.Config, err = pluginContext.StrategyPluginParse(request.Config)
 
 		if err != nil {
 			return err
 		}
-		request.Config, _ = pluginContext.StrategyPluginParse(request.Config)
 	}
 
 	config, err := json.Marshal(request.Config)
@@ -339,4 +334,47 @@ func (s *PluginsService) PluginConfigDelete(pluginConfigId string) error {
 	}
 
 	return nil
+}
+
+func SyncPluginToDataSide(tx *gorm.DB, resType int, targetId string) ([]models.PluginConfigs, error) {
+	// 获取控制面已绑定插件，同步至远程
+	pluginConfigList, err := (&models.PluginConfigs{}).PluginConfigList(tx, resType, targetId, utils.EnableOn)
+
+	if err != nil {
+		return []models.PluginConfigs{}, err
+	}
+
+	if len(pluginConfigList) == 0 {
+		return []models.PluginConfigs{}, nil
+	}
+	success := []models.PluginConfigs{}
+	// 同步服务插件
+	for k, v := range pluginConfigList {
+
+		pluginContext, err := plugins.NewPluginContext(v.PluginKey)
+
+		if err != nil {
+			continue
+		}
+
+		config, err := pluginContext.StrategyPluginParse(v.Config)
+
+		if err != nil {
+			continue
+		}
+		pluginPutRequest := &rpc.PluginPutRequest{
+			Name:   v.ResID,
+			Key:    v.PluginKey,
+			Config: config,
+		}
+		err = rpc.NewApiOak().PluginPut(pluginPutRequest)
+
+		if err != nil {
+			continue
+		}
+
+		success = append(success, pluginConfigList[k])
+	}
+
+	return success, nil
 }

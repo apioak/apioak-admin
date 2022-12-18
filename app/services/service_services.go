@@ -3,6 +3,8 @@ package services
 import (
 	"apioak-admin/app/enums"
 	"apioak-admin/app/models"
+	"apioak-admin/app/packages"
+	"apioak-admin/app/rpc"
 	"apioak-admin/app/utils"
 	"apioak-admin/app/validators"
 	"errors"
@@ -181,15 +183,60 @@ func (s *ServicesService) ServiceDelete(serviceId string) error {
 		return errors.New(enums.CodeMessages(enums.ServiceBindingRouter))
 	}
 
-	// TODO 获取consul 服务数据
+	err := packages.GetDb().Transaction(func(tx *gorm.DB) error {
 
-	serviceModel := &models.Services{}
-	err := serviceModel.ServiceDelete(serviceId)
+		// 删除service 信息
+		err := (&models.Services{}).ServiceDelete(serviceId)
+		if err != nil {
+			return errors.New(err.Error())
+		}
+
+		pluginConfigList, err := (&models.PluginConfigs{}).PluginConfigList(tx, models.PluginConfigsTypeService, serviceId, utils.EnableOn)
+
+		// 删除pluginConfig 信息
+		if err == nil && len(pluginConfigList) > 0 {
+			for _, v := range pluginConfigList {
+				err = tx.Model(&models.PluginConfigs{}).Where("res_id = ?", v.ResID).Delete(&models.PluginConfigs{}).Error
+
+				if err != nil {
+					return err
+				}
+			}
+		}
+		// 获取consul service数据
+		serviceDataSideInfo, err := rpc.NewApiOak().ServiceGet(serviceId)
+
+		if err != nil {
+			return err
+		}
+
+		// 远程serviceID 为空表示远程数据已删除
+		if serviceDataSideInfo.ID == "" {
+			return nil
+		}
+		// 删除consul service数据
+		err = rpc.NewApiOak().ServiceDelete(serviceId)
+
+		if err != nil {
+			return err
+		}
+
+		if len(serviceDataSideInfo.Plugins) == 0 {
+			return nil
+		}
+
+		// 删除consul plugin数据
+		for _, v := range pluginConfigList {
+			_ = rpc.NewApiOak().PluginDelete(v.ResID) // 忽略删除远程插件实体错误信息
+
+		}
+
+		return nil
+	})
+
 	if err != nil {
-		return errors.New(err.Error())
+		return err
 	}
-
-	// TODO 删除consul 服务数据
 
 	return nil
 }
@@ -280,109 +327,99 @@ func (s *ServicesService) ServiceList(request *validators.ServiceList) ([]Servic
 	return serviceList, total, nil
 }
 
-func checkServiceRelease(serviceId string) error {
-	serviceModel := &models.Services{}
-	serviceInfo, err := serviceModel.ServiceInfoById(serviceId)
+func genServiceReleaseSyncRequest(service models.Services, serviceDomains []models.ServiceDomains, pluginConfigs []models.PluginConfigs) rpc.ServicePutRequest {
+	protocols := []string{}
+	ports := []int{}
+	if service.Protocol == 1 {
+		protocols = []string{"http"}
+		ports = []int{80}
+	} else if service.Protocol == 2 {
+		protocols = []string{"https"}
+		ports = []int{443}
+	} else {
+		protocols = []string{"http", "https"}
+		ports = []int{80, 443}
+	}
+
+	domains := []string{}
+	for _, v := range serviceDomains {
+		domains = append(domains, v.Domain)
+	}
+
+	pluginsList := []rpc.ConfigObjectName{}
+	for _, v := range pluginConfigs {
+		pluginsList = append(pluginsList, rpc.ConfigObjectName{
+			Name: v.ResID,
+		})
+	}
+	enable := false
+	if service.Enable == utils.EnableOn {
+		enable = true
+	}
+	servicePutRequest := rpc.ServicePutRequest{
+		Name:      service.ResID,
+		Protocols: protocols,
+		Hosts:     domains,
+		Ports:     ports,
+		Plugins:   pluginsList,
+		Enabled:   enable,
+	}
+
+	return servicePutRequest
+}
+
+func (s *ServicesService) ServiceRelease(serviceId string) error {
+
+	serviceInfo, err := (&models.Services{}).ServiceInfoById(serviceId)
 
 	if err != nil {
 		return err
 	}
-
 	if serviceInfo.Release == utils.ReleaseStatusY {
 		return errors.New(enums.CodeMessages(enums.SwitchPublished))
 	}
 
-	if (serviceInfo.Protocol == utils.ProtocolHTTPS) || (serviceInfo.Protocol == utils.ProtocolHTTPAndHTTPS) {
-		serviceDomains, err := (&models.ServiceDomains{}).DomainInfosByServiceIds([]string{serviceId})
-		if err != nil {
-			return err
-		}
-		if len(serviceDomains) == 0 {
-			return nil
+	err = packages.GetDb().Transaction(func(tx *gorm.DB) error {
+
+		updateParam := map[string]interface{}{
+			"release": utils.ReleaseStatusY,
 		}
 
-		domains := []string{}
-		for _, v := range serviceDomains {
-			domains = append(domains, v.Domain)
-		}
-
-		domainSnis, err := utils.InterceptSni(domains)
+		err = (&models.Services{}).ServiceUpdateColumnsWithDB(tx, serviceId, updateParam)
 		if err != nil {
+			packages.Log.Error("service release update mysql data error", err.Error())
 			return err
 		}
 
-		certificatesModel := models.Certificates{}
-		_ = certificatesModel.CertificateInfoByDomainSniInfos(domainSnis)
+		serviceDomain, err := (&models.ServiceDomains{}).DomainInfosByServiceIds([]string{serviceId})
+		if err != nil {
+			packages.Log.Error("service release get domains data error", err.Error())
+			return err
+		}
 
-		//if len(domainCert) < len(domainSnis) {
-		//
-		//	domainCertificatesMap := make(map[string]byte, 0)
-		//	for _, domainCertificateInfo := range domainCert {
-		//		domainCertificatesMap[domainCertificateInfo.Sni] = 0
-		//	}
-		//
-		//	noCertificateDomains := make([]string, 0)
-		//	for _, serviceDomainInfo := range domainCert {
-		//		disassembleDomains := strings.Split(serviceDomainInfo.Domain, ".")
-		//		disassembleDomains[0] = "*"
-		//		domainSni := strings.Join(disassembleDomains, ".")
-		//		_, ok := domainCertificatesMap[domainSni]
-		//		if ok == false {
-		//			noCertificateDomains = append(noCertificateDomains, serviceDomainInfo.Domain)
-		//		}
-		//	}
-		//
-		//	if len(noCertificateDomains) != 0 {
-		//		return fmt.Errorf(fmt.Sprintf(enums.CodeMessages(enums.ServiceDomainSslNull), strings.Join(noCertificateDomains, ",")))
-		//	}
-		//}
-		//
-		//noReleaseCertificates := make([]string, 0)
-		//noEnableCertificates := make([]string, 0)
-		//for _, domainCertificateInfo := range domainCertificateInfos {
-		//	if domainCertificateInfo.ReleaseStatus != utils.ReleaseStatusY {
-		//		noReleaseCertificates = append(noReleaseCertificates, domainCertificateInfo.Sni)
-		//	}
-		//	if domainCertificateInfo.IsEnable != utils.EnableOn {
-		//		noEnableCertificates = append(noEnableCertificates, domainCertificateInfo.Sni)
-		//	}
-		//}
-		//
-		//if len(noReleaseCertificates) != 0 {
-		//	return fmt.Errorf(fmt.Sprintf(enums.CodeMessages(enums.CertificateNoRelease), strings.Join(noReleaseCertificates, ",")))
-		//}
-		//
-		//if len(noEnableCertificates) != 0 {
-		//	return fmt.Errorf(fmt.Sprintf(enums.CodeMessages(enums.CertificateEnableOff), strings.Join(noEnableCertificates, ",")))
-		//}
-	}
+		successPluginConfig, err := SyncPluginToDataSide(tx, models.PluginConfigsTypeService, serviceId)
 
-	return nil
-}
+		if err != nil {
+			packages.Log.Error("service release sync plugin data error", err.Error())
+			return err
+		}
 
-func (s *ServicesService) ServiceRelease(serviceId string) error {
-	serviceModel := &models.Services{}
-	_, err := serviceModel.ServiceInfoById(serviceId)
+		request := genServiceReleaseSyncRequest(serviceInfo, serviceDomain, successPluginConfig)
+
+		// 更新consul service 数据
+		err = rpc.NewApiOak().ServicePut(&request)
+
+		if err != nil {
+			packages.Log.Error("service release sync error", err.Error())
+			return err
+		}
+
+		return nil
+	})
 
 	if err != nil {
 		return err
 	}
-	err = checkServiceRelease(serviceId)
-	if err != nil {
-		return err
-	}
-
-	updateParam := map[string]interface{}{
-		"release": utils.ReleaseStatusY,
-	}
-	err = serviceModel.ServiceUpdateColumns(serviceId, updateParam)
-	if err != nil {
-		return err
-	}
-
-	// TODO 查询consul service info
-
-	// TODO 更新consul service info
 	return nil
 }
 

@@ -65,13 +65,18 @@ func (m *PluginConfigs) ModelUniqueId() (string, error) {
 	}
 }
 
-func (m *PluginConfigs) PluginConfigList(pluginConfigType int, targetId string) ([]PluginConfigs, error) {
+func (m *PluginConfigs) PluginConfigList(tx *gorm.DB, configType int, targetId string, enable int) ([]PluginConfigs, error) {
 
 	var pluginConfigs []PluginConfigs
 
-	err := packages.GetDb().Table(m.TableName()).
-		Where("type = ? AND target_id = ?", pluginConfigType, targetId).
-		Find(&pluginConfigs).Error
+	db := tx.Table(m.TableName()).
+		Where("type = ? AND target_id = ?", configType, targetId)
+
+	if enable > 0 {
+		db.Where("enable = ?", enable)
+	}
+
+	err := db.Find(&pluginConfigs).Error
 
 	if err != nil && err != gorm.ErrRecordNotFound {
 		return []PluginConfigs{}, err
@@ -93,11 +98,11 @@ func (m *PluginConfigs) PluginConfigInfoByResId(resId string) (PluginConfigs, er
 	return pluginConfigInfo, nil
 }
 
-func pluginConfigSyncTargetRelease(tx *gorm.DB, pluginConfigType int, pluginConfigTargetId string) error {
-	if pluginConfigType == PluginConfigsTypeService {
+func pluginConfigSyncTargetRelease(tx *gorm.DB, configType int, targetId string) error {
+	if configType == PluginConfigsTypeService {
 
 		var service Services
-		err := tx.Model(&Services{}).Where("res_id = ?", pluginConfigTargetId).First(&service).Error
+		err := tx.Model(&Services{}).Where("res_id = ?", targetId).First(&service).Error
 
 		if err != nil {
 			packages.Log.Error("Failed to modify the service plugin to obtain the service")
@@ -107,16 +112,16 @@ func pluginConfigSyncTargetRelease(tx *gorm.DB, pluginConfigType int, pluginConf
 		if service.Release == utils.ReleaseStatusY {
 			service.Release = utils.ReleaseStatusT
 
-			err = tx.Model(&Services{}).Updates(&service).Error
+			err = tx.Model(&Services{}).Where("res_id = ?", targetId).Updates(&service).Error
 
 			if err != nil {
 				packages.Log.Error("Failed to modify the service plugin release status")
 				return err
 			}
 		}
-	} else if pluginConfigType == PluginConfigsTypeRouter {
+	} else if configType == PluginConfigsTypeRouter {
 		var router Routers
-		err := tx.Model(&Routers{}).Where("res_id = ?", pluginConfigTargetId).First(&router).Error
+		err := tx.Model(&Routers{}).Where("res_id = ?", targetId).First(&router).Error
 
 		if err != nil {
 			packages.Log.Error("Failed to modify the router plugin to obtain the router")
@@ -126,7 +131,7 @@ func pluginConfigSyncTargetRelease(tx *gorm.DB, pluginConfigType int, pluginConf
 		if router.Release == utils.ReleaseStatusY {
 			router.Release = utils.ReleaseStatusT
 
-			err = tx.Model(&Services{}).Updates(&router).Error
+			err = tx.Model(&Services{}).Where("res_id = ?", targetId).Updates(&router).Error
 
 			if err != nil {
 				packages.Log.Error("Failed to modify the router plugin release status")
@@ -176,20 +181,16 @@ func (m *PluginConfigs) PluginConfigAdd(pluginConfigInfo *PluginConfigs) (string
 }
 
 func (m *PluginConfigs) PluginConfigUpdateColumns(
-	pluginConfigId string,
-	pluginConfigType int,
-	pluginConfigTargetId string,
-	params map[string]interface{},
-) error {
+	resId string, configType int, targetId string, params map[string]interface{}) error {
 
 	err := packages.GetDb().Transaction(func(tx *gorm.DB) error {
 
-		err := tx.Table(m.TableName()).Where("res_id = ?", pluginConfigId).Updates(params).Error
+		err := tx.Table(m.TableName()).Where("res_id = ?", resId).Updates(params).Error
 		if err != nil {
 			return err
 		}
 
-		err = pluginConfigSyncTargetRelease(tx, pluginConfigType, pluginConfigTargetId)
+		err = pluginConfigSyncTargetRelease(tx, configType, targetId)
 
 		if err != nil {
 			return err
@@ -204,20 +205,16 @@ func (m *PluginConfigs) PluginConfigUpdateColumns(
 	return nil
 }
 
-func (m *PluginConfigs) PluginConfigDelete(
-	pluginConfigId string,
-	pluginConfigType int,
-	pluginConfigTargetId string,
-) error {
+func (m *PluginConfigs) PluginConfigDelete(resId string, configType int, targetId string) error {
 
 	err := packages.GetDb().Transaction(func(tx *gorm.DB) error {
 
-		err := tx.Table(m.TableName()).Where("res_id = ?", pluginConfigId).Delete(&PluginConfigs{}).Error
+		err := tx.Table(m.TableName()).Where("res_id = ?", resId).Delete(&PluginConfigs{}).Error
 		if err != nil {
 			return err
 		}
 
-		err = pluginConfigSyncTargetRelease(tx, pluginConfigType, pluginConfigTargetId)
+		err = pluginConfigSyncTargetRelease(tx, configType, targetId)
 
 		if err != nil {
 			return err

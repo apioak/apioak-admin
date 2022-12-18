@@ -253,3 +253,14 @@ func (s *Services) ServiceUpdateColumns(serviceId string, params map[string]inte
 
 	return nil
 }
+
+func (s *Services) ServiceUpdateColumnsWithDB(tx *gorm.DB, serviceId string, params map[string]interface{}) error {
+
+	err := tx.Table(s.TableName()).Where("res_id = ?", serviceId).Updates(params).Error
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
