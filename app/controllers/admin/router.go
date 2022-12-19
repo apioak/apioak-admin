@@ -400,6 +400,23 @@ func RouterPluginConfigUpdate(c *gin.Context) {
 	utils.Ok(c)
 }
 
+func RouterPluginConfigDelete(c *gin.Context) {
+	pluginConfigResId := strings.TrimSpace(c.Param("res_id"))
+
+	if pluginConfigResId == "" {
+		utils.Error(c, enums.CodeMessages(enums.ParamsError))
+		return
+	}
+
+	err := services.NewPluginsService().PluginConfigDelete(pluginConfigResId)
+	if err != nil {
+		utils.Error(c, err.Error())
+		return
+	}
+
+	utils.Ok(c)
+}
+
 func RouterPluginConfigSwitchEnable(c *gin.Context) {
 	pluginConfigResId := strings.TrimSpace(c.Param("res_id"))
 
