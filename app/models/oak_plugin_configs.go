@@ -34,7 +34,7 @@ func (m *PluginConfigs) TableName() string {
 var recursionTimesPluginConfig = 1
 
 func (m *PluginConfigs) ModelUniqueId() (string, error) {
-	generateResId, generateIdErr := utils.IdGenerate(utils.IdTypeRouter)
+	generateResId, generateIdErr := utils.IdGenerate(utils.IdTypePluginConfig)
 	if generateIdErr != nil {
 		return "", generateIdErr
 	}
@@ -131,7 +131,7 @@ func pluginConfigSyncTargetRelease(tx *gorm.DB, configType int, targetId string)
 		if router.Release == utils.ReleaseStatusY {
 			router.Release = utils.ReleaseStatusT
 
-			err = tx.Model(&Services{}).Where("res_id = ?", targetId).Updates(&router).Error
+			err = tx.Model(&Routers{}).Where("res_id = ?", targetId).Updates(&router).Error
 
 			if err != nil {
 				packages.Log.Error("Failed to modify the router plugin release status")

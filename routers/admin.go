@@ -61,16 +61,19 @@ func RouterRegister(routerEngine *gin.Engine) {
 			router.PUT("/switch/enable/:service_res_id/:router_res_id", admin.RouterSwitchEnable)
 			router.PUT("/switch/release/:service_res_id/:router_res_id", admin.RouterSwitchRelease)
 			router.POST("/copy/:service_res_id/:router_res_id", admin.RouterCopy)
+		}
 
-
+		// router plugin
+		routerPlugin := adminRouter.Group("router/plugin/config")
+		{
 			// router plugin
-			// route.GET("/plugin/list/:service_id/:route_id", admin.RouterPluginList)
-			// route.GET("/plugin/info/:route_id/:plugin_id/:route_plugin_id", admin.RouterPluginInfo)
-			// route.POST("/plugin/add/:service_id/:route_id/:plugin_id", admin.RouterPluginAdd)
-			// route.PUT("/plugin/update/:route_id/:plugin_id/:route_plugin_id", admin.RouterPluginUpdate)
-			// route.DELETE("/plugin/delete/:route_id/:plugin_id/:route_plugin_id", admin.RouterPluginDelete)
-			// route.PUT("/plugin/switch/enable/:route_id/:plugin_id/:route_plugin_id", admin.RouterPluginSwitchEnable)
-			// route.PUT("/plugin/switch/release/:route_id/:plugin_id/:route_plugin_id", admin.RouterPluginSwitchRelease)
+			routerPlugin.POST("/add", admin.RouterPluginConfigAdd)
+			// routerPlugin.GET("/list/:service_id/:route_id", admin.RouterPluginList)
+			// routerPlugin.GET("/plugin/info/:route_id/:plugin_id/:route_plugin_id", admin.RouterPluginInfo)
+			// routerPlugin.PUT("/plugin/update/:route_id/:plugin_id/:route_plugin_id", admin.RouterPluginUpdate)
+			// routerPlugin.DELETE("/plugin/delete/:route_id/:plugin_id/:route_plugin_id", admin.RouterPluginDelete)
+			// routerPlugin.PUT("/plugin/switch/enable/:route_id/:plugin_id/:route_plugin_id", admin.RouterPluginSwitchEnable)
+			// routerPlugin.PUT("/plugin/switch/release/:route_id/:plugin_id/:route_plugin_id", admin.RouterPluginSwitchRelease)
 		}
 
 		// plugin

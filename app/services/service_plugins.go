@@ -51,7 +51,7 @@ func (s *PluginsService) PluginInfoByResId(resId string) (PluginInfoService, err
 	if err != nil {
 		return pluginInfo, err
 	}
-	if plugin.ID == 0 {
+	if plugin.ResID == "" {
 		return pluginInfo, errors.New(enums.CodeMessages(enums.PluginNull))
 	}
 
@@ -179,47 +179,52 @@ func (s *PluginsService) PluginConfigInfoByResId(resId string) (*PluginConfigLis
 	return res, nil
 }
 
-func (s *PluginsService) PluginConfigAdd(request *validators.ValidatorPluginConfigAdd) (string, error) {
+func (s *PluginsService) PluginConfigAdd(request *validators.ValidatorPluginConfigAdd) (pluginConfigResId string, err error) {
 
-	pluginInfo, err := s.PluginInfoByResId(request.PluginID)
+	var pluginInfo PluginInfoService
+	pluginInfo, err = s.PluginInfoByResId(request.PluginID)
 
 	if err != nil {
-		return "", errors.New(enums.CodeMessages(enums.PluginNull))
+		err = errors.New(enums.CodeMessages(enums.PluginNull))
+		return
 	}
 
 	if request.Type == models.PluginConfigsTypeService {
 
-		_, err := NewServicesService().ServiceInfoById(request.TargetID)
+		_, err = NewServicesService().ServiceInfoById(request.TargetID)
 		if err != nil {
-			return "", errors.New(enums.CodeMessages(enums.ServiceNull))
+			err = errors.New(enums.CodeMessages(enums.ServiceNull))
+			return
 		}
 	} else if request.Type == models.PluginConfigsTypeRouter {
 
-		_, err := RouterInfoByResId(request.TargetID)
+		_, err = RouterInfoByResId(request.TargetID)
 		if err != nil {
-			return "", errors.New(enums.CodeMessages(enums.RouterNull))
+			err = errors.New(enums.CodeMessages(enums.RouterNull))
+			return
 		}
 	}
 
-	pluginContext, err := plugins.NewPluginContext(pluginInfo.Key)
+	var pluginContext plugins.PluginContext
+	pluginContext, err = plugins.NewPluginContext(pluginInfo.Key)
 
 	if err != nil {
-		return "", err
+		return
 	}
 
-	if reflect.ValueOf(request.Config).IsNil() {
-		request.Config = pluginContext.StrategyPluginFormatDefault()
-	} else {
-		request.Config, _ = pluginContext.StrategyPluginParse(request.Config)
+	err = pluginContext.StrategyPluginCheck(request.Config)
+	if err != nil {
+		return
 	}
 
+	request.Config, _ = pluginContext.StrategyPluginParse(request.Config)
 	config, err := json.Marshal(request.Config)
 
 	if err != nil {
-		return "", err
+		return
 	}
 
-	pluginConfigResId, err := (&models.PluginConfigs{}).PluginConfigAdd(&models.PluginConfigs{
+	pluginConfigResId, err = (&models.PluginConfigs{}).PluginConfigAdd(&models.PluginConfigs{
 		Name:        request.Name,
 		Type:        request.Type,
 		TargetID:    request.TargetID,
@@ -231,10 +236,10 @@ func (s *PluginsService) PluginConfigAdd(request *validators.ValidatorPluginConf
 
 	if err != nil {
 		packages.Log.Error("create plugin config error")
-		return pluginConfigResId, err
+		return
 	}
 
-	return pluginConfigResId, nil
+	return
 }
 
 func (s *PluginsService) PluginConfigUpdate(request *validators.ValidatorPluginConfigUpdate) error {

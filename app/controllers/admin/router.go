@@ -317,4 +317,22 @@ func RouterCopy(c *gin.Context) {
 	utils.Ok(c)
 }
 
+func RouterPluginConfigAdd(c *gin.Context) {
+	var request = &validators.ValidatorPluginConfigAdd{
+		Type: models.PluginConfigsTypeRouter,
+	}
+	if msg, err := packages.ParseRequestParams(c, request); err != nil {
+		utils.Error(c, msg)
+		return
+	}
+
+	_, err := services.NewPluginsService().PluginConfigAdd(request)
+	if err != nil {
+		utils.Error(c, err.Error())
+		return
+	}
+
+	utils.Ok(c)
+}
+
 

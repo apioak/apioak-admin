@@ -21,7 +21,7 @@ type ValidatorPluginConfigAdd struct {
 	PluginID string      `json:"plugin_id" zh:"插件ID" en:"Plugin ID" binding:"required"`
 	Type     int         `json:"type" zh:"资源类型" en:"Resource type" binding:"omitempty,oneof=1 2"`
 	TargetID string      `json:"target_id" zh:"资源ID" en:"Resource ID" binding:"required"`
-	Enable   int         `json:"enable" zh:"插件开关" en:"Plugin enable" binding:"omitempty"`
+	Enable   int         `json:"enable" zh:"插件开关" en:"Plugin enable" binding:"omitempty,oneof=1 2"`
 	Config   interface{} `json:"config" zh:"插件配置" en:"Plugin config" binding:"omitempty"`
 }
 

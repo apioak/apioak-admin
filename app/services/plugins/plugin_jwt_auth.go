@@ -25,7 +25,7 @@ var jwtAuthValidatorErrorMessages = map[string]map[string]string{
 type PluginJwtAuthConfig struct{}
 
 type PluginJwtAuth struct {
-	Secret string `json:"secret"`
+	JwtKey string `json:"jwt_key"`
 }
 
 func NewJwtAuth() PluginJwtAuthConfig {
@@ -36,7 +36,7 @@ func NewJwtAuth() PluginJwtAuthConfig {
 
 func (jwtAuthConfig PluginJwtAuthConfig) PluginConfigDefault() interface{} {
 	pluginJwtAuth := PluginJwtAuth{
-		Secret: utils.Md5(strconv.Itoa(int(time.Now().UnixNano()))),
+		JwtKey: utils.Md5(strconv.Itoa(int(time.Now().UnixNano()))),
 	}
 
 	return pluginJwtAuth
@@ -45,10 +45,10 @@ func (jwtAuthConfig PluginJwtAuthConfig) PluginConfigDefault() interface{} {
 func (jwtAuthConfig PluginJwtAuthConfig) PluginConfigParse(configInfo interface{}) (interface{}, error) {
 
 	pluginJwtAuth := PluginJwtAuth{
-		Secret: "",
+		JwtKey: "",
 	}
-	configInfoJson := []byte(fmt.Sprint(configInfo))
 
+	configInfoJson, _ := json.Marshal(configInfo)
 	err := json.Unmarshal(configInfoJson, &pluginJwtAuth)
 
 	return pluginJwtAuth, err
@@ -63,16 +63,16 @@ func (jwtAuthConfig PluginJwtAuthConfig) PluginConfigCheck(configInfo interface{
 
 func (jwtAuthConfig PluginJwtAuthConfig) configValidator(config PluginJwtAuth) error {
 
-	if len(config.Secret) == 0 {
+	if len(config.JwtKey) == 0 {
 		return errors.New(fmt.Sprintf(
 			jwtAuthValidatorErrorMessages[strings.ToLower(packages.GetValidatorLocale())]["required"],
-			"config.secret", "string"))
+			"config.jwt_key", "string"))
 	}
 
-	if len(config.Secret) > 128 {
+	if len(config.JwtKey) > 128 {
 		return errors.New(fmt.Sprintf(
 			jwtAuthValidatorErrorMessages[strings.ToLower(packages.GetValidatorLocale())]["max"],
-			"config.secret", 128))
+			"config.jwt_key", 128))
 	}
 
 	return nil

@@ -57,8 +57,8 @@ func IdGenerate(idType string) (string, error) {
 		id = IdTypeRouter + "-" + randomId
 	case IdTypePlugin:
 		id = IdTypePlugin + "-" + randomId
-	case IdTypeRoutePlugin:
-		id = IdTypeRoutePlugin + "-" + randomId
+	case IdTypePluginConfig:
+		id = IdTypePluginConfig + "-" + randomId
 	case IdTypeCertificate:
 		id = IdTypeCertificate + "-" + randomId
 	case IdTypeClusterNode:

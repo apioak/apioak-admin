@@ -8,7 +8,7 @@ const (
 	IdTypeServiceNode   = "sn"
 	IdTypeRouter        = "rt"
 	IdTypePlugin        = "pl"
-	IdTypeRoutePlugin   = "rp"
+	IdTypePluginConfig  = "pc"
 	IdTypeCertificate   = "ce"
 	IdTypeClusterNode   = "cn"
 	IdTypeUpstream      = "up"

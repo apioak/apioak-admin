@@ -7,13 +7,10 @@ import (
 	"apioak-admin/app/rpc"
 	"apioak-admin/app/utils"
 	"apioak-admin/app/validators"
-	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"gorm.io/gorm"
 	"strings"
-	"time"
 )
 
 func CheckRouterExist(routerResId string, serviceResId string) error {
@@ -758,126 +755,6 @@ func RouterCopy(routerResId string) (err error) {
 
 	return
 }
-
-// ---------------------------------------------------------------
-
-func ServiceRouterConfigRelease(releaseType string, id string) error {
-
-	// routerConfig, routerConfigErr := generateRouterConfig(id)
-	// if routerConfigErr != nil {
-	// 	return routerConfigErr
-	// }
-	routerConfig := rpc.RouterConfig{}
-
-	routerConfigJson, routerConfigJsonErr := json.Marshal(routerConfig)
-	if routerConfigJsonErr != nil {
-		return routerConfigJsonErr
-	}
-	routerConfigStr := string(routerConfigJson)
-
-	etcdKey := utils.EtcdKey(utils.EtcdKeyTypeRouter, id)
-	if len(etcdKey) == 0 {
-		return errors.New(enums.CodeMessages(enums.EtcdKeyNull))
-	}
-
-	etcdClient := packages.GetEtcdClient()
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*utils.EtcdTimeOut)
-	defer cancel()
-
-	var respErr error
-	if strings.ToLower(releaseType) == utils.ReleaseTypePush {
-		_, respErr = etcdClient.Put(ctx, etcdKey, routerConfigStr)
-	} else if strings.ToLower(releaseType) == utils.ReleaseTypePush {
-		_, respErr = etcdClient.Delete(ctx, etcdKey)
-	}
-
-	if respErr != nil {
-		return errors.New(enums.CodeMessages(enums.EtcdUnavailable))
-	}
-
-	return nil
-}
-
-type RouterAddPluginInfo struct {
-	ID          string `json:"id"`
-	Name        string `json:"name"`
-	Tag         string `json:"tag"`
-	Type        int    `json:"type"`
-	Description string `json:"description"`
-}
-
-// func (r *RouterAddPluginInfo) RouterAddPluginList(filterRouterId string) ([]RouterAddPluginInfo, error) {
-// 	routerAddPluginList := make([]RouterAddPluginInfo, 0)
-// 	if len(filterRouterId) == 0 {
-// 		return routerAddPluginList, errors.New(enums.CodeMessages(enums.ParamsError))
-// 	}
-//
-// 	pluginsModel := models.Plugins{}
-// 	allPluginList := pluginsModel.PluginAllList()
-//
-// 	routerPluginsModel := models.RouterPlugins{}
-// 	routerPluginAllList := routerPluginsModel.RouterPluginAllListByRouterIds([]string{filterRouterId})
-//
-// 	routerPluginAllPluginIdsMap := make(map[string]byte, 0)
-// 	for _, routerPluginInfo := range routerPluginAllList {
-// 		routerPluginAllPluginIdsMap[routerPluginInfo.PluginID] = 0
-// 	}
-//
-// 	for _, allPluginInfo := range allPluginList {
-// 		_, routerPluginExist := routerPluginAllPluginIdsMap[allPluginInfo.ResID]
-//
-// 		if !routerPluginExist {
-// 			routerAddPluginInfo := RouterAddPluginInfo{}
-// 			routerAddPluginInfo.ID = allPluginInfo.ResID
-// 			routerAddPluginInfo.Tag = allPluginInfo.PluginKey
-// 			routerAddPluginInfo.Type = allPluginInfo.Type
-// 			routerAddPluginInfo.Description = allPluginInfo.Description
-//
-// 			routerAddPluginList = append(routerAddPluginList, routerAddPluginInfo)
-// 		}
-// 	}
-//
-// 	return routerAddPluginList, nil
-// }
-
-type RouterPluginInfo struct {
-	ID            string `json:"id"`
-	PluginId      string `json:"plugin_id"`
-	Name          string `json:"name"`
-	Tag           string `json:"tag"`
-	Icon          string `json:"icon"`
-	Type          int    `json:"type"`
-	Description   string `json:"description"`
-	Order         int    `json:"order"`
-	Config        string `json:"config"`
-	IsEnable      int    `json:"is_enable"`
-	ReleaseStatus int    `json:"release_status"`
-}
-
-// func (r *RouterPluginInfo) RouterPluginList(routerId string) []RouterPluginInfo {
-// 	routerPluginList := make([]RouterPluginInfo, 0)
-//
-// 	routerPluginsModel := models.RouterPlugins{}
-// 	routerPluginConfigInfos := routerPluginsModel.RouterPluginInfoConfigListByRouterIds([]string{routerId})
-//
-// 	for _, routerPluginConfigInfo := range routerPluginConfigInfos {
-// 		routerPluginInfo := RouterPluginInfo{}
-// 		routerPluginInfo.ID = routerPluginConfigInfo.ID
-// 		routerPluginInfo.PluginId = routerPluginConfigInfo.Plugin.ResID
-// 		routerPluginInfo.Tag = routerPluginConfigInfo.Plugin.PluginKey
-// 		routerPluginInfo.Icon = routerPluginConfigInfo.Plugin.Icon
-// 		routerPluginInfo.Type = routerPluginConfigInfo.Plugin.Type
-// 		routerPluginInfo.Description = routerPluginConfigInfo.Plugin.Description
-// 		routerPluginInfo.Order = routerPluginConfigInfo.Order
-// 		routerPluginInfo.Config = routerPluginConfigInfo.Config
-// 		routerPluginInfo.IsEnable = routerPluginConfigInfo.IsEnable
-// 		routerPluginInfo.ReleaseStatus = routerPluginConfigInfo.ReleaseStatus
-//
-// 		routerPluginList = append(routerPluginList, routerPluginInfo)
-// 	}
-//
-// 	return routerPluginList
-// }
 
 func RouterInfoByResId(resId string) (models.Routers, error) {
 	return (&models.Routers{}).RouterDetailByResId(resId)
