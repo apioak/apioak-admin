@@ -429,23 +429,7 @@ func RouterPluginConfigSwitchEnable(c *gin.Context) {
 		return
 	}
 
-	pluginConfigDetail, err := services.NewPluginsService().PluginConfigInfoByResId(pluginConfigResId)
-	if err != nil {
-		utils.Error(c, err.Error())
-		return
-	}
-
-	if pluginConfigDetail.ResID == "" {
-		utils.Error(c, enums.CodeMessages(enums.PluginNull))
-		return
-	}
-
-	if pluginConfigDetail.Enable == request.Enable {
-		utils.Error(c, enums.CodeMessages(enums.SwitchNoChange))
-		return
-	}
-
-	err = services.NewPluginsService().PluginConfigSwitchEnable(pluginConfigResId, request.Enable)
+	err := services.NewPluginsService().PluginConfigSwitchEnable(pluginConfigResId, request.Enable)
 	if err != nil {
 		utils.Error(c, err.Error())
 		return
