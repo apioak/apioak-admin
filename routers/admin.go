@@ -72,8 +72,7 @@ func RouterRegister(routerEngine *gin.Engine) {
 			routerPlugin.GET("/info/:res_id", admin.RouterPluginConfigInfo)
 			routerPlugin.PUT("/update/:res_id", admin.RouterPluginConfigUpdate)
 			// routerPlugin.DELETE("/plugin/delete/:route_id/:plugin_id/:route_plugin_id", admin.RouterPluginDelete)
-			// routerPlugin.PUT("/plugin/switch/enable/:route_id/:plugin_id/:route_plugin_id", admin.RouterPluginSwitchEnable)
-			// routerPlugin.PUT("/plugin/switch/release/:route_id/:plugin_id/:route_plugin_id", admin.RouterPluginSwitchRelease)
+			routerPlugin.PUT("/switch/enable/:res_id", admin.RouterPluginConfigSwitchEnable)
 		}
 
 		// plugin
