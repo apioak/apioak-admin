@@ -11,7 +11,6 @@ import (
 	"encoding/json"
 	"errors"
 	"gorm.io/gorm"
-	"reflect"
 	"sync"
 )
 
@@ -247,12 +246,20 @@ func (s *PluginsService) PluginConfigUpdate(request *validators.ValidatorPluginC
 	pluginConfigInfo, err := (&models.PluginConfigs{}).PluginConfigInfoByResId(request.PluginConfigId)
 
 	if err != nil {
+		return err
+	}
+
+	if pluginConfigInfo.ResID == "" {
 		return errors.New(enums.CodeMessages(enums.PluginConfigNull))
 	}
 
 	pluginInfo, err := s.PluginInfoByResId(pluginConfigInfo.PluginResID)
 
 	if err != nil {
+		return err
+	}
+
+	if pluginInfo.ResID == "" {
 		return errors.New(enums.CodeMessages(enums.PluginNull))
 	}
 
@@ -262,16 +269,7 @@ func (s *PluginsService) PluginConfigUpdate(request *validators.ValidatorPluginC
 		return err
 	}
 
-	if reflect.ValueOf(request.Config).IsNil() {
-		request.Config = pluginContext.StrategyPluginFormatDefault()
-	} else {
-		request.Config, err = pluginContext.StrategyPluginParse(request.Config)
-
-		if err != nil {
-			return err
-		}
-	}
-
+	request.Config, _ = pluginContext.StrategyPluginParse(request.Config)
 	config, err := json.Marshal(request.Config)
 
 	if err != nil {

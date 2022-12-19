@@ -379,4 +379,25 @@ func RouterPluginConfigInfo(c *gin.Context) {
 	utils.Ok(c, res)
 }
 
+func RouterPluginConfigUpdate(c *gin.Context) {
+	pluginConfigResId := strings.TrimSpace(c.Param("res_id"))
+
+	var request = &validators.ValidatorPluginConfigUpdate{
+		PluginConfigId: pluginConfigResId,
+	}
+
+	if msg, err := packages.ParseRequestParams(c, request); err != nil {
+		utils.Error(c, msg)
+		return
+	}
+
+	err := services.NewPluginsService().PluginConfigUpdate(request)
+	if err != nil {
+		utils.Error(c, err.Error())
+		return
+	}
+
+	utils.Ok(c)
+}
+
 
