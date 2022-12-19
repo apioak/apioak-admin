@@ -83,7 +83,7 @@ type PluginConfigListItem struct {
 	Config            interface{} `json:"config"`
 }
 type PluginConfigListResponse struct {
-	List []PluginConfigListItem
+	List []PluginConfigListItem `json:"list"`
 }
 
 func (s *PluginsService) PluginConfigList(resType int, resId string) (*PluginConfigListResponse, error) {

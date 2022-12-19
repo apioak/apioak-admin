@@ -335,4 +335,31 @@ func RouterPluginConfigAdd(c *gin.Context) {
 	utils.Ok(c)
 }
 
+func RouterPluginConfigList(c *gin.Context) {
+	routerResId := strings.TrimSpace(c.Param("router_res_id"))
+
+	if routerResId == "" {
+		utils.Error(c, enums.CodeMessages(enums.ParamsError))
+		return
+	}
+
+	var request = &validators.ValidatorPluginConfigList{
+		Type: models.PluginConfigsTypeRouter,
+	}
+
+	if msg, err := packages.ParseRequestParams(c, request); err != nil {
+		utils.Error(c, msg)
+		return
+	}
+
+	res, err := services.NewPluginsService().PluginConfigList(request.Type, routerResId)
+
+	if err != nil {
+		utils.Error(c, err.Error())
+		return
+	}
+
+	utils.Ok(c, res)
+}
+
 

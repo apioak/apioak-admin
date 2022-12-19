@@ -42,16 +42,23 @@ func (jwtAuthConfig PluginJwtAuthConfig) PluginConfigDefault() interface{} {
 	return pluginJwtAuth
 }
 
-func (jwtAuthConfig PluginJwtAuthConfig) PluginConfigParse(configInfo interface{}) (interface{}, error) {
+func (jwtAuthConfig PluginJwtAuthConfig) PluginConfigParse(configInfo interface{}) (pluginJwtAuth interface{}, err error) {
 
-	pluginJwtAuth := PluginJwtAuth{
+	pluginJwtAuth = PluginJwtAuth{
 		JwtKey: "",
 	}
 
-	configInfoJson, _ := json.Marshal(configInfo)
-	err := json.Unmarshal(configInfoJson, &pluginJwtAuth)
+	var configInfoJson []byte
+	_, ok := configInfo.(string)
+	if ok {
+		configInfoJson = []byte(fmt.Sprint(configInfo))
+	} else {
+		configInfoJson, err = json.Marshal(configInfo)
+	}
 
-	return pluginJwtAuth, err
+	err = json.Unmarshal(configInfoJson, &pluginJwtAuth)
+
+	return
 }
 
 func (jwtAuthConfig PluginJwtAuthConfig) PluginConfigCheck(configInfo interface{}) error {
