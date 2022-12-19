@@ -362,4 +362,21 @@ func RouterPluginConfigList(c *gin.Context) {
 	utils.Ok(c, res)
 }
 
+func RouterPluginConfigInfo(c *gin.Context) {
+	pluginConfigResId := strings.TrimSpace(c.Param("res_id"))
+
+	if pluginConfigResId == "" {
+		utils.Error(c, enums.CodeMessages(enums.ParamsError))
+		return
+	}
+
+	res, err := services.NewPluginsService().PluginConfigInfoByResId(pluginConfigResId)
+	if err != nil {
+		utils.Error(c, err.Error())
+		return
+	}
+
+	utils.Ok(c, res)
+}
+
 
