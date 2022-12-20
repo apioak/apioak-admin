@@ -8,7 +8,7 @@ import (
 func PluginBasicInfoMaintain() {
 
 	pluginModel := models.Plugins{}
-	dbPluginList := pluginModel.PluginAllList()
+	dbPluginList, _ := pluginModel.PluginAllList()
 
 	dbPluginMapResId := make(map[string]models.Plugins)
 
@@ -56,8 +56,8 @@ type PluginAddListItem struct {
 
 func (s PluginAddListItem) PluginAddList() (list []PluginAddListItem, err error) {
 	pluginModel := models.Plugins{}
-	pluginAllList := pluginModel.PluginAllList()
-	if len(pluginAllList) == 0 {
+	pluginAllList, err := pluginModel.PluginAllList()
+	if len(pluginAllList) == 0 || err != nil {
 		return
 	}
 

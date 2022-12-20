@@ -228,3 +228,16 @@ func (m *PluginConfigs) PluginConfigDelete(resId string, configType int, targetI
 
 	return nil
 }
+
+func (m *PluginConfigs) PluginConfigListByTargetResIds(configType int, targetResIds []string) (list []PluginConfigs, err error) {
+	err = packages.GetDb().Table(m.TableName()).
+		Where("type = ?", configType).
+		Where("target_id in ?", targetResIds).
+		Find(&list).Error
+
+	if errors.Is(err, gorm.ErrRecordNotFound){
+		err = nil
+	}
+
+	return
+}

@@ -257,32 +257,7 @@ func (r *Routers) RouterDelete(id string) error {
 	return tx.Commit().Error
 }
 
-type RouterPluginListItem struct {
-	ID            string `json:"id"`
-	Name          string `json:"name"`
-	Tag           string `json:"tag"`
-	Icon          string `json:"icon"`
-	Type          int    `json:"type"`
-	Config        string `json:"config"`
-	IsEnable      int    `json:"is_enable"`
-	ReleaseStatus int    `json:"release_status"`
-}
-
-type RouterListItem struct {
-	ResID          string                 `json:"res_id"`
-	ServiceResID   string                 `json:"service_res_id"`
-	ServiceName    string                 `json:"service_name"`
-	RouterName     string                 `json:"router_name"`
-	RequestMethods string                 `json:"request_methods"`
-	RouterPath     string                 `json:"router_path"`
-	Enable         int                    `json:"enable"`
-	Release        int                    `json:"release"`
-	Plugins        []RouterPluginListItem `json:"plugins"`
-}
-
-func (r *Routers) RouterListPage(serviceResId string, param *validators.ValidatorRouterList) (list []RouterListItem, total int, listError error) {
-	routersList := make([]Routers, 0)
-
+func (r *Routers) RouterListPage(serviceResId string, param *validators.ValidatorRouterList) (list []Routers, total int, listError error) {
 	routersModel := Routers{}
 	tx := packages.GetDb().
 		Table(routersModel.TableName())
@@ -319,26 +294,10 @@ func (r *Routers) RouterListPage(serviceResId string, param *validators.Validato
 	tx = tx.
 		Order("created_at desc")
 
-	listError = ListPaginate(tx, &routersList, &param.BaseListPage)
+	listError = ListPaginate(tx, &list, &param.BaseListPage)
 
-	if len(routersList) == 0 {
+	if len(list) == 0 {
 		return
-	}
-
-	// @todo 列表中需要补充服务名称，路由插件的数据列表
-
-	for _, routersInfo := range routersList {
-		routerPluginListItem := RouterListItem{
-			ResID:          routersInfo.ResID,
-			ServiceResID:   routersInfo.ServiceResID,
-			RouterName:     routersInfo.RouterName,
-			RequestMethods: routersInfo.RequestMethods,
-			RouterPath:     routersInfo.RouterPath,
-			Enable:         routersInfo.Enable,
-			Release:        routersInfo.Release,
-		}
-
-		list = append(list, routerPluginListItem)
 	}
 
 	return

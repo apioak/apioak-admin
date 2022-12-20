@@ -141,13 +141,12 @@ func RouterCreate(routerData *validators.ValidatorRouterAddUpdate) (routerResId 
 }
 
 type routerPlugin struct {
-	ID            string `json:"id"`
-	Name          string `json:"name"`
-	Icon          string `json:"icon"`
-	Tag           string `json:"tag"`
-	Type          int    `json:"type"`
-	IsEnable      int    `json:"is_enable"`
-	ReleaseStatus int    `json:"release_status"`
+	ResID  string `json:"res_id"`
+	Name   string `json:"name"`
+	Key    string `json:"key"`
+	Icon   string `json:"icon"`
+	Type   int    `json:"type"`
+	Enable int    `json:"enable"`
 }
 
 type RouterListItem struct {
@@ -162,12 +161,17 @@ type RouterListItem struct {
 	PluginList     []routerPlugin `json:"plugin_list"`
 }
 
-func (s *RouterListItem) RouterListPage(serviceResId string, param *validators.ValidatorRouterList) ([]RouterListItem, int, error) {
+func (s *RouterListItem) RouterListPage(serviceResId string, param *validators.ValidatorRouterList) (
+	routerList []RouterListItem, total int, err error) {
 
 	routerModel := models.Routers{}
-	routerInfos, total, listError := routerModel.RouterListPage(serviceResId, param)
+	routerInfos := make([]models.Routers, 0)
+	routerInfos, total, err = routerModel.RouterListPage(serviceResId, param)
 
-	routerList := make([]RouterListItem, 0)
+	routerServiceResIds := make([]string, 0)
+	routerServiceResIdsMap := make(map[string]byte)
+
+	routerResIds := make([]string, 0)
 	if len(routerInfos) != 0 {
 		for _, routerInfo := range routerInfos {
 			routerListItem := RouterListItem{}
@@ -178,15 +182,96 @@ func (s *RouterListItem) RouterListPage(serviceResId string, param *validators.V
 			routerListItem.RouterPath = routerInfo.RouterPath
 			routerListItem.Enable = routerInfo.Enable
 			routerListItem.Release = routerInfo.Release
-
-			// @todo 这里补充路由的插件列表数据，还有一个是服务的名称也需要补充
-			// routerListItem.PluginList = routerPluginInfos
-
+			routerListItem.PluginList = make([]routerPlugin, 0)
 			routerList = append(routerList, routerListItem)
+			routerResIds = append(routerResIds, routerInfo.ResID)
+
+			if _, ok := routerServiceResIdsMap[routerInfo.ServiceResID]; ok == false {
+				routerServiceResIds = append(routerServiceResIds, routerInfo.ServiceResID)
+			}
 		}
 	}
 
-	return routerList, total, listError
+	pluginConfigModel := models.PluginConfigs{}
+	pluginConfigList, err := pluginConfigModel.PluginConfigListByTargetResIds(models.PluginConfigsTypeRouter, routerResIds)
+	if err != nil {
+		return
+	}
+
+	if len(pluginConfigList) > 0 {
+
+		pluginResIds := make([]string, 0)
+		pluginResIdsMap := make(map[string]byte)
+		for _, pluginConfigInfo := range pluginConfigList {
+			_, ok := pluginResIdsMap[pluginConfigInfo.PluginResID]
+			if ok == false {
+				pluginResIds = append(pluginResIds, pluginConfigInfo.PluginResID)
+			}
+		}
+
+		pluginModel := models.Plugins{}
+		pluginList := make([]models.Plugins, 0)
+		pluginList, err = pluginModel.PluginAllList()
+		if err != nil {
+			return
+		}
+
+		pluginListMap := make(map[string]models.Plugins)
+		for _, pluginInfo := range pluginList {
+			pluginListMap[pluginInfo.ResID] = pluginInfo
+		}
+
+		pluginConfigMapList := make(map[string][]routerPlugin)
+		for _, pluginConfigInfo := range pluginConfigList {
+			_, ok := pluginConfigMapList[pluginConfigInfo.TargetID]
+			if ok == false {
+				pluginConfigMapList[pluginConfigInfo.TargetID] = make([]routerPlugin, 0)
+			}
+			pluginConfigMapList[pluginConfigInfo.TargetID] = append(pluginConfigMapList[pluginConfigInfo.TargetID], routerPlugin{
+				ResID:  pluginConfigInfo.ResID,
+				Name:   pluginConfigInfo.Name,
+				Key:    pluginConfigInfo.PluginKey,
+				Enable: pluginConfigInfo.Enable,
+				Icon:   pluginListMap[pluginConfigInfo.PluginResID].Icon,
+				Type:   pluginListMap[pluginConfigInfo.PluginResID].Type,
+			})
+		}
+
+		if len(routerList) > 0 {
+			for key, routerInfo := range routerList {
+				routerPluginList, ok := pluginConfigMapList[routerInfo.ResID]
+				if ok {
+					routerList[key].PluginList = routerPluginList
+				}
+			}
+		}
+	}
+
+	if len(routerServiceResIds) > 0 {
+
+		serviceModel := models.Services{}
+		serviceList := make([]models.Services, 0)
+		serviceList, err = serviceModel.ServiceListByResIds(routerServiceResIds)
+		if err != nil {
+			return
+		}
+
+		serviceMap := make(map[string]models.Services)
+		for _, serviceInfo := range serviceList {
+			serviceMap[serviceInfo.ResID] = serviceInfo
+		}
+
+		if len(routerList) > 0 {
+			for key, routerInfo := range routerList {
+				serviceInfo, ok := serviceMap[routerInfo.ServiceResID]
+				if ok {
+					routerList[key].ServiceName = serviceInfo.Name
+				}
+			}
+		}
+	}
+
+	return
 }
 
 type StructRouterInfo struct {
@@ -709,14 +794,14 @@ func RouterCopy(routerResId string) (err error) {
 					}
 
 					newUpstreamNodeList = append(newUpstreamNodeList, models.UpstreamNodes{
-						ResID: upstreamNodeResId,
+						ResID:         upstreamNodeResId,
 						UpstreamResID: upstreamResId,
-						NodeIP: upstreamNodeDetail.NodeIP,
-						IPType: upstreamNodeDetail.IPType,
-						NodePort: upstreamNodeDetail.NodePort,
-						NodeWeight: upstreamNodeDetail.NodeWeight,
-						Health: upstreamNodeDetail.Health,
-						HealthCheck: upstreamNodeDetail.HealthCheck,
+						NodeIP:        upstreamNodeDetail.NodeIP,
+						IPType:        upstreamNodeDetail.IPType,
+						NodePort:      upstreamNodeDetail.NodePort,
+						NodeWeight:    upstreamNodeDetail.NodeWeight,
+						Health:        upstreamNodeDetail.Health,
+						HealthCheck:   upstreamNodeDetail.HealthCheck,
 					})
 				}
 
@@ -737,14 +822,14 @@ func RouterCopy(routerResId string) (err error) {
 
 		randomStr := utils.RandomStrGenerate(4)
 		err = tx.Table(routerModel.TableName()).Create(&models.Routers{
-			ResID: newRouterResId,
-			ServiceResID: routerDetail.ServiceResID,
-			UpstreamResID: upstreamResId,
+			ResID:          newRouterResId,
+			ServiceResID:   routerDetail.ServiceResID,
+			UpstreamResID:  upstreamResId,
 			RequestMethods: routerDetail.RequestMethods,
-			RouterName: routerDetail.RouterName + "-copy-" + randomStr,
-			RouterPath: routerDetail.RouterPath + "-copy-" + randomStr,
-			Enable: routerDetail.Enable,
-			Release: utils.ReleaseStatusU,
+			RouterName:     routerDetail.RouterName + "-copy-" + randomStr,
+			RouterPath:     routerDetail.RouterPath + "-copy-" + randomStr,
+			Enable:         routerDetail.Enable,
+			Release:        utils.ReleaseStatusU,
 		}).Error
 		if err != nil {
 			return

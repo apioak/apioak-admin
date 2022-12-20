@@ -12,8 +12,7 @@ import (
 )
 
 func RouterAdd(c *gin.Context) {
-	bindParams := validators.ValidatorRouterAddUpdate{
-	}
+	bindParams := validators.ValidatorRouterAddUpdate{}
 	if msg, err := packages.ParseRequestParams(c, &bindParams); err != nil {
 		utils.Error(c, msg)
 		return
@@ -56,10 +55,12 @@ func RouterList(c *gin.Context) {
 		return
 	}
 
-	checkServiceExistErr := services.CheckServiceExist(bindParams.ServiceResID)
-	if checkServiceExistErr != nil {
-		utils.Error(c, checkServiceExistErr.Error())
-		return
+	if len(bindParams.ServiceResID) > 0 {
+		checkServiceExistErr := services.CheckServiceExist(bindParams.ServiceResID)
+		if checkServiceExistErr != nil {
+			utils.Error(c, checkServiceExistErr.Error())
+			return
+		}
 	}
 
 	structRouterList := services.RouterListItem{}
@@ -124,12 +125,11 @@ func RouterUpdate(c *gin.Context) {
 		return
 	}
 
-	// @todo 默认服务下的全量路由检测，后续版本中放开
-	// checkEditDefaultPathRouterErr := services.CheckEditDefaultPathRouter(routerResId)
-	// if checkEditDefaultPathRouterErr != nil {
-	// 	utils.Error(c, checkEditDefaultPathRouterErr.Error())
-	// 	return
-	// }
+	checkEditDefaultPathRouterErr := services.CheckEditDefaultPathRouter(routerResId)
+	if checkEditDefaultPathRouterErr != nil {
+		utils.Error(c, checkEditDefaultPathRouterErr.Error())
+		return
+	}
 
 	checkServiceRouterPathErr := services.CheckServiceRouterPath(bindParams.RouterPath)
 	if checkServiceRouterPathErr != nil {
@@ -263,17 +263,21 @@ func RouterSwitchRelease(c *gin.Context) {
 	serviceResId := strings.TrimSpace(c.Param("service_res_id"))
 	routerResId := strings.TrimSpace(c.Param("router_res_id"))
 
-	checkServiceExistErr := services.CheckServiceExist(serviceResId)
-	if checkServiceExistErr != nil {
-		utils.Error(c, checkServiceExistErr.Error())
-		return
-	}
-
-	// @todo 这里增加检测服务是否已发布，只要不是未发布都可以通过，请优先发布服务（未发布的服务不允许发布路由）
-
 	checkExistRouterErr := services.CheckRouterExist(routerResId, serviceResId)
 	if checkExistRouterErr != nil {
 		utils.Error(c, checkExistRouterErr.Error())
+		return
+	}
+
+	serviceModel := models.Services{}
+	serviceDetail, err := serviceModel.ServiceInfoById(serviceResId)
+	if err != nil {
+		utils.Error(c, err.Error())
+		return
+	}
+
+	if serviceDetail.Release == utils.ReleaseStatusU {
+		utils.Error(c, enums.CodeMessages(enums.ServiceUnpublished))
 		return
 	}
 

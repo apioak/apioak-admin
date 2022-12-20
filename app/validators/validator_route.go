@@ -34,7 +34,7 @@ type ValidatorRouterAddUpdate struct {
 }
 
 type ValidatorRouterList struct {
-	ServiceResID string `json:"service_res_id" zh:"所属服务" en:"Belonging service" binding:"omitempty"`
+	ServiceResID string `form:"service_res_id" json:"service_res_id" zh:"所属服务" en:"Belonging service" binding:"omitempty"`
 	Search       string `form:"search" json:"search" zh:"搜索内容" en:"Search content" binding:"omitempty"`
 	Enable       int    `form:"enable" json:"enable" zh:"路由开关" en:"Routing enable" binding:"omitempty,oneof=1 2"`
 	Release      int    `form:"release" json:"release" zh:"发布状态" en:"Release status" binding:"omitempty,oneof=1 2 3"`
@@ -47,10 +47,6 @@ type RouterUpdateName struct {
 
 type RouterSwitchEnable struct {
 	Enable int `json:"enable" zh:"路由开关" en:"Router enable" binding:"required,oneof=1 2"`
-}
-
-type RouterSwitchRelease struct {
-	IsRelease int `json:"is_release" zh:"路由发布" en:"Route enable" binding:"required,oneof=1"`
 }
 
 func CheckRouterPathPrefix(fl validator.FieldLevel) bool {

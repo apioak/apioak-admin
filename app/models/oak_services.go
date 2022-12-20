@@ -264,3 +264,15 @@ func (s *Services) ServiceUpdateColumnsWithDB(tx *gorm.DB, serviceId string, par
 
 	return nil
 }
+
+func (s *Services) ServiceListByResIds(serviceResIds []string) (list []Services, err error) {
+	err = packages.GetDb().Table(s.TableName()).
+		Where("res_id in ?", serviceResIds).
+		Find(&list).Error
+
+	if err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
+		err = nil
+	}
+
+	return
+}

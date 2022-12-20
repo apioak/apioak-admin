@@ -1,9 +1,7 @@
 package models
 
 import (
-	"apioak-admin/app/enums"
 	"apioak-admin/app/packages"
-	"apioak-admin/app/utils"
 	"errors"
 	"gorm.io/gorm"
 )
@@ -21,40 +19,6 @@ type Plugins struct {
 // TableName sets the insert table name for this struct type
 func (p *Plugins) TableName() string {
 	return "oak_plugins"
-}
-
-var recursionTimesPlugins = 1
-
-func (m *Plugins) ModelUniqueId() (string, error) {
-	generateId, generateIdErr := utils.IdGenerate(utils.IdTypePlugin)
-	if generateIdErr != nil {
-		return "", generateIdErr
-	}
-
-	result := packages.GetDb().
-		Table(m.TableName()).
-		Where("res_id = ?", generateId).
-		Select("res_id").
-		First(m)
-
-	if result.RowsAffected == 0 {
-		recursionTimesPlugins = 1
-		return generateId, nil
-	} else {
-		if recursionTimesPlugins == utils.IdGenerateMaxTimes {
-			recursionTimesPlugins = 1
-			return "", errors.New(enums.CodeMessages(enums.IdConflict))
-		}
-
-		recursionTimesPlugins++
-		id, err := m.ModelUniqueId()
-
-		if err != nil {
-			return "", err
-		}
-
-		return id, nil
-	}
 }
 
 func (p *Plugins) PluginAdd(pluginData *Plugins) error {
@@ -100,13 +64,16 @@ func (p *Plugins) PluginUpdate(resId string, pluginInfo *Plugins) error {
 	return updateError
 }
 
-func (p *Plugins) PluginAllList() []Plugins {
-	pluginAllList := make([]Plugins, 0)
-	packages.GetDb().
+func (p *Plugins) PluginAllList() (list []Plugins, err error) {
+	err = packages.GetDb().
 		Table(p.TableName()).
-		Find(&pluginAllList)
+		Find(&list).Error
 
-	return pluginAllList
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		err = nil
+	}
+
+	return
 }
 
 func (p *Plugins) PluginDelByPluginKeys(pluginKeys []string, filterResIds []string) (err error) {
