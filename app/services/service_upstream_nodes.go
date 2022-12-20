@@ -191,8 +191,6 @@ func generateUpstreamNodeConfig(upstreamNodeInfo models.UpstreamNodes) (rpc.Upst
 	upstreamNodeConfig.Address = upstreamNodeInfo.NodeIP
 	upstreamNodeConfig.Port = upstreamNodeInfo.NodePort
 	upstreamNodeConfig.Weight = upstreamNodeInfo.NodeWeight
-
-	// @todo 节点健康检查
 	upstreamNodeConfig.Check.Enabled = false
 
 	return upstreamNodeConfig, nil

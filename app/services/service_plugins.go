@@ -381,3 +381,44 @@ func SyncPluginToDataSide(tx *gorm.DB, resType int, targetId string) ([]models.P
 
 	return success, nil
 }
+
+func PluginBasicInfoMaintain() {
+
+	pluginModel := models.Plugins{}
+	dbPluginList, _ := pluginModel.PluginAllList()
+
+	dbPluginMapResId := make(map[string]models.Plugins)
+
+	for _, dbPluginInfo := range dbPluginList {
+		dbPluginMapResId[dbPluginInfo.ResID] = dbPluginInfo
+	}
+
+	configPluginList := utils.AllConfigPluginData()
+
+	for _, configPluginInfo := range configPluginList {
+
+		dbPluginMapInfo, ok := dbPluginMapResId[configPluginInfo.ResID]
+
+		if ok {
+			if (configPluginInfo.PluginKey != dbPluginMapInfo.PluginKey) ||
+				(configPluginInfo.Type != dbPluginMapInfo.Type) {
+
+				dbPluginMapInfo.PluginKey = configPluginInfo.PluginKey
+				dbPluginMapInfo.Type = configPluginInfo.Type
+				_ = pluginModel.PluginUpdate(configPluginInfo.ResID, &dbPluginMapInfo)
+			}
+
+		} else {
+
+			_ = pluginModel.PluginDelByPluginKeys([]string{configPluginInfo.PluginKey}, []string{})
+
+			newPluginData := pluginModel
+			newPluginData.ResID = configPluginInfo.ResID
+			newPluginData.Type = configPluginInfo.Type
+			newPluginData.PluginKey = configPluginInfo.PluginKey
+			newPluginData.Icon = configPluginInfo.Icon
+
+			_ = pluginModel.PluginAdd(&newPluginData)
+		}
+	}
+}

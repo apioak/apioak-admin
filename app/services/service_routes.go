@@ -5,6 +5,7 @@ import (
 	"apioak-admin/app/models"
 	"apioak-admin/app/packages"
 	"apioak-admin/app/rpc"
+	"apioak-admin/app/services/plugins"
 	"apioak-admin/app/utils"
 	"apioak-admin/app/validators"
 	"errors"
@@ -482,8 +483,19 @@ func filterPushedServiceRouterResIds(routerResIds []string) (opRoutersResIds []s
 		}
 	}
 
+	serviceModel := models.Services{}
+	serviceList := make([]models.Services, 0)
+	serviceList, err = serviceModel.ServiceListByResIds(serviceResIds)
+	if err != nil {
+		return
+	}
+
 	publishedServiceResIdsMap := make(map[string]byte)
-	// @todo 根据服务ID获取已经发布的服务数据（如果没有已经发布的数据，则本次发布不允许，直接返回错误信息即可）
+	for _, serviceInfo := range serviceList {
+		if serviceInfo.Release != utils.ReleaseStatusU {
+			publishedServiceResIdsMap[serviceInfo.ResID] = 0
+		}
+	}
 
 	for _, routerInfo := range routerList {
 		_, ok := publishedServiceResIdsMap[routerInfo.ServiceResID]
@@ -526,8 +538,19 @@ func RouterUpstreamRelease(routerResIds []string, releaseType string) (err error
 		}
 	}
 
-	// publishedServiceResIdsMap := make(map[string]byte)
-	// @todo 根据服务ID获取已经发布的服务数据（如果没有已经发布的数据，则本次发布不允许，直接返回错误信息即可）
+	serviceModel := models.Services{}
+	serviceList := make([]models.Services, 0)
+	serviceList, err = serviceModel.ServiceListByResIds(serviceResIds)
+	if err != nil {
+		return
+	}
+
+	publishedServiceResIdsMap := make(map[string]byte)
+	for _, serviceInfo := range serviceList {
+		if serviceInfo.Release != utils.ReleaseStatusU {
+			publishedServiceResIdsMap[serviceInfo.ResID] = 0
+		}
+	}
 
 	toBeOpUpstreamResIds := make([]string, 0)
 	toBeOpRouterList := make([]models.Routers, 0)
@@ -550,6 +573,7 @@ func RouterUpstreamRelease(routerResIds []string, releaseType string) (err error
 	}
 
 	routerConfigList := make([]rpc.RouterConfig, 0)
+	routerConfigResIds := make([]string, 0)
 	for _, toBeOpRouterInfo := range toBeOpRouterList {
 		var routerConfig rpc.RouterConfig
 		routerConfig, err = generateRouterConfig(toBeOpRouterInfo)
@@ -562,10 +586,50 @@ func RouterUpstreamRelease(routerResIds []string, releaseType string) (err error
 		}
 
 		routerConfigList = append(routerConfigList, routerConfig)
+		routerConfigResIds = append(routerConfigResIds, toBeOpRouterInfo.ResID)
 	}
+
+	pluginConfigModel := models.PluginConfigs{}
+	routerPluginConfigList := make([]models.PluginConfigs, 0)
+	routerPluginConfigList, err = pluginConfigModel.PluginConfigListByTargetResIds(models.PluginConfigsTypeRouter, routerConfigResIds)
+	if err != nil {
+		return
+	}
+
+	fmt.Println(fmt.Sprintf("---------%+v--------", routerPluginConfigList))
 
 	newApiOak := rpc.NewApiOak()
 	if releaseType == utils.ReleaseTypePush {
+
+		if len(routerPluginConfigList) > 0 {
+			for _, routerPluginConfigInfo := range routerPluginConfigList {
+
+				var pluginContext plugins.PluginContext
+				pluginContext, err = plugins.NewPluginContext(routerPluginConfigInfo.PluginKey)
+
+				if err != nil {
+					continue
+				}
+
+				var config interface{}
+				config, err = pluginContext.StrategyPluginParse(routerPluginConfigInfo.Config)
+
+				err = newApiOak.PluginPut(&rpc.PluginPutRequest{
+					Name:   routerPluginConfigInfo.ResID,
+					Key:    routerPluginConfigInfo.PluginKey,
+					Config: config,
+				})
+
+				if err != nil {
+					continue
+				}
+			}
+		}
+
+		err = newApiOak.RouterDelete(routerResIds)
+		if err != nil {
+			return
+		}
 
 		err = UpstreamRelease(toBeOpUpstreamResIds, releaseType)
 		if err != nil {
@@ -593,6 +657,27 @@ func RouterUpstreamRelease(routerResIds []string, releaseType string) (err error
 		err = UpstreamRelease(toBeOpUpstreamResIds, releaseType)
 		if err != nil {
 			return
+		}
+
+		apioakRouterConfigList := make([]rpc.RouterConfig, 0)
+		apioakRouterConfigList, err = newApiOak.RouterGet(routerConfigResIds)
+		if err != nil {
+			return
+		}
+
+		if len(apioakRouterConfigList) > 0 {
+			for _, apioakRouterConfigInfo := range apioakRouterConfigList {
+				if len(apioakRouterConfigInfo.Plugins) == 0 {
+					continue
+				}
+
+				for _, pluginIdName := range apioakRouterConfigInfo.Plugins {
+					err = newApiOak.PluginDelete(pluginIdName.Id)
+					if err != nil {
+						return
+					}
+				}
+			}
 		}
 	}
 
@@ -669,9 +754,25 @@ func generateRouterConfig(routerInfo models.Routers) (rpc.RouterConfig, error) {
 	routerConfig.Headers = make(map[string]string)
 	routerConfig.Service.Name = routerInfo.ServiceResID
 	routerConfig.Upstream.Name = routerInfo.UpstreamResID
-
-	// @todo 根据路由res_id获取插件列表数据进行补充插件数据
 	routerConfig.Plugins = make([]rpc.ConfigObjectName, 0)
+
+	pluginConfigModel := models.PluginConfigs{}
+	pluginConfigList, err := pluginConfigModel.PluginConfigListByTargetResIds(models.PluginConfigsTypeRouter, []string{routerInfo.ResID})
+	if err != nil {
+		return routerConfig, err
+	}
+
+	if len(pluginConfigList) > 0 {
+		for _, pluginConfigInfo := range pluginConfigList {
+			if pluginConfigInfo.Enable == utils.EnableOff {
+				continue
+			}
+
+			routerConfig.Plugins = append(routerConfig.Plugins, rpc.ConfigObjectName{
+				Name: pluginConfigInfo.ResID,
+			})
+		}
+	}
 
 	return routerConfig, nil
 }
@@ -762,7 +863,12 @@ func RouterCopy(routerResId string) (err error) {
 		}
 	}
 
-	// @todo 获取plugin信息，plugin写入数据库的时候plugin的ID补充到路由上，进行更新到路由信息中（plugin_config数据表中）
+	pluginConfigModel := models.PluginConfigs{}
+	pluginConfigList := make([]models.PluginConfigs, 0)
+	pluginConfigList, err = pluginConfigModel.PluginConfigListByTargetResIds(models.PluginConfigsTypeRouter, []string{routerResId})
+	if err != nil {
+		return
+	}
 
 	err = packages.GetDb().Transaction(func(tx *gorm.DB) (err error) {
 		var upstreamResId string
@@ -833,6 +939,33 @@ func RouterCopy(routerResId string) (err error) {
 		}).Error
 		if err != nil {
 			return
+		}
+
+		newRouterPluginConfig := make([]models.PluginConfigs, 0)
+		if len(pluginConfigList) > 0 {
+			for _, pluginConfigInfo := range pluginConfigList {
+				var pluginConfigresId string
+				pluginConfigresId, err = pluginConfigModel.ModelUniqueId()
+				if err != nil {
+					return
+				}
+
+				newRouterPluginConfig= append(newRouterPluginConfig, models.PluginConfigs{
+					ResID: pluginConfigresId,
+					Name: pluginConfigInfo.Name,
+					Type: models.PluginConfigsTypeRouter,
+					TargetID: newRouterResId,
+					PluginResID: pluginConfigInfo.PluginResID,
+					PluginKey: pluginConfigInfo.PluginKey,
+					Config: pluginConfigInfo.Config,
+					Enable: pluginConfigInfo.Enable,
+				})
+			}
+
+			err = tx.Table(pluginConfigModel.TableName()).Create(&newRouterPluginConfig).Error
+			if err != nil {
+				return
+			}
 		}
 
 		return

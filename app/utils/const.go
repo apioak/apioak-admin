@@ -14,11 +14,6 @@ const (
 	IdTypeUpstream      = "up"
 	IdTypeUpstreamNode  = "un"
 
-	EtcdKeyTypeService     = "service"
-	EtcdKeyTypeRouter      = "router"
-	EtcdKeyTypePlugin      = "plugin"
-	EtcdKeyTypeCertificate = "certificate"
-
 	IdLength           = 15
 	IdGenerateMaxTimes = 5
 
@@ -38,8 +33,6 @@ const (
 
 	EnableOn  = 1
 	EnableOff = 2
-
-	EtcdTimeOut = 3
 
 	ReleaseY = 1 // 是否发布——是
 	ReleaseN = 2 // 是否发布——否
@@ -139,8 +132,6 @@ const (
 	PluginIconLimitCount = "icon-limit-count"
 
 	// ===================================== cluster node =====================================
-
-	EtcdKeyWatchClusterNode = "/apioak/etcd-key/watch/cluster/node/add"
 
 	ClusterNodeStatusHealth    = 1
 	ClusterNodeStatusUnhealthy = 2

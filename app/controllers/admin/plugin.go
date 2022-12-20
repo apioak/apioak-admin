@@ -1,7 +1,7 @@
 package admin
 
 import (
-	"apioak-admin/app/services"
+	"apioak-admin/app/models"
 	"apioak-admin/app/utils"
 	"github.com/gin-gonic/gin"
 )
@@ -13,12 +13,12 @@ func PluginTypeList(c *gin.Context) {
 }
 
 func PluginAddList(c *gin.Context) {
-	pluginAddListItem := services.PluginAddListItem{}
-	pluginAddList, err := pluginAddListItem.PluginAddList()
+	pluginModel := models.Plugins{}
+	pluginList, err := pluginModel.PluginAllList()
 	if err != nil {
 		utils.Error(c, err.Error())
 		return
 	}
 
-	utils.Ok(c, pluginAddList)
+	utils.Ok(c, pluginList)
 }

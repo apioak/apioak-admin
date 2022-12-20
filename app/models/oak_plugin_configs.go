@@ -235,7 +235,7 @@ func (m *PluginConfigs) PluginConfigListByTargetResIds(configType int, targetRes
 		Where("target_id in ?", targetResIds).
 		Find(&list).Error
 
-	if errors.Is(err, gorm.ErrRecordNotFound){
+	if err != nil && errors.Is(err, gorm.ErrRecordNotFound){
 		err = nil
 	}
 
