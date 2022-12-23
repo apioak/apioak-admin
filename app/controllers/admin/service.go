@@ -121,6 +121,18 @@ func ServiceList(c *gin.Context) {
 	utils.Ok(c, res)
 }
 
+func ServiceNameList(c *gin.Context) {
+
+	serviceModel := models.Services{}
+	serviceNameList, err := serviceModel.ServiceNameList()
+	if err != nil {
+		utils.Error(c, err.Error())
+		return
+	}
+
+	utils.Ok(c, serviceNameList)
+}
+
 func ServiceDelete(c *gin.Context) {
 	serviceId := strings.TrimSpace(c.Param("res_id"))
 

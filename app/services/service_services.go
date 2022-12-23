@@ -135,13 +135,13 @@ func (s *ServicesService) ServiceSwitchEnable(serviceId string, enable int) erro
 }
 
 type StructServiceInfo struct {
-	ID             int64    `json:"id"`              //Service id
-	ResID          string   `json:"res_id"`          //Service res id
-	Name           string   `json:"name"`            //Service name
-	Protocol       int      `json:"protocol"`        //Protocol  1:HTTP  2:HTTPS  3:HTTP&HTTPS
-	Enable         int      `json:"enable"`          //Service enable  1:on  2:off
-	Release        int      `json:"release"`         //Service release status 1:unpublished  2:to be published  3:published
-	ServiceDomains []string `json:"service_domains"` //Service Domains
+	ID             int64    `json:"id"`              // Service id
+	ResID          string   `json:"res_id"`          // Service res id
+	Name           string   `json:"name"`            // Service name
+	Protocol       int      `json:"protocol"`        // Protocol  1:HTTP  2:HTTPS  3:HTTP&HTTPS
+	Enable         int      `json:"enable"`          // Service enable  1:on  2:off
+	Release        int      `json:"release"`         // Service release status 1:unpublished  2:to be published  3:published
+	ServiceDomains []string `json:"service_domains"` // Service Domains
 }
 
 func (s *ServicesService) ServiceInfoById(serviceId string) (StructServiceInfo, error) {
@@ -241,14 +241,24 @@ func (s *ServicesService) ServiceDelete(serviceId string) error {
 	return nil
 }
 
+type pluginConfig struct {
+	ResID  string `json:"res_id"`
+	Name   string `json:"name"`
+	Key    string `json:"key"`
+	Icon   string `json:"icon"`
+	Type   int    `json:"type"`
+	Enable int    `json:"enable"`
+}
+
 type ServiceItem struct {
-	ID             int64    `json:"id"`
-	ResID          string   `json:"res_id"`          //Service id
-	Name           string   `json:"name"`            //Service name
-	Protocol       int      `json:"protocol"`        //Protocol  1:HTTP  2:HTTPS  3:HTTP&HTTPS
-	Enable         int      `json:"enable"`          //Service enable  1:on  2:off
-	Release        int      `json:"release"`         //Service release status 1:unpublished  2:to be published  3:published
-	ServiceDomains []string `json:"service_domains"` //Domain name
+	ID             int64          `json:"id"`
+	ResID          string         `json:"res_id"`          // Service id
+	Name           string         `json:"name"`            // Service name
+	Protocol       int            `json:"protocol"`        // Protocol  1:HTTP  2:HTTPS  3:HTTP&HTTPS
+	Enable         int            `json:"enable"`          // Service enable  1:on  2:off
+	Release        int            `json:"release"`         // Service release status 1:unpublished  2:to be published  3:published
+	ServiceDomains []string       `json:"service_domains"` // Domain name
+	PluginList     []pluginConfig `json:"plugin_list"`
 }
 
 func (s *ServicesService) ServiceList(request *validators.ServiceList) ([]ServiceItem, int, error) {
@@ -305,6 +315,55 @@ func (s *ServicesService) ServiceList(request *validators.ServiceList) ([]Servic
 		}
 	}
 
+	pluginConfigModel := models.PluginConfigs{}
+	pluginConfigList, err := pluginConfigModel.PluginConfigListByTargetResIds(models.PluginConfigsTypeService, listServiceId)
+	if err != nil {
+		return []ServiceItem{}, 0, err
+	}
+
+	pluginConfigListMap := make(map[string][]pluginConfig)
+	if len(pluginConfigList) > 0 {
+
+		pluginResIds := make([]string, 0)
+		pluginResIdsMap := make(map[string]byte)
+		for _, pluginConfigInfo := range pluginConfigList {
+			_, ok := pluginResIdsMap[pluginConfigInfo.PluginResID]
+			if ok == false {
+				pluginResIds = append(pluginResIds, pluginConfigInfo.PluginResID)
+			}
+		}
+
+		pluginModel := models.Plugins{}
+		pluginList := make([]models.Plugins, 0)
+		pluginList, err = pluginModel.PluginAllList()
+		if err != nil {
+			return []ServiceItem{}, 0, err
+		}
+
+		pluginListMap := make(map[string]models.Plugins)
+		for _, pluginInfo := range pluginList {
+			pluginListMap[pluginInfo.ResID] = pluginInfo
+		}
+
+		for _, pluginConfigInfo := range pluginConfigList {
+			_, ok := pluginConfigListMap[pluginConfigInfo.TargetID]
+			if !ok {
+				pluginConfigListMap[pluginConfigInfo.TargetID] = make([]pluginConfig, 0)
+			}
+
+			pluginConfigInfos := pluginConfig{
+				ResID:  pluginConfigInfo.ResID,
+				Name:   pluginConfigInfo.Name,
+				Key:    pluginConfigInfo.PluginKey,
+				Enable: pluginConfigInfo.Enable,
+				Icon:   pluginListMap[pluginConfigInfo.ResID].Icon,
+				Type:   pluginListMap[pluginConfigInfo.ResID].Type,
+			}
+
+			pluginConfigListMap[pluginConfigInfo.TargetID] = append(pluginConfigListMap[pluginConfigInfo.TargetID], pluginConfigInfos)
+		}
+	}
+
 	for _, v := range list {
 
 		domain := []string{}
@@ -313,7 +372,8 @@ func (s *ServicesService) ServiceList(request *validators.ServiceList) ([]Servic
 				domain = append(domain, vd.Domain)
 			}
 		}
-		serviceList = append(serviceList, ServiceItem{
+
+		serviceItem := ServiceItem{
 			ID:             v.ID,
 			ResID:          v.ResID,
 			Name:           v.Name,
@@ -321,7 +381,14 @@ func (s *ServicesService) ServiceList(request *validators.ServiceList) ([]Servic
 			Enable:         v.Enable,
 			Release:        v.Release,
 			ServiceDomains: domain,
-		})
+			PluginList:     make([]pluginConfig, 0),
+		}
+
+		if _, ok := pluginConfigListMap[v.ResID]; ok {
+			serviceItem.PluginList = pluginConfigListMap[v.ResID]
+		}
+
+		serviceList = append(serviceList, serviceItem)
 	}
 
 	return serviceList, total, nil

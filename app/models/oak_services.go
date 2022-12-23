@@ -11,12 +11,12 @@ import (
 )
 
 type Services struct {
-	ID       int64  `gorm:"column:id;primary_key"` //Service id
-	ResID    string `gorm:"column:res_id"`         //ServiceResID
-	Name     string `gorm:"column:name"`           //Service name
-	Protocol int    `gorm:"column:protocol"`       //Protocol  1:HTTP  2:HTTPS  3:HTTP&HTTPS
-	Enable   int    `gorm:"column:enable"`         //Service enable  1:on  2:off
-	Release  int    `gorm:"column:release"`        //Service release status 1:unpublished  2:to be published  3:published
+	ID       int64  `gorm:"column:id;primary_key"` // Service id
+	ResID    string `gorm:"column:res_id"`         // ServiceResID
+	Name     string `gorm:"column:name"`           // Service name
+	Protocol int    `gorm:"column:protocol"`       // Protocol  1:HTTP  2:HTTPS  3:HTTP&HTTPS
+	Enable   int    `gorm:"column:enable"`         // Service enable  1:on  2:off
+	Release  int    `gorm:"column:release"`        // Service release status 1:unpublished  2:to be published  3:published
 	ModelTime
 }
 
@@ -202,7 +202,7 @@ func (s *Services) ServiceList(serviceIds []string, param *validators.ServiceLis
 		tx.Where("enable = ?", param.Enable)
 	}
 	if param.Release != 0 {
-		tx.Where("release = ?", param.Release)
+		tx.Where("`release` = ?", param.Release)
 	}
 
 	var total int
@@ -268,6 +268,22 @@ func (s *Services) ServiceUpdateColumnsWithDB(tx *gorm.DB, serviceId string, par
 func (s *Services) ServiceListByResIds(serviceResIds []string) (list []Services, err error) {
 	err = packages.GetDb().Table(s.TableName()).
 		Where("res_id in ?", serviceResIds).
+		Find(&list).Error
+
+	if err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
+		err = nil
+	}
+
+	return
+}
+
+type ServiceNameItem struct {
+	ResId string `json:"res_id"`
+	Name  string `json:"name"`
+}
+
+func (s *Services) ServiceNameList() (list []ServiceNameItem, err error) {
+	err = packages.GetDb().Table(s.TableName()).
 		Find(&list).Error
 
 	if err != nil && errors.Is(err, gorm.ErrRecordNotFound) {

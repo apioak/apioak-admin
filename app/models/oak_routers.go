@@ -282,7 +282,7 @@ func (r *Routers) RouterListPage(serviceResId string, param *validators.Validato
 		tx = tx.Where("enable = ?", param.Enable)
 	}
 	if param.Release != 0 {
-		tx = tx.Where("release = ?", param.Release)
+		tx = tx.Where("`release` = ?", param.Release)
 	}
 
 	countError := ListCount(tx, &total)

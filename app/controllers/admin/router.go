@@ -55,6 +55,10 @@ func RouterList(c *gin.Context) {
 		return
 	}
 
+	if bindParams.ServiceResID == "0" {
+		bindParams.ServiceResID = ""
+	}
+
 	if len(bindParams.ServiceResID) > 0 {
 		checkServiceExistErr := services.CheckServiceExist(bindParams.ServiceResID)
 		if checkServiceExistErr != nil {

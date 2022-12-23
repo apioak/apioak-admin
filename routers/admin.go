@@ -30,6 +30,7 @@ func RouterRegister(routerEngine *gin.Engine) {
 		{
 			service.POST("/add", admin.ServiceAdd)
 			service.GET("/list", admin.ServiceList)
+			service.GET("/name/list", admin.ServiceNameList)
 			service.GET("/info/:res_id", admin.ServiceInfo)
 			service.PUT("/update/:res_id", admin.ServiceUpdate)
 			service.DELETE("/delete/:res_id", admin.ServiceDelete)
