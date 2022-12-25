@@ -5,7 +5,7 @@ import (
 )
 
 type ServiceAddUpdate struct {
-	Name           string   `json:"name" zh:"服务名称" en:"Service name" binding:"required,min=1,max=30"`
+	Name           string   `json:"name" zh:"服务名称" en:"Service name" binding:"omitempty,min=1,max=30"`
 	Enable         int      `json:"enable" zh:"服务开关" en:"Service enable" binding:"omitempty,oneof=1 2"`
 	Release        int      `json:"release" zh:"发布开关" en:"Release status enable" binding:"omitempty,oneof=1 2"`
 	Protocol       int      `json:"protocol" zh:"请求协议" en:"Protocol" binding:"omitempty,oneof=1 2 3"`

@@ -276,13 +276,14 @@ func (s *RouterListItem) RouterListPage(serviceResId string, param *validators.V
 }
 
 type StructRouterInfo struct {
-	ID             string             `json:"id"`
-	ServiceID      string             `json:"service_id"`
+	ResId          string             `json:"res_id"`
+	ServiceResId   string             `json:"service_res_id"`
 	RouterName     string             `json:"router_name"`
 	RequestMethods []string           `json:"request_methods"`
 	RouterPath     string             `json:"router_path"`
 	Enable         int                `json:"enable"`
 	Release        int                `json:"release"`
+	UpstreamResId  string             `json:"upstream_res_id"`
 	Upstream       UpstreamItem       `json:"upstream"`
 	UpstreamNodes  []UpstreamNodeItem `json:"upstream_nodes"`
 }
@@ -295,13 +296,15 @@ func (s *StructRouterInfo) RouterInfoByServiceRouterId(serviceResId string, rout
 		return
 	}
 
-	routerDetail.ID = routerModelDetail.ResID
-	routerDetail.ServiceID = routerModelDetail.ServiceResID
+	routerDetail.ResId = routerModelDetail.ResID
+	routerDetail.ServiceResId = routerModelDetail.ServiceResID
 	routerDetail.RouterName = routerModelDetail.RouterName
 	routerDetail.RequestMethods = strings.Split(routerModelDetail.RequestMethods, ",")
 	routerDetail.RouterPath = routerModelDetail.RouterPath
 	routerDetail.Enable = routerModelDetail.Enable
 	routerDetail.Release = routerModelDetail.Release
+	routerDetail.UpstreamResId = routerModelDetail.UpstreamResID
+	routerDetail.UpstreamNodes = make([]UpstreamNodeItem, 0)
 
 	upstreamItem := UpstreamItem{}
 	upstreamDetail, upstreamDetailErr := upstreamItem.UpstreamDetailByResId(routerModelDetail.UpstreamResID)
@@ -311,7 +314,7 @@ func (s *StructRouterInfo) RouterInfoByServiceRouterId(serviceResId string, rout
 
 	upstreamNodeItem := UpstreamNodeItem{}
 	upstreamNodeList, upstreamNodeListErr := upstreamNodeItem.UpstreamNodeListByUpstreamResIds([]string{routerModelDetail.UpstreamResID})
-	if upstreamNodeListErr == nil {
+	if upstreamNodeListErr == nil && len(upstreamNodeList) > 0{
 		routerDetail.UpstreamNodes = upstreamNodeList
 	}
 
@@ -346,9 +349,11 @@ func RouterUpdate(routerResId string, routerData validators.ValidatorRouterAddUp
 		upstreamNodeModel := models.UpstreamNodes{}
 
 		if len(routerData.UpstreamNodes) == 0 {
-			err = UpstreamRelease([]string{upstreamResId}, utils.ReleaseTypeDelete)
-			if err != nil {
-				return
+			if len(routerDetail.UpstreamResID) > 0 {
+				err = UpstreamRelease([]string{routerDetail.UpstreamResID}, utils.ReleaseTypeDelete)
+				if err != nil {
+					return
+				}
 			}
 
 			if err = tx.Table(upstreamModel.TableName()).
@@ -447,9 +452,11 @@ func RouterUpdate(routerResId string, routerData validators.ValidatorRouterAddUp
 		return
 	}
 
-	err = UpstreamRelease([]string{upstreamResId}, utils.ReleaseTypePush)
-	if err != nil {
-		return
+	if len(upstreamResId) > 0 {
+		err = UpstreamRelease([]string{upstreamResId}, utils.ReleaseTypePush)
+		if err != nil {
+			return
+		}
 	}
 
 	return
@@ -950,15 +957,15 @@ func RouterCopy(routerResId string) (err error) {
 					return
 				}
 
-				newRouterPluginConfig= append(newRouterPluginConfig, models.PluginConfigs{
-					ResID: pluginConfigresId,
-					Name: pluginConfigInfo.Name,
-					Type: models.PluginConfigsTypeRouter,
-					TargetID: newRouterResId,
+				newRouterPluginConfig = append(newRouterPluginConfig, models.PluginConfigs{
+					ResID:       pluginConfigresId,
+					Name:        pluginConfigInfo.Name,
+					Type:        models.PluginConfigsTypeRouter,
+					TargetID:    newRouterResId,
 					PluginResID: pluginConfigInfo.PluginResID,
-					PluginKey: pluginConfigInfo.PluginKey,
-					Config: pluginConfigInfo.Config,
-					Enable: pluginConfigInfo.Enable,
+					PluginKey:   pluginConfigInfo.PluginKey,
+					Config:      pluginConfigInfo.Config,
+					Enable:      pluginConfigInfo.Enable,
 				})
 			}
 
