@@ -42,9 +42,9 @@ func (jwtAuthConfig PluginJwtAuthConfig) PluginConfigDefault() interface{} {
 	return pluginJwtAuth
 }
 
-func (jwtAuthConfig PluginJwtAuthConfig) PluginConfigParse(configInfo interface{}) (pluginJwtAuth interface{}, err error) {
+func (jwtAuthConfig PluginJwtAuthConfig) PluginConfigParse(configInfo interface{}) (pluginJwtAuthConfig interface{}, err error) {
 
-	pluginJwtAuth = PluginJwtAuth{
+	pluginJwtAuth := PluginJwtAuth{
 		JwtKey: "",
 	}
 
@@ -54,9 +54,17 @@ func (jwtAuthConfig PluginJwtAuthConfig) PluginConfigParse(configInfo interface{
 		configInfoJson = []byte(fmt.Sprint(configInfo))
 	} else {
 		configInfoJson, err = json.Marshal(configInfo)
+		if err != nil {
+			return
+		}
 	}
 
 	err = json.Unmarshal(configInfoJson, &pluginJwtAuth)
+	if err != nil {
+		return
+	}
+
+	pluginJwtAuthConfig = pluginJwtAuth
 
 	return
 }
@@ -76,10 +84,16 @@ func (jwtAuthConfig PluginJwtAuthConfig) configValidator(config PluginJwtAuth) e
 			"config.jwt_key", "string"))
 	}
 
-	if len(config.JwtKey) > 128 {
+	if len(config.JwtKey) < 10 {
+		return errors.New(fmt.Sprintf(
+			jwtAuthValidatorErrorMessages[strings.ToLower(packages.GetValidatorLocale())]["min"],
+			"config.jwt_key", 10))
+	}
+
+	if len(config.JwtKey) > 32 {
 		return errors.New(fmt.Sprintf(
 			jwtAuthValidatorErrorMessages[strings.ToLower(packages.GetValidatorLocale())]["max"],
-			"config.jwt_key", 128))
+			"config.jwt_key", 32))
 	}
 
 	return nil

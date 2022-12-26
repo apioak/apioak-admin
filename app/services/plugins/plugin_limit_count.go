@@ -46,17 +46,31 @@ func (limitCountConfig PluginLimitCountConfig) PluginConfigDefault() interface{}
 	return pluginLimitCount
 }
 
-func (limitCountConfig PluginLimitCountConfig) PluginConfigParse(configInfo interface{}) (interface{}, error) {
+func (limitCountConfig PluginLimitCountConfig) PluginConfigParse(configInfo interface{}) (pluginLimitCountConfig interface{}, err error) {
 	pluginLimitCount := PluginLimitCount{
-		TimeWindow: -9999999,
-		Count:      -9999999,
+		TimeWindow: -999,
+		Count:      -999,
 	}
 
-	configInfoJson := []byte(fmt.Sprint(configInfo))
+	var configInfoJson []byte
+	_, ok := configInfo.(string)
+	if ok {
+		configInfoJson = []byte(fmt.Sprint(configInfo))
+	} else {
+		configInfoJson, err = json.Marshal(configInfo)
+		if err != nil {
+			return
+		}
+	}
 
-	err := json.Unmarshal(configInfoJson, &pluginLimitCount)
+	err = json.Unmarshal(configInfoJson, &pluginLimitCount)
+	if err != nil {
+		return
+	}
 
-	return pluginLimitCount, err
+	pluginLimitCountConfig = pluginLimitCount
+
+	return
 }
 
 func (limitCountConfig PluginLimitCountConfig) PluginConfigCheck(configInfo interface{}) error {
@@ -68,26 +82,38 @@ func (limitCountConfig PluginLimitCountConfig) PluginConfigCheck(configInfo inte
 
 func (limitCountConfig PluginLimitCountConfig) configValidator(config PluginLimitCount) error {
 
-	if config.TimeWindow == -9999999 {
+	if config.TimeWindow == -999 {
 		return errors.New(fmt.Sprintf(
 			limitCountValidatorErrorMessages[strings.ToLower(packages.GetValidatorLocale())]["required"],
 			"config.time_window", "int"))
 	}
-	if config.TimeWindow < 0 {
-		return errors.New(fmt.Sprintf(
-			limitCountValidatorErrorMessages[strings.ToLower(packages.GetValidatorLocale())]["min"],
-			"config.time_window", 0))
-	}
 
-	if config.Count == -9999999 {
+	if config.Count == -999 {
 		return errors.New(fmt.Sprintf(
 			limitCountValidatorErrorMessages[strings.ToLower(packages.GetValidatorLocale())]["required"],
 			"config.count", "int"))
 	}
-	if config.Count < 0 {
+
+	if config.TimeWindow < 1 {
 		return errors.New(fmt.Sprintf(
 			limitCountValidatorErrorMessages[strings.ToLower(packages.GetValidatorLocale())]["min"],
-			"config.count", 0))
+			"config.time_window", 1))
+	}
+	if config.Count < 1 {
+		return errors.New(fmt.Sprintf(
+			limitCountValidatorErrorMessages[strings.ToLower(packages.GetValidatorLocale())]["min"],
+			"config.count", 1))
+	}
+
+	if config.TimeWindow > 86400 {
+		return errors.New(fmt.Sprintf(
+			limitCountValidatorErrorMessages[strings.ToLower(packages.GetValidatorLocale())]["max"],
+			"config.time_window", 86400))
+	}
+	if config.Count > 100000000 {
+		return errors.New(fmt.Sprintf(
+			limitCountValidatorErrorMessages[strings.ToLower(packages.GetValidatorLocale())]["max"],
+			"config.count", 100000000))
 	}
 
 	return nil
