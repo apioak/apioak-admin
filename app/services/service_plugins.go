@@ -422,3 +422,41 @@ func PluginBasicInfoMaintain() {
 		}
 	}
 }
+
+type PluginConfigDefault struct {
+	ResID       string      `json:"res_id"`
+	PluginKey   string      `json:"plugin_key"`
+	Icon        string      `json:"icon"`
+	Type        int         `json:"type"`
+	Description string      `json:"description"`
+	Config      interface{} `json:"config"`
+}
+
+func (s *PluginsService) PluginConfigDefault(pluginResId string) (pluginConfigDefault PluginConfigDefault, err error) {
+	pluginModel := models.Plugins{}
+	var pluginInfo models.Plugins
+	pluginInfo, err = pluginModel.PluginInfoByResId(pluginResId)
+	if err != nil {
+		return
+	}
+
+	if pluginInfo.ResID == "" {
+		return
+	}
+
+	var pluginContext plugins.PluginContext
+	pluginContext, err = plugins.NewPluginContext(pluginInfo.PluginKey)
+
+	if err != nil {
+		return
+	}
+
+	pluginConfigDefault.ResID = pluginInfo.ResID
+	pluginConfigDefault.PluginKey = pluginInfo.PluginKey
+	pluginConfigDefault.Icon = pluginInfo.Icon
+	pluginConfigDefault.Type = pluginInfo.Type
+	pluginConfigDefault.Description = pluginInfo.Description
+	pluginConfigDefault.Config = pluginContext.StrategyPluginFormatDefault()
+
+	return
+}

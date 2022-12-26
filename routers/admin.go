@@ -80,11 +80,11 @@ func RouterRegister(routerEngine *gin.Engine) {
 		plugin := adminRouter.Group("plugin")
 		{
 			plugin.GET("/type-list", admin.PluginTypeList)
+			plugin.GET("/add-list", admin.PluginAddList)
+			plugin.GET("/info/:plugin_res_id", admin.PluginInfo)
 			// plugin.GET("/list", admin.PluginList)
-			// plugin.GET("/info/:id", admin.PluginInfo)
 			// plugin.PUT("/update/:id", admin.PluginUpdate)
 			// plugin.DELETE("/delete/:id", admin.PluginDelete)
-			plugin.GET("/add-list", admin.PluginAddList)
 		}
 
 		// certificate
