@@ -76,9 +76,6 @@ func (limitConnConfig PluginLimitConnConfig) PluginConfigParse(configInfo interf
 
 func (limitConnConfig PluginLimitConnConfig) PluginConfigCheck(configInfo interface{}) error {
 	limitConn, _ := limitConnConfig.PluginConfigParse(configInfo)
-
-	fmt.Println(fmt.Sprintf("--------%+v------%+v----", configInfo, limitConn))
-
 	pluginLimitConn := limitConn.(PluginLimitConn)
 
 	return limitConnConfig.configValidator(pluginLimitConn)

@@ -27,6 +27,8 @@ func NewPluginContext(pluginTag string) (PluginContext, error) {
 		pluginContext.Strategy = NewLimitCount()
 	case utils.PluginKeyLimitConn:
 		pluginContext.Strategy = NewLimitConn()
+	case utils.PluginKeyLimitReq:
+		pluginContext.Strategy = NewLimitReq()
 	default:
 		return pluginContext, errors.New(enums.CodeMessages(enums.PluginTagNull))
 	}
