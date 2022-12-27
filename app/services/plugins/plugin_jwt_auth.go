@@ -14,8 +14,8 @@ import (
 var jwtAuthValidatorErrorMessages = map[string]map[string]string{
 	utils.LocalEn: {
 		"required": "[%s] is a required field,expected type: %s",
-		"max":      "[%s]长度必须小于或等于%d",
-		"min":      "[%s]长度必须大于或等于%d",
+		"max":      "[%s] length must be less than or equal to %d",
+		"min":      "[%s] length must be greater than or equal to %d",
 	},
 	utils.LocalZh: {
 		"required": "[%s]为必填字段，期望类型:%s",
@@ -65,6 +65,8 @@ func (jwtAuthConfig PluginJwtAuthConfig) PluginConfigParse(configInfo interface{
 	if err != nil {
 		return
 	}
+
+	pluginJwtAuth.JwtKey = strings.TrimSpace(pluginJwtAuth.JwtKey)
 
 	pluginJwtAuthConfig = pluginJwtAuth
 

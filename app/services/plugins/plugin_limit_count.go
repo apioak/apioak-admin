@@ -19,7 +19,7 @@ var limitCountValidatorErrorMessages = map[string]map[string]string{
 	utils.LocalZh: {
 		"required": "[%s]为必填字段，期望类型:%s",
 		"max":      "[%s]必须小于或等于%d",
-		"min":      "[%s]最小只能为%d",
+		"min":      "[%s]必须大于或等于%d",
 		"type":     "[%s]类型错误，期望类型:%s",
 	},
 }
