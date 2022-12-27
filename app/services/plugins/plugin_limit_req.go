@@ -72,7 +72,11 @@ func (limitReqConfig PluginLimitReqConfig) PluginConfigParse(configInfo interfac
 }
 
 func (limitReqConfig PluginLimitReqConfig) PluginConfigCheck(configInfo interface{}) error {
-	limitReq, _ := limitReqConfig.PluginConfigParse(configInfo)
+	limitReq, err := limitReqConfig.PluginConfigParse(configInfo)
+	if err != nil {
+		return err
+	}
+
 	pluginLimitReq := limitReq.(PluginLimitReq)
 
 	return limitReqConfig.configValidator(pluginLimitReq)

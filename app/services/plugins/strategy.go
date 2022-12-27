@@ -21,6 +21,8 @@ func NewPluginContext(pluginTag string) (PluginContext, error) {
 	pluginContext := PluginContext{}
 
 	switch strings.ToLower(pluginTag) {
+	case utils.PluginKeyKeyAuth:
+		pluginContext.Strategy = NewKeyAuth()
 	case utils.PluginKeyJwtAuth:
 		pluginContext.Strategy = NewJwtAuth()
 	case utils.PluginKeyLimitCount:

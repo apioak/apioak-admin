@@ -75,7 +75,11 @@ func (limitConnConfig PluginLimitConnConfig) PluginConfigParse(configInfo interf
 }
 
 func (limitConnConfig PluginLimitConnConfig) PluginConfigCheck(configInfo interface{}) error {
-	limitConn, _ := limitConnConfig.PluginConfigParse(configInfo)
+	limitConn, err := limitConnConfig.PluginConfigParse(configInfo)
+	if err != nil {
+		return err
+	}
+
 	pluginLimitConn := limitConn.(PluginLimitConn)
 
 	return limitConnConfig.configValidator(pluginLimitConn)

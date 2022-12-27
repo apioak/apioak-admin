@@ -74,7 +74,11 @@ func (limitCountConfig PluginLimitCountConfig) PluginConfigParse(configInfo inte
 }
 
 func (limitCountConfig PluginLimitCountConfig) PluginConfigCheck(configInfo interface{}) error {
-	limitCount, _ := limitCountConfig.PluginConfigParse(configInfo)
+	limitCount, err := limitCountConfig.PluginConfigParse(configInfo)
+	if err != nil {
+		return err
+	}
+
 	pluginLimitCount := limitCount.(PluginLimitCount)
 
 	return limitCountConfig.configValidator(pluginLimitCount)
