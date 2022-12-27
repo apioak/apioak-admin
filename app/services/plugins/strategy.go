@@ -33,6 +33,8 @@ func NewPluginContext(pluginTag string) (PluginContext, error) {
 		pluginContext.Strategy = NewLimitConn()
 	case utils.PluginKeyLimitReq:
 		pluginContext.Strategy = NewLimitReq()
+	case utils.PluginKeyMock:
+		pluginContext.Strategy = NewMock()
 	default:
 		return pluginContext, errors.New(enums.CodeMessages(enums.PluginTagNull))
 	}
