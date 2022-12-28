@@ -82,7 +82,7 @@ func syncDataSideCertificate(tx *gorm.DB, new *models.Certificates, filterID str
 	return nil
 }
 
-//CertificateAdd
+// CertificateAdd
 func (s *CertificateService) CertificateAdd(request *validators.CertificateAddUpdate) error {
 	certificateInfo, err := utils.DiscernCertificate(&request.Certificate)
 	if err != nil {
@@ -165,7 +165,8 @@ func (s *CertificateService) CertificateUpdate(resID string, request *validators
 }
 
 type CertificateInfo struct {
-	ResID       string `json:"resId"`
+	ResID       string `json:"res_id"`
+	Sni         string `json:"sni"`
 	Certificate string `json:"certificate"`
 	PrivateKey  string `json:"private_key"`
 	Enable      int    `json:"enable"`
@@ -184,6 +185,7 @@ func (s *CertificateService) CertificateInfo(id string) (CertificateInfo, error)
 
 	return CertificateInfo{
 		ResID:       certificateInfo.ResID,
+		Sni:         certificateInfo.Sni,
 		Certificate: certificateInfo.Certificate,
 		PrivateKey:  certificateInfo.PrivateKey,
 		Enable:      certificateInfo.Enable,
@@ -192,7 +194,7 @@ func (s *CertificateService) CertificateInfo(id string) (CertificateInfo, error)
 }
 
 type CertificateItem struct {
-	ResID     string `json:"resId"`
+	ResID     string `json:"res_id"`
 	Sni       string `json:"sni"`
 	ExpiredAt int64  `json:"expired_at"`
 	Enable    int    `json:"enable"`

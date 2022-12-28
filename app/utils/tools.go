@@ -109,6 +109,7 @@ func DiscernCertificate(certificate *string) (CertificateInfo, error) {
 		return certificateInfo, errors.New(enums.CodeMessages(enums.CertificateParseError))
 	}
 
+	// 多域名证书的CommonName需要提取 parseCert.DNSNames（一维数组）中的数据，并且需要过滤出"*"开头的
 	certificateInfo.CommonName = parseCert.Subject.CommonName
 	certificateInfo.NotBefore = parseCert.NotBefore
 	certificateInfo.NotAfter = parseCert.NotAfter
