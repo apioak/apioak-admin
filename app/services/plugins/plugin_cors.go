@@ -47,8 +47,8 @@ type PluginCors struct {
 	AllowMethods    string `json:"allow_methods"`
 	AllowOrigins    string `json:"allow_origins"`
 	AllowHeaders    string `json:"allow_headers"`
-	AllowCredential bool   `json:"allow_credential"`
 	MaxAge          int    `json:"max_age"`
+	AllowCredential bool   `json:"allow_credential"`
 }
 
 func NewCors() PluginCorsConfig {
@@ -62,8 +62,8 @@ func (corsConfig PluginCorsConfig) PluginConfigDefault() interface{} {
 		AllowMethods:    "*",
 		AllowOrigins:    "*",
 		AllowHeaders:    "*",
-		AllowCredential: false,
 		MaxAge:          0,
+		AllowCredential: false,
 	}
 
 	return pluginCors
@@ -75,8 +75,8 @@ func (corsConfig PluginCorsConfig) PluginConfigParse(configInfo interface{}) (pl
 		AllowMethods:    "",
 		AllowOrigins:    "",
 		AllowHeaders:    "",
-		AllowCredential: false,
 		MaxAge:          0,
+		AllowCredential: false,
 	}
 
 	var configInfoJson []byte

@@ -75,6 +75,7 @@ func (s *PluginsService) PluginInfoByResId(resId string) (PluginInfoService, err
 type PluginConfigListItem struct {
 	ResID             string      `json:"res_id"`
 	Name              string      `json:"name"`
+	Icon              string      `json:"icon"`
 	PluginKey         string      `json:"plugin_key"`
 	PluginType        int         `json:"plugin_type"`
 	PluginDescription string      `json:"plugin_description"`
@@ -128,6 +129,7 @@ func (s *PluginsService) PluginConfigList(resType int, resId string) (*PluginCon
 		item := PluginConfigListItem{
 			ResID:             v.ResID,
 			Name:              v.Name,
+			Icon:              plugin.Icon,
 			PluginKey:         plugin.PluginKey,
 			PluginType:        plugin.Type,
 			PluginDescription: plugin.Description,

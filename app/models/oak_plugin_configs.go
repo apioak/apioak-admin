@@ -76,6 +76,8 @@ func (m *PluginConfigs) PluginConfigList(tx *gorm.DB, configType int, targetId s
 		db.Where("enable = ?", enable)
 	}
 
+	db = db.Order("created_at desc")
+
 	err := db.Find(&pluginConfigs).Error
 
 	if err != nil && err != gorm.ErrRecordNotFound {

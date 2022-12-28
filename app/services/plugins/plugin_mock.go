@@ -54,7 +54,7 @@ func (mockConfig PluginMockConfig) PluginConfigDefault() interface{} {
 		ResponseType: "application/json",
 		HttpCode:     0,
 		HttpBody:     "",
-		HttpHeaders:  map[string]string{},
+		HttpHeaders: map[string]string{},
 	}
 
 	return pluginMock
@@ -66,7 +66,7 @@ func (mockConfig PluginMockConfig) PluginConfigParse(configInfo interface{}) (pl
 		ResponseType: "application/json",
 		HttpCode:     -999,
 		HttpBody:     "",
-		HttpHeaders:  map[string]string{},
+		HttpHeaders: map[string]string{},
 	}
 
 	var configInfoJson []byte

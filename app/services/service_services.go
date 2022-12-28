@@ -356,8 +356,8 @@ func (s *ServicesService) ServiceList(request *validators.ServiceList) ([]Servic
 				Name:   pluginConfigInfo.Name,
 				Key:    pluginConfigInfo.PluginKey,
 				Enable: pluginConfigInfo.Enable,
-				Icon:   pluginListMap[pluginConfigInfo.ResID].Icon,
-				Type:   pluginListMap[pluginConfigInfo.ResID].Type,
+				Icon:   pluginListMap[pluginConfigInfo.PluginResID].Icon,
+				Type:   pluginListMap[pluginConfigInfo.PluginResID].Type,
 			}
 
 			pluginConfigListMap[pluginConfigInfo.TargetID] = append(pluginConfigListMap[pluginConfigInfo.TargetID], pluginConfigInfos)
