@@ -407,6 +407,8 @@ func PluginBasicInfoMaintain() {
 
 				dbPluginMapInfo.PluginKey = configPluginInfo.PluginKey
 				dbPluginMapInfo.Type = configPluginInfo.Type
+				dbPluginMapInfo.Icon = configPluginInfo.Icon
+				dbPluginMapInfo.Description = configPluginInfo.Description
 				_ = pluginModel.PluginUpdate(configPluginInfo.ResID, &dbPluginMapInfo)
 			}
 
@@ -419,6 +421,7 @@ func PluginBasicInfoMaintain() {
 			newPluginData.Type = configPluginInfo.Type
 			newPluginData.PluginKey = configPluginInfo.PluginKey
 			newPluginData.Icon = configPluginInfo.Icon
+			newPluginData.Description = configPluginInfo.Description
 
 			_ = pluginModel.PluginAdd(&newPluginData)
 		}

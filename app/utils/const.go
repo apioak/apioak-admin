@@ -131,6 +131,14 @@ const (
 	PluginIconLimitConn  = "icon-limit-conn"
 	PluginIconLimitCount = "icon-limit-count"
 
+	PluginDescCors       = "配置服务端CORS（Cross-Origin Resource Sharing，跨域资源共享）的响应头信息"
+	PluginDescMock       = "配置模拟API数据，且请求不会转发到上游"
+	PluginDescKeyAuth    = "配置身份验证密钥（key密钥字符串）"
+	PluginDescJwtAuth    = "配置用于JWT身份验证的密钥"
+	PluginDescLimitReq   = "使用漏桶算法限制客户端对服务的请求速率"
+	PluginDescLimitConn  = "限制客户端对服务的并发请求数"
+	PluginDescLimitCount = "限制客户端在指定的时间范围内对服务的总请求数"
+
 	// ===================================== cluster node =====================================
 
 	ClusterNodeStatusHealth    = 1

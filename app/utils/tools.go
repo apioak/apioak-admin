@@ -187,32 +187,53 @@ func AllConfigPluginData() []ConfigPluginData {
 
 	allConfigPluginData := []ConfigPluginData{
 		{
-			ResID: PluginIdCors, PluginKey: PluginKeyCors,
-			Icon: PluginIconCors, Type: PluginTypeIdSafety,
+			ResID:       PluginIdCors,
+			PluginKey:   PluginKeyCors,
+			Icon:        PluginIconCors,
+			Type:        PluginTypeIdSafety,
+			Description: PluginDescCors,
 		},
 		{
-			ResID: PluginIdMock, PluginKey: PluginKeyMock,
-			Icon: PluginIconMock, Type: PluginTypeIdOther,
+			ResID:       PluginIdMock,
+			PluginKey:   PluginKeyMock,
+			Icon:        PluginIconMock,
+			Type:        PluginTypeIdOther,
+			Description: PluginDescMock,
 		},
 		{
-			ResID: PluginIdKeyAuth, PluginKey: PluginKeyKeyAuth,
-			Icon: PluginIconKeyAuth, Type: PluginTypeIdAuth,
+			ResID:       PluginIdKeyAuth,
+			PluginKey:   PluginKeyKeyAuth,
+			Icon:        PluginIconKeyAuth,
+			Type:        PluginTypeIdAuth,
+			Description: PluginDescKeyAuth,
 		},
 		{
-			ResID: PluginIdJwtAuth, PluginKey: PluginKeyJwtAuth,
-			Icon: PluginIconJwtAuth, Type: PluginTypeIdAuth,
+			ResID:       PluginIdJwtAuth,
+			PluginKey:   PluginKeyJwtAuth,
+			Icon:        PluginIconJwtAuth,
+			Type:        PluginTypeIdAuth,
+			Description: PluginDescJwtAuth,
 		},
 		{
-			ResID: PluginIdLimitReq, PluginKey: PluginKeyLimitReq,
-			Icon: PluginIconLimitReq, Type: PluginTypeIdLimit,
+			ResID:       PluginIdLimitReq,
+			PluginKey:   PluginKeyLimitReq,
+			Icon:        PluginIconLimitReq,
+			Type:        PluginTypeIdLimit,
+			Description: PluginDescLimitReq,
 		},
 		{
-			ResID: PluginIdLimitConn, PluginKey: PluginKeyLimitConn,
-			Icon: PluginIconLimitConn, Type: PluginTypeIdLimit,
+			ResID:       PluginIdLimitConn,
+			PluginKey:   PluginKeyLimitConn,
+			Icon:        PluginIconLimitConn,
+			Type:        PluginTypeIdLimit,
+			Description: PluginDescLimitConn,
 		},
 		{
-			ResID: PluginIdLimitCount, PluginKey: PluginKeyLimitCount,
-			Icon: PluginIconLimitCount, Type: PluginTypeIdLimit,
+			ResID:       PluginIdLimitCount,
+			PluginKey:   PluginKeyLimitCount,
+			Icon:        PluginIconLimitCount,
+			Type:        PluginTypeIdLimit,
+			Description: PluginDescLimitCount,
 		},
 	}
 
@@ -398,4 +419,3 @@ func InterceptSni(domains []string) ([]string, error) {
 
 	return domainSniInfos, nil
 }
-
