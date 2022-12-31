@@ -35,11 +35,6 @@ type ConfigDatabase struct {
 	SqlMode            bool   `yaml:"sql_mode" mapstructure:"sql_mode"`
 }
 
-type ConfigEtcd struct {
-	HostPort string `yaml:"host_port" mapstructure:"host_port"`
-	TimeOut  int64  `yaml:"time_out" mapstructure:"time_out"`
-}
-
 type ConfigToken struct {
 	TokenIssuer string `yaml:"token_issuer" mapstructure:"token_issuer"`
 	TokenSecret string `yaml:"token_secret" mapstructure:"token_secret"`
@@ -67,7 +62,6 @@ type ConfigGlobal struct {
 	Server    ConfigServer    `yaml:"server" mapstructure:"server"`
 	Logger    Logger          `yaml:"logger" mapstructure:"logger"`
 	Database  ConfigDatabase  `yaml:"database" mapstructure:"database"`
-	Etcd      ConfigEtcd      `yaml:"etcd" mapstructure:"etcd"`
 	Validator ConfigValidator `yaml:"validator" mapstructure:"validator"`
 	Token     ConfigToken     `yaml:"token"`
 	Apioak    ConfigApiOak    `yaml:"apioak" mapstructure:"apioak"`
@@ -77,7 +71,7 @@ type ConfigGlobal struct {
 // InitConfig 全局配置初始化
 func InitConfig(conf *ConfigGlobal) error {
 
-	filename := "./config/app.yaml"
+	filename := ""
 
 	v := viper.New()
 	v.SetConfigType("yaml")

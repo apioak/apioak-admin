@@ -165,6 +165,8 @@ type RouterListItem struct {
 func (s *RouterListItem) RouterListPage(serviceResId string, param *validators.ValidatorRouterList) (
 	routerList []RouterListItem, total int, err error) {
 
+	routerList = make([]RouterListItem, 0)
+
 	routerModel := models.Routers{}
 	routerInfos := make([]models.Routers, 0)
 	routerInfos, total, err = routerModel.RouterListPage(serviceResId, param)
@@ -342,7 +344,7 @@ func RouterUpdate(routerResId string, routerData validators.ValidatorRouterAddUp
 		updateRouterData["release"] = utils.ReleaseStatusT
 	}
 
-	var upstreamResId string
+	upstreamResId := ""
 	err = packages.GetDb().Transaction(func(tx *gorm.DB) (err error) {
 
 		upstreamModel := models.Upstreams{}
@@ -350,6 +352,11 @@ func RouterUpdate(routerResId string, routerData validators.ValidatorRouterAddUp
 
 		if len(routerData.UpstreamNodes) == 0 {
 			if len(routerDetail.UpstreamResID) > 0 {
+				err = RouterRelease([]string{routerResId}, utils.ReleaseTypeDelete)
+				if err != nil {
+					return
+				}
+
 				err = UpstreamRelease([]string{routerDetail.UpstreamResID}, utils.ReleaseTypeDelete)
 				if err != nil {
 					return
@@ -453,7 +460,17 @@ func RouterUpdate(routerResId string, routerData validators.ValidatorRouterAddUp
 	}
 
 	if len(upstreamResId) > 0 {
+		err = RouterRelease([]string{routerResId}, utils.ReleaseTypeDelete)
+		if err != nil {
+			return
+		}
+
 		err = UpstreamRelease([]string{upstreamResId}, utils.ReleaseTypePush)
+		if err != nil {
+			return
+		}
+
+		err = RouterRelease([]string{routerResId}, utils.ReleaseTypePush)
 		if err != nil {
 			return
 		}
@@ -563,10 +580,10 @@ func RouterUpstreamRelease(routerResIds []string, releaseType string) (err error
 	toBeOpRouterList := make([]models.Routers, 0)
 	for _, routerInfo := range routerList {
 
-		// _, ok := publishedServiceResIdsMap[routerInfo.ServiceResID]
-		// if !ok {
-		// 	continue
-		// }
+		_, ok := publishedServiceResIdsMap[routerInfo.ServiceResID]
+		if !ok {
+			continue
+		}
 
 		toBeOpRouterList = append(toBeOpRouterList, routerInfo)
 
@@ -602,8 +619,6 @@ func RouterUpstreamRelease(routerResIds []string, releaseType string) (err error
 	if err != nil {
 		return
 	}
-
-	fmt.Println(fmt.Sprintf("---------%+v--------", routerPluginConfigList))
 
 	newApiOak := rpc.NewApiOak()
 	if releaseType == utils.ReleaseTypePush {

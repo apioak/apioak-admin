@@ -2,7 +2,14 @@ package main
 
 import (
 	"apioak-admin/cores"
+	"embed"
+	"github.com/gin-gonic/gin"
+	"html/template"
+	"net"
 )
+
+//go:embed html/*
+var htmlFS embed.FS
 
 func main() {
 
@@ -44,6 +51,8 @@ func main() {
 		panic(err)
 	}
 
+	initStatic(&conf)
+
 	// 协程处理额外事件
 	cores.InitGoroutineFunc()
 
@@ -51,4 +60,23 @@ func main() {
 	if err := cores.RunFramework(&conf); err != nil {
 		panic(err)
 	}
+}
+
+func initStatic(conf *cores.ConfigGlobal) {
+
+	// 引入html
+	conf.Runtime.Gin.SetHTMLTemplate(template.Must(template.New("").ParseFS(htmlFS, "html/*")))
+
+	// 访问入口
+	conf.Runtime.Gin.Handle("GET", "/", index)
+
+	// 静态文件路由
+	conf.Runtime.Gin.Static("/css", "./dist/css")
+	conf.Runtime.Gin.Static("/js", "./dist/js")
+	conf.Runtime.Gin.Static("/img", "./dist/img")
+	conf.Runtime.Gin.Static("/fonts", "./dist/fonts")
+}
+
+func index(c *gin.Context)  {
+	c.HTML(200, "index.html", net.Interface{})
 }

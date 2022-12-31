@@ -273,17 +273,17 @@ func RouterSwitchRelease(c *gin.Context) {
 		return
 	}
 
-	// serviceModel := models.Services{}
-	// serviceDetail, err := serviceModel.ServiceInfoById(serviceResId)
-	// if err != nil {
-	// 	utils.Error(c, err.Error())
-	// 	return
-	// }
+	serviceModel := models.Services{}
+	serviceDetail, err := serviceModel.ServiceInfoById(serviceResId)
+	if err != nil {
+		utils.Error(c, err.Error())
+		return
+	}
 
-	// if serviceDetail.Release == utils.ReleaseStatusU {
-	// 	utils.Error(c, enums.CodeMessages(enums.ServiceUnpublished))
-	// 	return
-	// }
+	if serviceDetail.Release == utils.ReleaseStatusU {
+		utils.Error(c, enums.CodeMessages(enums.ServiceUnpublished))
+		return
+	}
 
 	checkRouterReleaseErr := services.CheckRouterRelease(routerResId)
 	if checkRouterReleaseErr != nil {

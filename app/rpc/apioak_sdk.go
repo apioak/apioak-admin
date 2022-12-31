@@ -62,7 +62,7 @@ func NewApiOak() *ApiOak {
 
 type ConfigObjectName struct {
 	Id   string `json:"id,omitempty"`
-	Name string `json:"name"`
+	Name string `json:"name,omitempty"`
 }
 
 type HealthCheck struct {
@@ -98,7 +98,7 @@ func (m *ApiOak) commonPut(resName string, uri string, data interface{}, params 
 		return
 	}
 
-	if httpResp.StatusCode == 404 || httpResp.StatusCode == 500 {
+	if httpResp.StatusCode == 404 {
 		httpResp, err = utils.PostJson(uri, data, headers, timeOut)
 		if err != nil {
 			return
@@ -109,6 +109,7 @@ func (m *ApiOak) commonPut(resName string, uri string, data interface{}, params 
 		}
 	} else if httpResp.StatusCode == 200 {
 		httpResp, err = utils.PutJson(getUri, data, headers, timeOut)
+
 		if err != nil {
 			return
 		}
