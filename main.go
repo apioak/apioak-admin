@@ -71,10 +71,10 @@ func initStatic(conf *cores.ConfigGlobal) {
 	conf.Runtime.Gin.Handle("GET", "/", index)
 
 	// 静态文件路由
-	conf.Runtime.Gin.Static("/css", "./dist/css")
-	conf.Runtime.Gin.Static("/js", "./dist/js")
-	conf.Runtime.Gin.Static("/img", "./dist/img")
-	conf.Runtime.Gin.Static("/fonts", "./dist/fonts")
+	conf.Runtime.Gin.Static("/css", "./static/css")
+	conf.Runtime.Gin.Static("/js", "./static/js")
+	conf.Runtime.Gin.Static("/img", "./static/img")
+	conf.Runtime.Gin.Static("/fonts", "./static/fonts")
 }
 
 func index(c *gin.Context)  {
