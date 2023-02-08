@@ -5,7 +5,8 @@ import (
 	"embed"
 	"github.com/gin-gonic/gin"
 	"html/template"
-	"net"
+	"io/fs"
+	"net/http"
 )
 
 //go:embed html/*
@@ -62,21 +63,22 @@ func main() {
 	}
 }
 
+/**
+ * 初始化静态文件服务
+ */
 func initStatic(conf *cores.ConfigGlobal) {
 
-	// 引入html
-	conf.Runtime.Gin.SetHTMLTemplate(template.Must(template.New("").ParseFS(htmlFS, "html/*")))
+	// 引入静态文件模板
+	conf.Runtime.Gin.SetHTMLTemplate(template.Must(template.New("").ParseFS(htmlFS, "html/*.html")))
+
+	// 静态文件系统目录
+	assetsFs, _ := fs.Sub(htmlFS, "html/assets")
+
+	// 路由匹配并加载静态文件系统
+	conf.Runtime.Gin.StaticFS("/assets", http.FS(assetsFs))
 
 	// 访问入口
-	conf.Runtime.Gin.Handle("GET", "/", index)
-
-	// 静态文件路由
-	conf.Runtime.Gin.Static("/css", "./static/css")
-	conf.Runtime.Gin.Static("/js", "./static/js")
-	conf.Runtime.Gin.Static("/img", "./static/img")
-	conf.Runtime.Gin.Static("/fonts", "./static/fonts")
-}
-
-func index(c *gin.Context)  {
-	c.HTML(200, "index.html", net.Interface{})
+	conf.Runtime.Gin.GET("/", func(c *gin.Context) {
+		c.HTML(200, "index.html", nil)
+	})
 }
