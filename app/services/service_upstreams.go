@@ -5,16 +5,119 @@ import (
 	"apioak-admin/app/models"
 	"apioak-admin/app/rpc"
 	"apioak-admin/app/utils"
+	"apioak-admin/app/validators"
 	"errors"
 	"strings"
+	"sync"
 )
+
+type ServiceUpstream struct {
+}
+
+var (
+	serviceUpstream *ServiceUpstream
+	upstreamOnce    sync.Once
+)
+
+func NewServiceUpstream() *ServiceUpstream {
+
+	upstreamOnce.Do(func() {
+		serviceUpstream = &ServiceUpstream{}
+	})
+
+	return serviceUpstream
+}
 
 type UpstreamItem struct {
 	ResID          string `json:"res_id"`
+	Name           string `json:"name"`
 	Algorithm      int    `json:"algorithm"`
 	ConnectTimeout int    `json:"connect_timeout"`
 	WriteTimeout   int    `json:"write_timeout"`
 	ReadTimeout    int    `json:"read_timeout"`
+}
+
+type UpstreamListItem struct {
+	UpstreamItem
+	NodeList []UpstreamNodeItem `json:"node_list"`
+}
+
+func (s *ServiceUpstream) UpstreamList(request *validators.UpstreamList) (list []UpstreamListItem, total int, err error) {
+	list = make([]UpstreamListItem, 0)
+	upstreamModel := models.Upstreams{}
+	upstreamNodeModel := models.UpstreamNodes{}
+	request.Search = strings.TrimSpace(request.Search)
+
+	upstreamResIds := make([]string, 0)
+	upstreamResIdsMap := make(map[string]byte)
+	if request.Search != "" {
+
+		nodeList := make([]models.UpstreamNodes, 0)
+		nodeList, err = upstreamNodeModel.NodesListBySearch(request.Search)
+
+		if err != nil {
+			return
+		}
+
+		if len(nodeList) > 0 {
+			for _, nodeInfo := range nodeList {
+
+				if _, ok := upstreamResIdsMap[nodeInfo.UpstreamResID]; ok {
+					continue
+				}
+
+				upstreamResIds = append(upstreamResIds, nodeInfo.UpstreamResID)
+				upstreamResIdsMap[nodeInfo.UpstreamResID] = 0
+			}
+		}
+	}
+
+	upstreamList := make([]models.Upstreams, 0)
+	upstreamList, total, err = upstreamModel.UpstreamListPage(upstreamResIds, request)
+
+	upstreamResIds = make([]string, 0)
+	if len(upstreamList) != 0 {
+		for _, upstreamInfo := range upstreamList {
+			upstreamResIds = append(upstreamResIds, upstreamInfo.ResID)
+			upstreamItem := UpstreamItem{
+				ResID: upstreamInfo.ResID,
+				Name: upstreamInfo.Name,
+				Algorithm: upstreamInfo.Algorithm,
+				ConnectTimeout: upstreamInfo.ConnectTimeout,
+				WriteTimeout: upstreamInfo.WriteTimeout,
+				ReadTimeout: upstreamInfo.ReadTimeout,
+			}
+
+			upstreamListItem := UpstreamListItem{
+				UpstreamItem: upstreamItem,
+				NodeList:     make([]UpstreamNodeItem, 0),
+			}
+			list = append(list, upstreamListItem)
+		}
+	}
+
+	upstreamNodeItem := UpstreamNodeItem{}
+
+	nodeList := make([]UpstreamNodeItem, 0)
+	nodeList, err = upstreamNodeItem.UpstreamNodeListByUpstreamResIds(upstreamResIds)
+	if err != nil {
+		return
+	}
+
+	if len(nodeList) != 0 {
+		nodeListMap := make(map[string][]UpstreamNodeItem)
+		for _, nodeInfo := range nodeList {
+			nodeListMap[nodeInfo.UpstreamResID] = append(nodeListMap[nodeInfo.UpstreamResID], nodeInfo)
+		}
+
+		for key, info := range list {
+			if _, ok := nodeListMap[info.ResID]; ok {
+				list[key].NodeList = nodeListMap[info.ResID]
+			}
+		}
+	}
+
+	return
 }
 
 func (u UpstreamItem) UpstreamDetailByResId(resId string) (upstreamItem UpstreamItem, err error) {
@@ -30,6 +133,7 @@ func (u UpstreamItem) UpstreamDetailByResId(resId string) (upstreamItem Upstream
 	}
 
 	upstreamItem.ResID = upstreamDetail.ResID
+	upstreamItem.Name = upstreamDetail.Name
 	upstreamItem.Algorithm = upstreamDetail.Algorithm
 	upstreamItem.ConnectTimeout = upstreamDetail.ConnectTimeout
 	upstreamItem.WriteTimeout = upstreamDetail.WriteTimeout

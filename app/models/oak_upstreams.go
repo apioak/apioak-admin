@@ -4,6 +4,7 @@ import (
 	"apioak-admin/app/enums"
 	"apioak-admin/app/packages"
 	"apioak-admin/app/utils"
+	"apioak-admin/app/validators"
 	"errors"
 	"gorm.io/gorm"
 )
@@ -94,6 +95,44 @@ func (m Upstreams) UpstreamUpdate(resIds string, upstreamData Upstreams) (err er
 		Updates(&upstreamData).Error
 
 	return
+}
+
+func (m Upstreams) UpstreamListPage(resIds []string, request *validators.UpstreamList) (list []Upstreams, total int, err error) {
+	tx := packages.GetDb().Table(m.TableName())
+
+	if len(resIds) != 0 {
+		tx.Where("res_id IN ?", resIds)
+	}
+
+	if request.Search != "" {
+		search := "%" + request.Search + "%"
+		orWhere := packages.GetDb().
+			Or("res_id LIKE ?", search).
+			Or("name LIKE ?", search)
+
+		tx = tx.Where(orWhere)
+	}
+
+	if request.Algorithm != 0 {
+		tx.Where("algorithm = ?", request.Algorithm)
+	}
+
+	countError := ListCount(tx, &total)
+	if countError != nil {
+		err = countError
+		return
+	}
+
+	tx = tx.
+		Order("created_at desc")
+
+	err = ListPaginate(tx, &list, &request.BaseListPage)
+
+	if len(list) == 0 {
+		return
+	}
+
+	 return
 }
 
 

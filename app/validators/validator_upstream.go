@@ -17,6 +17,12 @@ var (
 	}
 )
 
+type UpstreamList struct {
+	Algorithm int    `form:"algorithm" json:"algorithm" zh:"负载均衡" en:"Load balancing" binding:"omitempty"`
+	Search    string `form:"search" json:"search" zh:"搜索内容" en:"Search content" binding:"omitempty"`
+	BaseListPage
+}
+
 type UpstreamTimeout struct {
 	ReadTimeout    int `json:"read_timeout" zh:"读超市" en:"Read timeout" binding:"omitempty,min=1,max=600000"`
 	WriteTimeout   int `json:"write_timeout" zh:"写超时" en:"Write timeout" binding:"omitempty,min=1,max=600000"`

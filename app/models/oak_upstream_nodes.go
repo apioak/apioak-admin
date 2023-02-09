@@ -86,3 +86,22 @@ func (m *UpstreamNodes) UpstreamNodeListByUpstreamResIds(upstreamResIds []string
 
 	return
 }
+
+func (m *UpstreamNodes) NodesListBySearch(searchContent string, ) (list []UpstreamNodes, err error) {
+	if searchContent == "" {
+		return
+	}
+
+	searchContent = "%" + searchContent + "%"
+	err = packages.GetDb().
+		Table(m.TableName()).
+		Where("node_ip LIKE ?", searchContent).
+		Or("res_id LIKE ?", searchContent).
+		Find(&list).Error
+
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		err = nil
+	}
+
+	return
+}

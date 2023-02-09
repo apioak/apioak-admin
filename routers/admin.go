@@ -76,6 +76,13 @@ func RouterRegister(routerEngine *gin.Engine) {
 			routerPlugin.PUT("/switch/enable/:res_id", admin.RouterPluginConfigSwitchEnable)
 		}
 
+		// upstream
+		upstream := adminRouter.Group("upstream")
+		{
+			upstream.GET("/list", admin.UpstreamList)
+
+		}
+
 		// plugin
 		plugin := adminRouter.Group("plugin")
 		{

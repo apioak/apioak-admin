@@ -24,6 +24,7 @@ type UpstreamNodeItem struct {
 }
 
 func (n UpstreamNodeItem) UpstreamNodeListByUpstreamResIds(upstreamResIds []string) (nodeList []UpstreamNodeItem, err error) {
+	nodeList = make([]UpstreamNodeItem, 0)
 	upstreamNodeModel := models.UpstreamNodes{}
 	upstreamNodeList, err := upstreamNodeModel.UpstreamNodeListByUpstreamResIds(upstreamResIds)
 	if err != nil || len(upstreamNodeList) == 0 {
