@@ -1,6 +1,7 @@
 package admin
 
 import (
+	"apioak-admin/app/models"
 	"apioak-admin/app/packages"
 	"apioak-admin/app/services"
 	"apioak-admin/app/utils"
@@ -59,4 +60,15 @@ func UpstreamAdd(c *gin.Context) {
 	}
 
 	utils.Ok(c)
+}
+
+func UpstreamNameList(c *gin.Context) {
+	upstreamModel := models.Upstreams{}
+	upstreamNameList, err := upstreamModel.UpstreamNameList()
+	if err != nil {
+		utils.Error(c, err.Error())
+		return
+	}
+
+	utils.Ok(c, upstreamNameList)
 }

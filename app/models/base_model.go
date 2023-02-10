@@ -12,6 +12,11 @@ type ModelTime struct {
 	UpdatedAt time.Time `gorm:"column:updated_at"` // Update time
 }
 
+type ResIdNameItem struct {
+	ResId string `json:"res_id"`
+	Name  string `json:"name"`
+}
+
 func ListCount(db *gorm.DB, total *int) error {
 	var count int64
 	countError := db.Count(&count).Error

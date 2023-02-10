@@ -277,12 +277,7 @@ func (s *Services) ServiceListByResIds(serviceResIds []string) (list []Services,
 	return
 }
 
-type ServiceNameItem struct {
-	ResId string `json:"res_id"`
-	Name  string `json:"name"`
-}
-
-func (s *Services) ServiceNameList() (list []ServiceNameItem, err error) {
+func (s *Services) ServiceNameList() (list []ResIdNameItem, err error) {
 	err = packages.GetDb().Table(s.TableName()).
 		Find(&list).Error
 

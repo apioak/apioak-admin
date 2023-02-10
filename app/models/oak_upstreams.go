@@ -201,7 +201,6 @@ func (m Upstreams) UpstreamAdd(upstreamData Upstreams, upstreamNodes []UpstreamN
 			upstreamNodes[key].ResID = nodeResId
 		}
 
-		// upstreamNodeModel := UpstreamNodes{}
 		err = tx.Create(&upstreamNodes).Error
 		if err != nil {
 			return err
@@ -209,6 +208,21 @@ func (m Upstreams) UpstreamAdd(upstreamData Upstreams, upstreamNodes []UpstreamN
 
 		return nil
 	})
+
+	return
+}
+
+func (m Upstreams) UpstreamNameList() (list []ResIdNameItem, err error) {
+	list = make([]ResIdNameItem, 0)
+
+	err = packages.GetDb().Table(m.TableName()).
+		Where("enable = ?", utils.EnableOn).
+		Where("`release` = ?", utils.ReleaseStatusY).
+		Find(&list).Error
+
+	if err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
+		err = nil
+	}
 
 	return
 }
