@@ -7,6 +7,7 @@ import (
 	"apioak-admin/app/validators"
 	"errors"
 	"gorm.io/gorm"
+	"strings"
 )
 
 type Upstreams struct {
@@ -223,6 +224,21 @@ func (m Upstreams) UpstreamReleaseNameList() (list []ResIdNameItem, err error) {
 	if err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
 		err = nil
 	}
+
+	return
+}
+
+func (m Upstreams) UpstreamUpdateName(resId string, name string) (err error) {
+	name = strings.TrimSpace(name)
+
+	if (len(resId) == 0) || (len(name) == 0) {
+		return errors.New(enums.CodeMessages(enums.ParamsError))
+	}
+
+	err = packages.GetDb().
+		Table(m.TableName()).
+		Where("res_id = ?", resId).
+		Update("name", name).Error
 
 	return
 }

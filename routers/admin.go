@@ -85,7 +85,7 @@ func RouterRegister(routerEngine *gin.Engine) {
 			upstream.GET("/info/:res_id", admin.UpstreamInfo)
 			upstream.PUT("/update/:res_id", admin.UpstreamUpdate)
 			upstream.DELETE("/delete/:res_id", admin.UpstreamDelete)
-
+			upstream.PUT("/update/name/:res_id", admin.UpstreamUpdateName)
 		}
 
 		// plugin
