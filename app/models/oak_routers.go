@@ -124,6 +124,21 @@ func (r *Routers) RouterListByRouterResIds(routerResIds []string) ([]Routers, er
 	return routerList, err
 }
 
+func (r *Routers) RouterListByUpstreamResIds(upstreamResIds []string) (list []Routers, err error) {
+	list = make([]Routers, 0)
+
+	err = packages.GetDb().
+		Table(r.TableName()).
+		Where("upstream_res_id in ?", upstreamResIds).
+		Find(&list).Error
+
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		err = nil
+	}
+
+	return
+}
+
 func (r *Routers) RouterInfosByServiceRouterId(serviceResId string, resId string) (router Routers, err error) {
 	err = packages.GetDb().
 		Table(r.TableName()).

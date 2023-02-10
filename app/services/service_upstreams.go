@@ -157,6 +157,27 @@ func (u *ServiceUpstream) CheckUpstreamExist(resId string) (err error) {
 	return
 }
 
+func (u *ServiceUpstream) CheckUpstreamUse(resId string) (err error) {
+	if resId == "" {
+		return
+	}
+
+	routerModel := models.Routers{}
+	routerList := make([]models.Routers, 0)
+	routerList, err = routerModel.RouterListByUpstreamResIds([]string{resId})
+	if err != nil {
+		return
+	}
+
+	if len(routerList) == 0 {
+		return
+	}
+
+	err = errors.New(enums.CodeMessages(enums.UpstreamRouterExist))
+
+	return
+}
+
 func (u *ServiceUpstream) UpstreamCreate(request *validators.UpstreamAddUpdate) (err error) {
 	upstreamModel := models.Upstreams{}
 

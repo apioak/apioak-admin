@@ -138,6 +138,12 @@ func UpstreamDelete(c *gin.Context) {
 		return
 	}
 
+	checkUpstreamUseErr := serviceUpstream.CheckUpstreamUse(resId)
+	if checkUpstreamUseErr != nil {
+		utils.Error(c, checkUpstreamUseErr.Error())
+		return
+	}
+
 	deleteErr := serviceUpstream.UpstreamDelete(resId)
 	if deleteErr != nil {
 		utils.Error(c, deleteErr.Error())

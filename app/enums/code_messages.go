@@ -74,6 +74,7 @@ const (
 	UserLoggingInExpire = 10608 // 用户登录已过期
 
 	UpstreamNull = 10701 // 上游不存在
+	UpstreamRouterExist = 10702 // 上游已被路由绑定，暂不允许该操作
 
 )
 
@@ -140,6 +141,7 @@ var ZhMapMessages = map[int]string{
 	UserLoggingInExpire: "用户登录已过期",
 
 	UpstreamNull: "上游不存在",
+	UpstreamRouterExist: "上游已被路由绑定，暂不允许该操作",
 
 }
 
@@ -206,6 +208,7 @@ var EnMapMessages = map[int]string{
 	UserLoggingInExpire: "User login has expired",
 
 	UpstreamNull: "Upstream does not exist",
+	UpstreamRouterExist: "Upstream has been bound by a route. This operation is not allowed temporarily",
 
 }
 
