@@ -17,6 +17,8 @@ type Upstreams struct {
 	ConnectTimeout int    `gorm:"column:connect_timeout"` // Connect timeout
 	WriteTimeout   int    `gorm:"column:write_timeout"`   // Write timeout
 	ReadTimeout    int    `gorm:"column:read_timeout"`    // Read timeout
+	Enable         int    `gorm:"column:enable"`          // Enable  1:on  2:off
+	Release        int    `gorm:"column:release"`         // Release status 1:unpublished  2:to be published  3:published
 	ModelTime
 }
 
@@ -133,6 +135,76 @@ func (m Upstreams) UpstreamListPage(resIds []string, request *validators.Upstrea
 	}
 
 	 return
+}
+
+func (m Upstreams) UpstreamInfosByNames (names []string, filterResIds []string) (list []Upstreams, err error) {
+	list = make([]Upstreams, 0)
+
+	if len(names) == 0 {
+		return
+	}
+
+	db := packages.GetDb().Table(m.TableName()).
+		Where("name IN ?", names)
+
+	if len(filterResIds) != 0 {
+		db = db.Where("res_id NOT IN ?", filterResIds)
+	}
+
+	err = db.Find(&list).Error
+
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		err = nil
+	}
+
+	return
+}
+
+func (m Upstreams) UpstreamAdd(upstreamData Upstreams, upstreamNodes []UpstreamNodes) (resId string, err error) {
+	resId, err = m.ModelUniqueId()
+	if err != nil {
+		return
+	}
+
+	err = packages.GetDb().Transaction(func(tx *gorm.DB) error {
+		upstreamData.ResID = resId
+		if upstreamData.Name == "" {
+			upstreamData.Name = resId
+		}
+
+		if upstreamData.Algorithm == 0 {
+			upstreamData.Algorithm = utils.LoadBalanceRoundRobin
+		}
+
+		err = tx.Create(&upstreamData).Error
+		if err != nil {
+			return err
+		}
+
+		if len(upstreamNodes) == 0 {
+			return nil
+		}
+
+		for key, upstreamNodeInfo := range upstreamNodes {
+			nodeResId, nodeResIdErr := upstreamNodeInfo.ModelUniqueId()
+			if nodeResIdErr != nil {
+				return nodeResIdErr
+			}
+
+			upstreamNodes[key].UpstreamResID = resId
+			upstreamNodes[key].ResID = nodeResId
+		}
+
+		// upstreamNodeModel := UpstreamNodes{}
+		err = tx.Create(&upstreamNodes).Error
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	return
 }
 
 

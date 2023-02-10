@@ -5,6 +5,7 @@ import (
 	"apioak-admin/app/utils"
 	"fmt"
 	"github.com/go-playground/validator/v10"
+	"strconv"
 	"strings"
 )
 
@@ -82,6 +83,12 @@ func CheckUpstreamNode(fl validator.FieldLevel) bool {
 	return true
 }
 
+func nodeIpRequired(tag string, field string) string {
+
+
+	return field + nodeLocalErrorMessages[strings.ToLower(packages.GetValidatorLocale())][strings.ToLower(tag)]
+}
+
 func nodeIpValidator(tag string, field string) string {
 	return field + nodeLocalErrorMessages[strings.ToLower(packages.GetValidatorLocale())][strings.ToLower(tag)]
 }
@@ -115,7 +122,7 @@ func CorrectUpstreamAddNodes(upstreamNodes *[]UpstreamNodeAddUpdate) {
 	tmpNodeInfos := make([]UpstreamNodeAddUpdate, 0)
 
 	for _, nodeIpInfo := range *upstreamNodes {
-		nodeIpTrim := strings.TrimSpace(nodeIpInfo.NodeIp)
+		nodeIpTrim := strings.TrimSpace(nodeIpInfo.NodeIp) + "-" + strconv.Itoa(nodeIpInfo.NodePort)
 		if len(nodeIpTrim) <= 0 {
 			continue
 		}

@@ -31,3 +31,32 @@ func UpstreamList(c *gin.Context) {
 
 	utils.Ok(c, res)
 }
+
+func UpstreamAdd(c *gin.Context) {
+	var request = &validators.UpstreamAddUpdate{}
+	if msg, err := packages.ParseRequestParams(c, request); err != nil {
+		utils.Error(c, msg)
+		return
+	}
+
+	// 初始化默认值
+	validators.CorrectUpstreamDefault(request)
+	validators.CorrectUpstreamAddNodes(&request.UpstreamNodes)
+
+	serviceUpstream := services.NewServiceUpstream()
+	if request.Name != "" {
+		err := serviceUpstream.CheckExistName([]string{request.Name}, []string{})
+		if err != nil {
+			utils.Error(c, err.Error())
+			return
+		}
+	}
+
+	err := serviceUpstream.UpstreamCreate(request)
+	if err != nil {
+		utils.Error(c, err.Error())
+		return
+	}
+
+	utils.Ok(c)
+}

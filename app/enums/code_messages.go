@@ -24,7 +24,7 @@ const (
 	ReleaseTypeError     = 108 // 发布类型错误
 	PublishError         = 109 // 发布失败
 	SyncError            = 110 // 同步失败
-	DataSideResourceNull = 111 // 远程数据资源不存在
+	NameExist            = 111 // 名称已存在
 
 	ServiceNull          = 10001 // 服务不存在
 	ServiceParamsNull    = 10002 // 服务参数缺失
@@ -91,6 +91,7 @@ var ZhMapMessages = map[int]string{
 	ReleaseTypeError:     "发布类型错误",
 	PublishError:         "发布失败",
 	SyncError:            "同步失败",
+	NameExist:            "名称已存在",
 
 	ServiceNull:          "服务不存在",
 	ServiceParamsNull:    "服务参数缺失",
@@ -156,6 +157,7 @@ var EnMapMessages = map[int]string{
 	ReleaseTypeError:     "Release type error",
 	PublishError:         "Publish error",
 	SyncError:            "Sync error",
+	NameExist:            "Name already exists",
 
 	ServiceNull:          "Service does not exist",
 	ServiceParamsNull:    "Missing service parameters",

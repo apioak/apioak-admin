@@ -24,15 +24,17 @@ type UpstreamList struct {
 }
 
 type UpstreamTimeout struct {
-	ReadTimeout    int `json:"read_timeout" zh:"读超市" en:"Read timeout" binding:"omitempty,min=1,max=600000"`
+	ReadTimeout    int `json:"read_timeout" zh:"读超时" en:"Read timeout" binding:"omitempty,min=1,max=600000"`
 	WriteTimeout   int `json:"write_timeout" zh:"写超时" en:"Write timeout" binding:"omitempty,min=1,max=600000"`
 	ConnectTimeout int `json:"connect_timeout" zh:"连接超时" en:"Connect timeout" binding:"omitempty,min=1,max=600000"`
 }
 
 type UpstreamAddUpdate struct {
-	LoadBalance   int                     `json:"load_balance" zh:"负载均衡算法" en:"Load balancing algorithm" binding:"omitempty,CheckLoadBalanceOneOf"`
-	UpstreamNodes []UpstreamNodeAddUpdate `json:"upstream_nodes" zh:"上游节点" en:"Upstream nodes" binding:"omitempty,CheckUpstreamNode"`
+	Name        string `json:"name" zh:"上游名称" en:"Upstream name" binding:"omitempty,min=1,max=30"`
+	LoadBalance int    `json:"load_balance" zh:"负载均衡算法" en:"Load balancing algorithm" binding:"omitempty,CheckLoadBalanceOneOf"`
+	Enable      int    `json:"enable" zh:"上游开关" en:"Upstream enable" binding:"required,oneof=1 2"`
 	UpstreamTimeout
+	UpstreamNodes []UpstreamNodeAddUpdate `json:"upstream_nodes" zh:"上游节点" en:"Upstream nodes" binding:"required,min=1,CheckUpstreamNode"`
 }
 
 func CheckLoadBalanceOneOf(fl validator.FieldLevel) bool {

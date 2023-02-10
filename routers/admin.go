@@ -80,6 +80,7 @@ func RouterRegister(routerEngine *gin.Engine) {
 		upstream := adminRouter.Group("upstream")
 		{
 			upstream.GET("/list", admin.UpstreamList)
+			upstream.POST("/add", admin.UpstreamAdd)
 
 		}
 

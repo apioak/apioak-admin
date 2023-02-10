@@ -42,7 +42,7 @@ type UpstreamListItem struct {
 	NodeList []UpstreamNodeItem `json:"node_list"`
 }
 
-func (s *ServiceUpstream) UpstreamList(request *validators.UpstreamList) (list []UpstreamListItem, total int, err error) {
+func (u *ServiceUpstream) UpstreamList(request *validators.UpstreamList) (list []UpstreamListItem, total int, err error) {
 	list = make([]UpstreamListItem, 0)
 	upstreamModel := models.Upstreams{}
 	upstreamNodeModel := models.UpstreamNodes{}
@@ -80,12 +80,12 @@ func (s *ServiceUpstream) UpstreamList(request *validators.UpstreamList) (list [
 		for _, upstreamInfo := range upstreamList {
 			upstreamResIds = append(upstreamResIds, upstreamInfo.ResID)
 			upstreamItem := UpstreamItem{
-				ResID: upstreamInfo.ResID,
-				Name: upstreamInfo.Name,
-				Algorithm: upstreamInfo.Algorithm,
+				ResID:          upstreamInfo.ResID,
+				Name:           upstreamInfo.Name,
+				Algorithm:      upstreamInfo.Algorithm,
 				ConnectTimeout: upstreamInfo.ConnectTimeout,
-				WriteTimeout: upstreamInfo.WriteTimeout,
-				ReadTimeout: upstreamInfo.ReadTimeout,
+				WriteTimeout:   upstreamInfo.WriteTimeout,
+				ReadTimeout:    upstreamInfo.ReadTimeout,
 			}
 
 			upstreamListItem := UpstreamListItem{
@@ -116,6 +116,61 @@ func (s *ServiceUpstream) UpstreamList(request *validators.UpstreamList) (list [
 			}
 		}
 	}
+
+	return
+}
+
+func (u *ServiceUpstream) CheckExistName(names []string, filterResIds []string) (err error) {
+	upstreamModel := models.Upstreams{}
+
+	upstreamInfos := make([]models.Upstreams, 0)
+	upstreamInfos, err = upstreamModel.UpstreamInfosByNames(names, filterResIds)
+	if err != nil {
+		return
+	}
+
+	if len(upstreamInfos) != 0 {
+		err = errors.New(enums.CodeMessages(enums.NameExist))
+	}
+
+	return
+}
+
+func (u *ServiceUpstream) UpstreamCreate(request *validators.UpstreamAddUpdate) (err error) {
+	upstreamModel := models.Upstreams{}
+
+	createUpstreamData := models.Upstreams{
+		Name:           request.Name,
+		Algorithm:      request.LoadBalance,
+		ConnectTimeout: request.ConnectTimeout,
+		WriteTimeout:   request.WriteTimeout,
+		ReadTimeout:    request.ReadTimeout,
+		Enable:         request.Enable,
+		Release:        utils.ReleaseStatusU,
+	}
+
+	createUpstreamNodesData := make([]models.UpstreamNodes, 0)
+	if len(request.UpstreamNodes) != 0 {
+		ipNameIdMap := utils.IpNameIdMap()
+		for _, reqNodeInfo := range request.UpstreamNodes {
+			var ipType string
+			ipType, err = utils.DiscernIP(reqNodeInfo.NodeIp)
+			if err != nil {
+				return
+			}
+
+			createUpstreamNodesData = append(createUpstreamNodesData, models.UpstreamNodes{
+				NodeIP:      reqNodeInfo.NodeIp,
+				IPType:      ipNameIdMap[ipType],
+				NodePort:    reqNodeInfo.NodePort,
+				NodeWeight:  reqNodeInfo.NodeWeight,
+				Health:      reqNodeInfo.Health,
+				HealthCheck: reqNodeInfo.HealthCheck,
+			})
+		}
+	}
+
+	_, err = upstreamModel.UpstreamAdd(createUpstreamData, createUpstreamNodesData)
 
 	return
 }
