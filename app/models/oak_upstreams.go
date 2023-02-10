@@ -212,7 +212,7 @@ func (m Upstreams) UpstreamAdd(upstreamData Upstreams, upstreamNodes []UpstreamN
 	return
 }
 
-func (m Upstreams) UpstreamNameList() (list []ResIdNameItem, err error) {
+func (m Upstreams) UpstreamReleaseNameList() (list []ResIdNameItem, err error) {
 	list = make([]ResIdNameItem, 0)
 
 	err = packages.GetDb().Table(m.TableName()).

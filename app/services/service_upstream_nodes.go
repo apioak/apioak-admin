@@ -46,6 +46,7 @@ func (n UpstreamNodeItem) UpstreamNodeListByUpstreamResIds(upstreamResIds []stri
 			NodeWeight:    upstreamNodeDetail.NodeWeight,
 			Health:        upstreamNodeDetail.Health,
 			HealthName:    healthTypeNameMap[upstreamNodeDetail.Health],
+			HealthCheck:   upstreamNodeDetail.HealthCheck,
 		})
 	}
 

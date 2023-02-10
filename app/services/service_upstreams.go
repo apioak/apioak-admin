@@ -179,6 +179,41 @@ func (u *ServiceUpstream) UpstreamCreate(request *validators.UpstreamAddUpdate) 
 	return
 }
 
+func (u *ServiceUpstream) UpstreamInfoByResId(resId string) (info UpstreamListItem, err error) {
+	upstreamModel := models.Upstreams{}
+
+	upstreamInfo := models.Upstreams{}
+	upstreamInfo, err = upstreamModel.UpstreamDetailByResId(resId)
+	if err != nil {
+		return
+	}
+
+	if upstreamInfo.ResID != resId {
+		err = errors.New(enums.CodeMessages(enums.UpstreamNull))
+		return
+	}
+
+	upstreamNodeItem := UpstreamNodeItem{}
+
+	nodeList := make([]UpstreamNodeItem, 0)
+	nodeList, err = upstreamNodeItem.UpstreamNodeListByUpstreamResIds([]string{resId})
+	if err != nil {
+		return
+	}
+
+	info.ResID = upstreamInfo.ResID
+	info.Name = upstreamInfo.Name
+	info.Algorithm = upstreamInfo.Algorithm
+	info.ConnectTimeout = upstreamInfo.ConnectTimeout
+	info.WriteTimeout = upstreamInfo.WriteTimeout
+	info.ReadTimeout = upstreamInfo.ReadTimeout
+	info.Enable = upstreamInfo.Enable
+	info.Release = upstreamInfo.Release
+	info.NodeList = nodeList
+
+	return
+}
+
 func (u UpstreamItem) UpstreamDetailByResId(resId string) (upstreamItem UpstreamItem, err error) {
 
 	upstreamModel := models.Upstreams{}

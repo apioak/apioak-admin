@@ -1,12 +1,14 @@
 package admin
 
 import (
+	"apioak-admin/app/enums"
 	"apioak-admin/app/models"
 	"apioak-admin/app/packages"
 	"apioak-admin/app/services"
 	"apioak-admin/app/utils"
 	"apioak-admin/app/validators"
 	"github.com/gin-gonic/gin"
+	"strings"
 )
 
 func UpstreamList(c *gin.Context) {
@@ -64,11 +66,28 @@ func UpstreamAdd(c *gin.Context) {
 
 func UpstreamNameList(c *gin.Context) {
 	upstreamModel := models.Upstreams{}
-	upstreamNameList, err := upstreamModel.UpstreamNameList()
+	upstreamNameList, err := upstreamModel.UpstreamReleaseNameList()
 	if err != nil {
 		utils.Error(c, err.Error())
 		return
 	}
 
 	utils.Ok(c, upstreamNameList)
+}
+
+func UpstreamInfo(c *gin.Context) {
+	resId := strings.TrimSpace(c.Param("res_id"))
+
+	if resId == "" {
+		utils.Error(c, enums.CodeMessages(enums.ParamsError))
+		return
+	}
+
+	upstreamInfo, err := services.NewServiceUpstream().UpstreamInfoByResId(resId)
+	if err != nil {
+		utils.Error(c, err.Error())
+		return
+	}
+
+	utils.Ok(c, upstreamInfo)
 }

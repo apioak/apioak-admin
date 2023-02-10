@@ -82,6 +82,7 @@ func RouterRegister(routerEngine *gin.Engine) {
 			upstream.GET("/list", admin.UpstreamList)
 			upstream.POST("/add", admin.UpstreamAdd)
 			upstream.GET("/name/list", admin.UpstreamNameList)
+			upstream.GET("/info/:res_id", admin.UpstreamInfo)
 
 		}
 
