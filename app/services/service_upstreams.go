@@ -3,10 +3,12 @@ package services
 import (
 	"apioak-admin/app/enums"
 	"apioak-admin/app/models"
+	"apioak-admin/app/packages"
 	"apioak-admin/app/rpc"
 	"apioak-admin/app/utils"
 	"apioak-admin/app/validators"
 	"errors"
+	"gorm.io/gorm"
 	"strings"
 	"sync"
 )
@@ -140,6 +142,21 @@ func (u *ServiceUpstream) CheckExistName(names []string, filterResIds []string) 
 	return
 }
 
+func (u *ServiceUpstream) CheckUpstreamExist(resId string) (err error) {
+	upstreamModel := models.Upstreams{}
+	upstreamInfo, err := upstreamModel.UpstreamDetailByResId(resId)
+	if err != nil {
+		return
+	}
+
+	if upstreamInfo.ResID != resId {
+		err = errors.New(enums.CodeMessages(enums.UpstreamNull))
+		return
+	}
+
+	return
+}
+
 func (u *ServiceUpstream) UpstreamCreate(request *validators.UpstreamAddUpdate) (err error) {
 	upstreamModel := models.Upstreams{}
 
@@ -175,6 +192,50 @@ func (u *ServiceUpstream) UpstreamCreate(request *validators.UpstreamAddUpdate) 
 	}
 
 	_, err = upstreamModel.UpstreamAdd(createUpstreamData, createUpstreamNodesData)
+
+	return
+}
+
+// @todo upstream更新
+func (u *ServiceUpstream) UpstreamUpdate(resId string, request *validators.UpstreamAddUpdate) (err error) {
+	// upstreamModel := models.Upstreams{}
+	// upstreamInfo, err := upstreamModel.UpstreamDetailByResId(resId)
+	// if err != nil {
+	// 	return err
+	// }
+
+	return
+}
+
+func (u *ServiceUpstream) UpstreamDelete(resId string) (err error) {
+	upstreamModel := models.Upstreams{}
+	upstreamInfo, err := upstreamModel.UpstreamDetailByResId(resId)
+	if err != nil {
+		return err
+	}
+
+	if upstreamInfo.ResID != resId {
+		return
+	}
+
+	err = packages.GetDb().Transaction(func(tx *gorm.DB) (err error) {
+		if err = tx.Table(upstreamModel.TableName()).
+			Where("res_id = ?", upstreamInfo.ResID).
+			Delete(&upstreamModel).Error; err != nil {
+			return
+		}
+
+		upstreamNodeModel := models.UpstreamNodes{}
+		if err = tx.Table(upstreamNodeModel.TableName()).
+			Where("upstream_res_id = ?", upstreamInfo.ResID).
+			Delete(&upstreamNodeModel).Error; err != nil {
+			return
+		}
+
+		return
+	})
+
+	// @todo 使用队列异步删除当前的upstream和upstream-node数据
 
 	return
 }

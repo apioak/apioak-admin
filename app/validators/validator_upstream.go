@@ -34,7 +34,7 @@ type UpstreamTimeout struct {
 type UpstreamAddUpdate struct {
 	Name        string `json:"name" zh:"上游名称" en:"Upstream name" binding:"omitempty,min=1,max=30"`
 	LoadBalance int    `json:"load_balance" zh:"负载均衡算法" en:"Load balancing algorithm" binding:"omitempty,CheckLoadBalanceOneOf"`
-	Enable      int    `json:"enable" zh:"上游开关" en:"Upstream enable" binding:"required,oneof=1 2"`
+	Enable      int    `json:"enable" zh:"上游开关" en:"Upstream enable" binding:"omitempty,oneof=1 2"`
 	UpstreamTimeout
 	UpstreamNodes []UpstreamNodeAddUpdate `json:"upstream_nodes" zh:"上游节点" en:"Upstream nodes" binding:"required,min=1,CheckUpstreamNode"`
 }

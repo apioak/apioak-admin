@@ -83,6 +83,8 @@ func RouterRegister(routerEngine *gin.Engine) {
 			upstream.POST("/add", admin.UpstreamAdd)
 			upstream.GET("/name/list", admin.UpstreamNameList)
 			upstream.GET("/info/:res_id", admin.UpstreamInfo)
+			upstream.PUT("/update/:res_id", admin.UpstreamUpdate)
+			upstream.DELETE("/delete/:res_id", admin.UpstreamDelete)
 
 		}
 

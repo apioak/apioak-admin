@@ -91,3 +91,58 @@ func UpstreamInfo(c *gin.Context) {
 
 	utils.Ok(c, upstreamInfo)
 }
+
+func UpstreamUpdate(c *gin.Context) {
+	var request = &validators.UpstreamAddUpdate{}
+	if msg, err := packages.ParseRequestParams(c, request); err != nil {
+		utils.Error(c, msg)
+		return
+	}
+
+	validators.CorrectUpstreamDefault(request)
+	validators.CorrectUpstreamAddNodes(&request.UpstreamNodes)
+
+	resId := strings.TrimSpace(c.Param("res_id"))
+
+	checkUpstreamExistErr :=services.NewServiceUpstream().CheckUpstreamExist(resId)
+	if checkUpstreamExistErr != nil {
+		utils.Error(c, checkUpstreamExistErr.Error())
+		return
+	}
+
+	serviceUpstream := services.NewServiceUpstream()
+	if request.Name != "" {
+		err := serviceUpstream.CheckExistName([]string{request.Name}, []string{resId})
+		if err != nil {
+			utils.Error(c, err.Error())
+			return
+		}
+	}
+
+	updateErr := serviceUpstream.UpstreamUpdate(resId, request)
+	if updateErr != nil {
+		utils.Error(c, updateErr.Error())
+		return
+	}
+
+	utils.Ok(c)
+}
+
+func UpstreamDelete(c *gin.Context) {
+	resId := strings.TrimSpace(c.Param("res_id"))
+
+	serviceUpstream := services.NewServiceUpstream()
+	checkUpstreamExistErr := serviceUpstream.CheckUpstreamExist(resId)
+	if checkUpstreamExistErr != nil {
+		utils.Error(c, checkUpstreamExistErr.Error())
+		return
+	}
+
+	deleteErr := serviceUpstream.UpstreamDelete(resId)
+	if deleteErr != nil {
+		utils.Error(c, deleteErr.Error())
+		return
+	}
+
+	utils.Ok(c)
+}
