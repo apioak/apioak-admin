@@ -15,7 +15,7 @@ func UpstreamList(c *gin.Context) {
 		return
 	}
 
-	list, total, err := services.NewServiceUpstream().UpstreamList(request)
+	list, total, err := services.NewServiceUpstream().UpstreamListPage(request)
 	if err != nil {
 		utils.Error(c, err.Error())
 		return

@@ -35,6 +35,8 @@ type UpstreamItem struct {
 	ConnectTimeout int    `json:"connect_timeout"`
 	WriteTimeout   int    `json:"write_timeout"`
 	ReadTimeout    int    `json:"read_timeout"`
+	Enable         int    `json:"enable"`
+	Release        int    `json:"release"`
 }
 
 type UpstreamListItem struct {
@@ -42,7 +44,7 @@ type UpstreamListItem struct {
 	NodeList []UpstreamNodeItem `json:"node_list"`
 }
 
-func (u *ServiceUpstream) UpstreamList(request *validators.UpstreamList) (list []UpstreamListItem, total int, err error) {
+func (u *ServiceUpstream) UpstreamListPage(request *validators.UpstreamList) (list []UpstreamListItem, total int, err error) {
 	list = make([]UpstreamListItem, 0)
 	upstreamModel := models.Upstreams{}
 	upstreamNodeModel := models.UpstreamNodes{}
@@ -86,6 +88,8 @@ func (u *ServiceUpstream) UpstreamList(request *validators.UpstreamList) (list [
 				ConnectTimeout: upstreamInfo.ConnectTimeout,
 				WriteTimeout:   upstreamInfo.WriteTimeout,
 				ReadTimeout:    upstreamInfo.ReadTimeout,
+				Enable:         upstreamInfo.Enable,
+				Release:        upstreamInfo.Release,
 			}
 
 			upstreamListItem := UpstreamListItem{

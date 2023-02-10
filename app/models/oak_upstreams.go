@@ -118,6 +118,12 @@ func (m Upstreams) UpstreamListPage(resIds []string, request *validators.Upstrea
 	if request.Algorithm != 0 {
 		tx.Where("algorithm = ?", request.Algorithm)
 	}
+	if request.Enable != 0 {
+		tx = tx.Where("enable = ?", request.Enable)
+	}
+	if request.Release != 0 {
+		tx = tx.Where("`release` = ?", request.Release)
+	}
 
 	countError := ListCount(tx, &total)
 	if countError != nil {

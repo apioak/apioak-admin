@@ -18,6 +18,8 @@ var (
 )
 
 type UpstreamList struct {
+	Enable    int    `form:"enable" json:"enable" zh:"上游开关" en:"Upstream enable" binding:"omitempty,oneof=1 2"`
+	Release   int    `form:"release" json:"release" zh:"发布状态" en:"Release status" binding:"omitempty,oneof=1 2 3"`
 	Algorithm int    `form:"algorithm" json:"algorithm" zh:"负载均衡" en:"Load balancing" binding:"omitempty"`
 	Search    string `form:"search" json:"search" zh:"搜索内容" en:"Search content" binding:"omitempty"`
 	BaseListPage
