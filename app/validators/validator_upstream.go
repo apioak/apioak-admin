@@ -43,6 +43,10 @@ type UpstreamUpdateName struct {
 	Name string `json:"name" zh:"上游名称" en:"Upstream name" binding:"required,min=1,max=30"`
 }
 
+type UpstreamSwitchEnable struct {
+	Enable int `json:"enable" zh:"上游开关" en:"Upstream enable" binding:"required,oneof=1 2"`
+}
+
 func CheckLoadBalanceOneOf(fl validator.FieldLevel) bool {
 	serviceLoadBalanceId := fl.Field().Int()
 

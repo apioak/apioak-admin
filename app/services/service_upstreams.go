@@ -261,6 +261,30 @@ func (u *ServiceUpstream) UpstreamDelete(resId string) (err error) {
 	return
 }
 
+func (u *ServiceUpstream) UpstreamSwitchEnable(resId string, enable int) (err error) {
+	upstreamModel := models.Upstreams{}
+	upstreamInfo, err := upstreamModel.UpstreamDetailByResId(resId)
+	if err != nil {
+		return
+	}
+
+	if upstreamInfo.Enable == enable {
+		err = errors.New(enums.CodeMessages(enums.SwitchNoChange))
+		return
+	}
+
+	updateData := map[string]interface{}{
+		"enable": enable,
+	}
+	if upstreamInfo.Release == utils.ReleaseStatusY {
+		updateData["release"] = utils.ReleaseStatusT
+	}
+
+	err = upstreamModel.UpstreamUpdateColumns(resId, updateData)
+
+	return
+}
+
 func (u *ServiceUpstream) UpstreamInfoByResId(resId string) (info UpstreamListItem, err error) {
 	upstreamModel := models.Upstreams{}
 

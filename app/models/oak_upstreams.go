@@ -243,4 +243,11 @@ func (m Upstreams) UpstreamUpdateName(resId string, name string) (err error) {
 	return
 }
 
+func (m Upstreams) UpstreamUpdateColumns(resId string, updateColumns map[string]interface{}) (err error) {
+
+	err = packages.GetDb().Table(m.TableName()).Where("res_id = ?", resId).Updates(updateColumns).Error
+
+	return
+}
+
 

@@ -186,3 +186,28 @@ func UpstreamUpdateName(c *gin.Context) {
 
 	utils.Ok(c)
 }
+
+func UpstreamSwitchEnable(c *gin.Context) {
+	var request = &validators.UpstreamSwitchEnable{}
+	if msg, err := packages.ParseRequestParams(c, request); err != nil {
+		utils.Error(c, msg)
+		return
+	}
+
+	resId := strings.TrimSpace(c.Param("res_id"))
+
+	serviceUpstream := services.NewServiceUpstream()
+	checkUpstreamExistErr := serviceUpstream.CheckUpstreamExist(resId)
+	if checkUpstreamExistErr != nil {
+		utils.Error(c, checkUpstreamExistErr.Error())
+		return
+	}
+
+	enableErr := serviceUpstream.UpstreamSwitchEnable(resId, request.Enable)
+	if enableErr != nil {
+		utils.Error(c, enableErr.Error())
+		return
+	}
+
+	utils.Ok(c)
+}
