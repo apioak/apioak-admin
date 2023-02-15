@@ -203,9 +203,36 @@ func UpstreamSwitchEnable(c *gin.Context) {
 		return
 	}
 
+	if request.Enable == utils.EnableOff {
+		checkUpstreamUseErr := serviceUpstream.CheckUpstreamUse(resId)
+		if checkUpstreamUseErr != nil {
+			utils.Error(c, checkUpstreamUseErr.Error())
+			return
+		}
+	}
+
 	enableErr := serviceUpstream.UpstreamSwitchEnable(resId, request.Enable)
 	if enableErr != nil {
 		utils.Error(c, enableErr.Error())
+		return
+	}
+
+	utils.Ok(c)
+}
+
+func UpstreamSwitchRelease(c *gin.Context) {
+	resId := strings.TrimSpace(c.Param("res_id"))
+
+	serviceUpstream := services.NewServiceUpstream()
+	checkUpstreamExistErr := serviceUpstream.CheckUpstreamExist(resId)
+	if checkUpstreamExistErr != nil {
+		utils.Error(c, checkUpstreamExistErr.Error())
+		return
+	}
+
+	releaseErr := serviceUpstream.UpstreamSwitchRelease(resId)
+	if releaseErr != nil {
+		utils.Error(c, releaseErr.Error())
 		return
 	}
 

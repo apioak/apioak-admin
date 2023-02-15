@@ -285,6 +285,31 @@ func (u *ServiceUpstream) UpstreamSwitchEnable(resId string, enable int) (err er
 	return
 }
 
+func (u *ServiceUpstream) UpstreamSwitchRelease(resId string) (err error) {
+	upstreamModel := models.Upstreams{}
+	upstreamInfo, err := upstreamModel.UpstreamDetailByResId(resId)
+	if err != nil {
+		return
+	}
+
+	if upstreamInfo.Release == utils.ReleaseStatusY {
+		err = errors.New(enums.CodeMessages(enums.SwitchPublished))
+		return
+	}
+
+	err = UpstreamRelease([]string{resId}, utils.ReleaseTypePush)
+	if err != nil {
+		return
+	}
+
+	releaseStatus := map[string]interface{}{
+		"release": utils.ReleaseStatusY,
+	}
+	err = upstreamModel.UpstreamUpdateColumns(resId, releaseStatus)
+
+	return
+}
+
 func (u *ServiceUpstream) UpstreamInfoByResId(resId string) (info UpstreamListItem, err error) {
 	upstreamModel := models.Upstreams{}
 
@@ -469,6 +494,10 @@ func generateUpstreamConfig(upstreamInfo models.Upstreams) (config rpc.UpstreamC
 	config.WriteTimeout = upstreamInfo.WriteTimeout
 	config.ReadTimeout = upstreamInfo.ReadTimeout
 	config.Nodes = make([]rpc.ConfigObjectName, 0)
+	config.Enabled = false
+	if upstreamInfo.Enable == utils.EnableOn {
+		config.Enabled = true
+	}
 
 	upstreamNodeModel := models.UpstreamNodes{}
 	upstreamNodeList := make([]models.UpstreamNodes, 0)

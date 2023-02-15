@@ -238,6 +238,7 @@ type UpstreamConfig struct {
 	ConnectTimeout int                `json:"connect_timeout"`
 	WriteTimeout   int                `json:"write_timeout"`
 	ReadTimeout    int                `json:"read_timeout"`
+	Enabled        bool               `json:"enabled"`
 	Nodes          []ConfigObjectName `json:"nodes"`
 }
 

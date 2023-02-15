@@ -87,6 +87,7 @@ func RouterRegister(routerEngine *gin.Engine) {
 			upstream.DELETE("/delete/:res_id", admin.UpstreamDelete)
 			upstream.PUT("/update/name/:res_id", admin.UpstreamUpdateName)
 			upstream.PUT("/switch/enable/:res_id", admin.UpstreamSwitchEnable)
+			upstream.PUT("/switch/release/:res_id", admin.UpstreamSwitchRelease)
 		}
 
 		// plugin
