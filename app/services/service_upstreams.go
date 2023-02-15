@@ -312,7 +312,7 @@ func (u *ServiceUpstream) UpstreamDelete(resId string) (err error) {
 		return
 	})
 
-	// @todo 使用队列异步删除当前的upstream和upstream-node数据
+	err = UpstreamRelease([]string{resId}, utils.ReleaseTypeDelete)
 
 	return
 }

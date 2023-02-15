@@ -5,7 +5,6 @@ import (
 	"apioak-admin/app/models"
 	"apioak-admin/app/packages"
 	"apioak-admin/app/rpc"
-	"apioak-admin/app/services/plugins"
 	"apioak-admin/app/utils"
 	"apioak-admin/app/validators"
 	"errors"
@@ -104,35 +103,7 @@ func RouterCreate(routerData *validators.ValidatorRouterAddUpdate) (routerResId 
 		Release:        utils.ReleaseStatusU,
 	}
 
-	createUpstreamData := models.Upstreams{
-		Algorithm:      routerData.LoadBalance,
-		ConnectTimeout: routerData.ConnectTimeout,
-		WriteTimeout:   routerData.WriteTimeout,
-		ReadTimeout:    routerData.ReadTimeout,
-	}
-
-	createUpstreamNodes := make([]models.UpstreamNodes, 0)
-	if len(routerData.UpstreamNodes) > 0 {
-		for _, upstreamNode := range routerData.UpstreamNodes {
-			var ipType string
-			ipType, err = utils.DiscernIP(upstreamNode.NodeIp)
-			if err != nil {
-				return
-			}
-			ipNameIdMap := utils.IpNameIdMap()
-
-			createUpstreamNodes = append(createUpstreamNodes, models.UpstreamNodes{
-				NodeIP:      upstreamNode.NodeIp,
-				IPType:      ipNameIdMap[ipType],
-				NodePort:    upstreamNode.NodePort,
-				NodeWeight:  upstreamNode.NodeWeight,
-				Health:      upstreamNode.Health,
-				HealthCheck: upstreamNode.HealthCheck,
-			})
-		}
-	}
-
-	routerResId, err = createRouterData.RouterAdd(createRouterData, createUpstreamData, createUpstreamNodes)
+	routerResId, err = createRouterData.RouterAdd(createRouterData)
 
 	if err != nil {
 		return
@@ -286,8 +257,6 @@ type StructRouterInfo struct {
 	Enable         int                `json:"enable"`
 	Release        int                `json:"release"`
 	UpstreamResId  string             `json:"upstream_res_id"`
-	Upstream       UpstreamItem       `json:"upstream"`
-	UpstreamNodes  []UpstreamNodeItem `json:"upstream_nodes"`
 }
 
 func (s *StructRouterInfo) RouterInfoByServiceRouterId(serviceResId string, routerResId string) (routerDetail StructRouterInfo, err error) {
@@ -306,19 +275,6 @@ func (s *StructRouterInfo) RouterInfoByServiceRouterId(serviceResId string, rout
 	routerDetail.Enable = routerModelDetail.Enable
 	routerDetail.Release = routerModelDetail.Release
 	routerDetail.UpstreamResId = routerModelDetail.UpstreamResID
-	routerDetail.UpstreamNodes = make([]UpstreamNodeItem, 0)
-
-	upstreamItem := UpstreamItem{}
-	upstreamDetail, upstreamDetailErr := upstreamItem.UpstreamDetailByResId(routerModelDetail.UpstreamResID)
-	if upstreamDetailErr == nil {
-		routerDetail.Upstream = upstreamDetail
-	}
-
-	upstreamNodeItem := UpstreamNodeItem{}
-	upstreamNodeList, upstreamNodeListErr := upstreamNodeItem.UpstreamNodeListByUpstreamResIds([]string{routerModelDetail.UpstreamResID})
-	if upstreamNodeListErr == nil && len(upstreamNodeList) > 0{
-		routerDetail.UpstreamNodes = upstreamNodeList
-	}
 
 	return
 }
@@ -336,6 +292,7 @@ func RouterUpdate(routerResId string, routerData validators.ValidatorRouterAddUp
 	updateRouterData["request_methods"] = routerData.RequestMethods
 	updateRouterData["router_path"] = routerData.RouterPath
 	updateRouterData["enable"] = routerData.Enable
+	updateRouterData["upstream_res_id"] = routerData.UpstreamResID
 
 	if len(routerData.RouterName) != 0 {
 		updateRouterData["router_name"] = routerData.RouterName
@@ -343,137 +300,10 @@ func RouterUpdate(routerResId string, routerData validators.ValidatorRouterAddUp
 	if routerDetail.Release == utils.ReleaseStatusY {
 		updateRouterData["release"] = utils.ReleaseStatusT
 	}
-
-	upstreamResId := ""
-	err = packages.GetDb().Transaction(func(tx *gorm.DB) (err error) {
-
-		upstreamModel := models.Upstreams{}
-		upstreamNodeModel := models.UpstreamNodes{}
-
-		if len(routerData.UpstreamNodes) == 0 {
-			if len(routerDetail.UpstreamResID) > 0 {
-				err = RouterRelease([]string{routerResId}, utils.ReleaseTypeDelete)
-				if err != nil {
-					return
-				}
-
-				err = UpstreamRelease([]string{routerDetail.UpstreamResID}, utils.ReleaseTypeDelete)
-				if err != nil {
-					return
-				}
-			}
-
-			if err = tx.Table(upstreamModel.TableName()).
-				Where("res_id = ?", routerDetail.UpstreamResID).
-				Delete(&upstreamModel).Error; err != nil {
-				return
-			}
-
-			if err = tx.Table(upstreamNodeModel.TableName()).
-				Where("upstream_res_id = ?", routerDetail.UpstreamResID).
-				Delete(&upstreamNodeModel).Error; err != nil {
-				return
-			}
-
-			upstreamResId = routerDetail.UpstreamResID
-			updateRouterData["upstream_res_id"] = ""
-		} else {
-			var upstreamInfo models.Upstreams
-			upstreamInfo, err = upstreamInfo.UpstreamDetailByResId(routerDetail.UpstreamResID)
-			if err != nil {
-				return
-			}
-
-			if len(upstreamInfo.ResID) == 0 {
-				upstreamResId, err = upstreamModel.ModelUniqueId()
-				if err != nil {
-					return
-				}
-
-				if err = tx.Table(upstreamModel.TableName()).
-					Create(&models.Upstreams{
-						ResID:          upstreamResId,
-						Name:           upstreamResId,
-						Algorithm:      routerData.LoadBalance,
-						ReadTimeout:    routerData.ReadTimeout,
-						WriteTimeout:   routerData.WriteTimeout,
-						ConnectTimeout: routerData.ConnectTimeout,
-					}).Error; err != nil {
-					return
-				}
-
-				updateRouterData["upstream_res_id"] = upstreamResId
-			} else {
-				if err = tx.Table(upstreamModel.TableName()).
-					Where("res_id = ?", upstreamInfo.ResID).
-					Updates(models.Upstreams{
-						Algorithm:      routerData.LoadBalance,
-						ReadTimeout:    routerData.ReadTimeout,
-						WriteTimeout:   routerData.WriteTimeout,
-						ConnectTimeout: routerData.ConnectTimeout,
-					}).Error; err != nil {
-					return
-				}
-
-				upstreamResId = routerDetail.UpstreamResID
-				updateRouterData["upstream_res_id"] = routerDetail.UpstreamResID
-			}
-
-			addNodeList, updateNodeList, delNodeResIds := DiffUpstreamNode(upstreamResId, routerData.UpstreamNodes)
-
-			if len(addNodeList) > 0 {
-				if err = tx.Create(&addNodeList).Error; err != nil {
-					return
-				}
-			}
-
-			if len(updateNodeList) > 0 {
-				for _, updateNodeInfo := range updateNodeList {
-					if err = tx.Table(upstreamNodeModel.TableName()).
-						Where("res_id = ?", updateNodeInfo.ResID).
-						Updates(&updateNodeInfo).Error; err != nil {
-						return
-					}
-				}
-			}
-
-			if len(delNodeResIds) > 0 {
-				if err = tx.Table(upstreamNodeModel.TableName()).
-					Where("res_id in ?", delNodeResIds).
-					Delete(&upstreamNodeModel).Error; err != nil {
-					return
-				}
-			}
-		}
-
-		if err = tx.Table(routerModel.TableName()).
-			Where("res_id = ?", routerResId).
-			Updates(&updateRouterData).Error; err != nil {
-			return
-		}
-
+	if err = packages.GetDb().Table(routerModel.TableName()).
+		Where("res_id = ?", routerResId).
+		Updates(&updateRouterData).Error; err != nil {
 		return
-	})
-
-	if err != nil {
-		return
-	}
-
-	if len(upstreamResId) > 0 {
-		err = RouterRelease([]string{routerResId}, utils.ReleaseTypeDelete)
-		if err != nil {
-			return
-		}
-
-		err = UpstreamRelease([]string{upstreamResId}, utils.ReleaseTypePush)
-		if err != nil {
-			return
-		}
-
-		err = RouterRelease([]string{routerResId}, utils.ReleaseTypePush)
-		if err != nil {
-			return
-		}
 	}
 
 	return
@@ -525,181 +355,6 @@ func filterPushedServiceRouterResIds(routerResIds []string) (opRoutersResIds []s
 		_, ok := publishedServiceResIdsMap[routerInfo.ServiceResID]
 		if ok {
 			opRoutersResIds = append(opRoutersResIds, routerInfo.ResID)
-		}
-	}
-
-	return
-}
-
-func RouterUpstreamRelease(routerResIds []string, releaseType string) (err error) {
-	if len(routerResIds) == 0 {
-		return
-	}
-
-	releaseType = strings.ToLower(releaseType)
-
-	if (releaseType != utils.ReleaseTypePush) && (releaseType != utils.ReleaseTypeDelete) {
-		err = errors.New(enums.CodeMessages(enums.ReleaseTypeError))
-		return
-	}
-
-	routerModel := models.Routers{}
-	var routerList []models.Routers
-	routerList, err = routerModel.RouterListByRouterResIds(routerResIds)
-	if err != nil {
-		return
-	}
-
-	if len(routerList) == 0 {
-		return
-	}
-
-	serviceResIds := make([]string, 0)
-
-	for _, routerInfo := range routerList {
-		if len(routerInfo.ServiceResID) > 0 {
-			serviceResIds = append(serviceResIds, routerInfo.ServiceResID)
-		}
-	}
-
-	serviceModel := models.Services{}
-	serviceList := make([]models.Services, 0)
-	serviceList, err = serviceModel.ServiceListByResIds(serviceResIds)
-	if err != nil {
-		return
-	}
-
-	publishedServiceResIdsMap := make(map[string]byte)
-	for _, serviceInfo := range serviceList {
-		if serviceInfo.Release != utils.ReleaseStatusU {
-			publishedServiceResIdsMap[serviceInfo.ResID] = 0
-		}
-	}
-
-	toBeOpUpstreamResIds := make([]string, 0)
-	toBeOpRouterList := make([]models.Routers, 0)
-	for _, routerInfo := range routerList {
-
-		_, ok := publishedServiceResIdsMap[routerInfo.ServiceResID]
-		if !ok {
-			continue
-		}
-
-		toBeOpRouterList = append(toBeOpRouterList, routerInfo)
-
-		if len(routerInfo.UpstreamResID) > 0 {
-			toBeOpUpstreamResIds = append(toBeOpUpstreamResIds, routerInfo.UpstreamResID)
-		}
-	}
-
-	if len(toBeOpRouterList) == 0 {
-		return
-	}
-
-	routerConfigList := make([]rpc.RouterConfig, 0)
-	routerConfigResIds := make([]string, 0)
-	for _, toBeOpRouterInfo := range toBeOpRouterList {
-		var routerConfig rpc.RouterConfig
-		routerConfig, err = generateRouterConfig(toBeOpRouterInfo)
-		if err != nil {
-			return
-		}
-
-		if len(routerConfig.Name) == 0 {
-			continue
-		}
-
-		routerConfigList = append(routerConfigList, routerConfig)
-		routerConfigResIds = append(routerConfigResIds, toBeOpRouterInfo.ResID)
-	}
-
-	pluginConfigModel := models.PluginConfigs{}
-	routerPluginConfigList := make([]models.PluginConfigs, 0)
-	routerPluginConfigList, err = pluginConfigModel.PluginConfigListByTargetResIds(models.PluginConfigsTypeRouter, routerConfigResIds)
-	if err != nil {
-		return
-	}
-
-	newApiOak := rpc.NewApiOak()
-	if releaseType == utils.ReleaseTypePush {
-
-		if len(routerPluginConfigList) > 0 {
-			for _, routerPluginConfigInfo := range routerPluginConfigList {
-
-				var pluginContext plugins.PluginContext
-				pluginContext, err = plugins.NewPluginContext(routerPluginConfigInfo.PluginKey)
-
-				if err != nil {
-					continue
-				}
-
-				var config interface{}
-				config, err = pluginContext.StrategyPluginParse(routerPluginConfigInfo.Config)
-
-				err = newApiOak.PluginPut(&rpc.PluginPutRequest{
-					Name:   routerPluginConfigInfo.ResID,
-					Key:    routerPluginConfigInfo.PluginKey,
-					Config: config,
-				})
-
-				if err != nil {
-					continue
-				}
-			}
-		}
-
-		err = newApiOak.RouterDelete(routerResIds)
-		if err != nil {
-			return
-		}
-
-		err = UpstreamRelease(toBeOpUpstreamResIds, releaseType)
-		if err != nil {
-			return
-		}
-
-		err = newApiOak.RouterPut(routerConfigList)
-		if err != nil {
-			return
-		}
-
-		for _, toBeOpRouterInfo := range toBeOpRouterList {
-			err = routerModel.RouterSwitchRelease(toBeOpRouterInfo.ResID, utils.ReleaseStatusY)
-			if err != nil {
-				return
-			}
-		}
-
-	} else {
-		err = newApiOak.RouterDelete(routerResIds)
-		if err != nil {
-			return
-		}
-
-		err = UpstreamRelease(toBeOpUpstreamResIds, releaseType)
-		if err != nil {
-			return
-		}
-
-		apioakRouterConfigList := make([]rpc.RouterConfig, 0)
-		apioakRouterConfigList, err = newApiOak.RouterGet(routerConfigResIds)
-		if err != nil {
-			return
-		}
-
-		if len(apioakRouterConfigList) > 0 {
-			for _, apioakRouterConfigInfo := range apioakRouterConfigList {
-				if len(apioakRouterConfigInfo.Plugins) == 0 {
-					continue
-				}
-
-				for _, pluginIdName := range apioakRouterConfigInfo.Plugins {
-					err = newApiOak.PluginDelete(pluginIdName.Id)
-					if err != nil {
-						return
-					}
-				}
-			}
 		}
 	}
 
@@ -822,36 +477,13 @@ func RouterDelete(routerResId string) (err error) {
 		return
 	}
 
-	err = packages.GetDb().Transaction(func(tx *gorm.DB) (err error) {
-		if err = tx.Table(routerModel.TableName()).
-			Where("res_id = ?", routerResId).
-			Delete(&routerModel).Error; err != nil {
-			return
-		}
-
-		upstreamModel := models.Upstreams{}
-		if err = tx.Table(upstreamModel.TableName()).
-			Where("res_id = ?", routerDetail.UpstreamResID).
-			Delete(&upstreamModel).Error; err != nil {
-			return
-		}
-
-		upstreamNodeModel := models.UpstreamNodes{}
-		if err = tx.Table(upstreamNodeModel.TableName()).
-			Where("upstream_res_id = ?", routerDetail.UpstreamResID).
-			Delete(&upstreamNodeModel).Error; err != nil {
-			return
-		}
-
-		return
-	})
-
-	err = RouterRelease([]string{routerResId}, utils.ReleaseTypeDelete)
-	if err != nil {
+	if err = packages.GetDb().Table(routerModel.TableName()).
+		Where("res_id = ?", routerResId).
+		Delete(&routerModel).Error; err != nil {
 		return
 	}
 
-	err = UpstreamRelease([]string{routerDetail.UpstreamResID}, utils.ReleaseTypePush)
+	err = RouterRelease([]string{routerResId}, utils.ReleaseTypeDelete)
 	if err != nil {
 		return
 	}
@@ -867,24 +499,6 @@ func RouterCopy(routerResId string) (err error) {
 		return
 	}
 
-	upstreamModel := models.Upstreams{}
-	var upstreamDetail models.Upstreams
-	if routerDetail.UpstreamResID != "" {
-		upstreamDetail, err = upstreamModel.UpstreamDetailByResId(routerDetail.UpstreamResID)
-		if err != nil {
-			return
-		}
-	}
-
-	upstreamNodeModel := models.UpstreamNodes{}
-	upstreamNodeList := make([]models.UpstreamNodes, 0)
-	if upstreamDetail.ResID != "" {
-		upstreamNodeList, err = upstreamNodeModel.UpstreamNodeListByUpstreamResIds([]string{upstreamDetail.ResID})
-		if err != nil {
-			return
-		}
-	}
-
 	pluginConfigModel := models.PluginConfigs{}
 	pluginConfigList := make([]models.PluginConfigs, 0)
 	pluginConfigList, err = pluginConfigModel.PluginConfigListByTargetResIds(models.PluginConfigsTypeRouter, []string{routerResId})
@@ -893,56 +507,6 @@ func RouterCopy(routerResId string) (err error) {
 	}
 
 	err = packages.GetDb().Transaction(func(tx *gorm.DB) (err error) {
-		var upstreamResId string
-		if upstreamDetail.ResID != "" {
-			upstreamResId, err = upstreamModel.ModelUniqueId()
-			if err != nil {
-				return
-			}
-
-			err = tx.Table(upstreamModel.TableName()).Create(&models.Upstreams{
-				ResID:          upstreamResId,
-				Name:           upstreamDetail.Name,
-				Algorithm:      upstreamDetail.Algorithm,
-				ConnectTimeout: upstreamDetail.ConnectTimeout,
-				WriteTimeout:   upstreamDetail.WriteTimeout,
-				ReadTimeout:    upstreamDetail.ReadTimeout,
-			}).Error
-			if err != nil {
-				return
-			}
-
-			newUpstreamNodeList := make([]models.UpstreamNodes, 0)
-			if len(upstreamNodeList) != 0 {
-				for _, upstreamNodeDetail := range upstreamNodeList {
-					var upstreamNodeResId string
-					upstreamNodeResId, err = upstreamNodeModel.ModelUniqueId()
-					if err != nil {
-						return
-					}
-
-					newUpstreamNodeList = append(newUpstreamNodeList, models.UpstreamNodes{
-						ResID:         upstreamNodeResId,
-						UpstreamResID: upstreamResId,
-						NodeIP:        upstreamNodeDetail.NodeIP,
-						IPType:        upstreamNodeDetail.IPType,
-						NodePort:      upstreamNodeDetail.NodePort,
-						NodeWeight:    upstreamNodeDetail.NodeWeight,
-						Health:        upstreamNodeDetail.Health,
-						HealthCheck:   upstreamNodeDetail.HealthCheck,
-					})
-				}
-
-				if len(newUpstreamNodeList) != 0 {
-					err = tx.Table(upstreamNodeModel.TableName()).Create(&newUpstreamNodeList).Error
-					if err != nil {
-						return
-					}
-				}
-			}
-
-		}
-
 		newRouterResId, err := routerModel.ModelUniqueId()
 		if err != nil {
 			return
@@ -952,7 +516,7 @@ func RouterCopy(routerResId string) (err error) {
 		err = tx.Table(routerModel.TableName()).Create(&models.Routers{
 			ResID:          newRouterResId,
 			ServiceResID:   routerDetail.ServiceResID,
-			UpstreamResID:  upstreamResId,
+			UpstreamResID:  routerDetail.UpstreamResID,
 			RequestMethods: routerDetail.RequestMethods,
 			RouterName:     routerDetail.RouterName + "-copy-" + randomStr,
 			RouterPath:     routerDetail.RouterPath + "-copy-" + randomStr,

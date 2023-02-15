@@ -19,8 +19,6 @@ func RouterAdd(c *gin.Context) {
 	}
 
 	validators.GetRouterAttributesDefault(&bindParams)
-	validators.CorrectUpstreamDefault(&bindParams.UpstreamAddUpdate)
-	validators.CorrectUpstreamAddNodes(&bindParams.UpstreamNodes)
 
 	if bindParams.RouterPath == utils.DefaultRouterPath {
 		utils.Error(c, enums.CodeMessages(enums.RouterDefaultPathNoPermission))
@@ -111,8 +109,6 @@ func RouterUpdate(c *gin.Context) {
 		return
 	}
 	validators.GetRouterAttributesDefault(&bindParams)
-	validators.CorrectUpstreamDefault(&bindParams.UpstreamAddUpdate)
-	validators.CorrectUpstreamAddNodes(&bindParams.UpstreamNodes)
 
 	serviceResId := strings.TrimSpace(c.Param("service_res_id"))
 	routerResId := strings.TrimSpace(c.Param("router_res_id"))
@@ -291,7 +287,7 @@ func RouterSwitchRelease(c *gin.Context) {
 		return
 	}
 
-	serviceRouterReleaseErr := services.RouterUpstreamRelease([]string{routerResId}, utils.ReleaseTypePush)
+	serviceRouterReleaseErr := services.RouterRelease([]string{routerResId}, utils.ReleaseTypePush)
 	if serviceRouterReleaseErr != nil {
 		utils.Error(c, serviceRouterReleaseErr.Error())
 		return
