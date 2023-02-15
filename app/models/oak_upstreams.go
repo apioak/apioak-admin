@@ -218,7 +218,7 @@ func (m Upstreams) UpstreamReleaseNameList() (list []ResIdNameItem, err error) {
 
 	err = packages.GetDb().Table(m.TableName()).
 		Where("enable = ?", utils.EnableOn).
-		Where("`release` = ?", utils.ReleaseStatusY).
+		Where("`release` in ?", []int{utils.ReleaseStatusT, utils.ReleaseStatusY}).
 		Find(&list).Error
 
 	if err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
