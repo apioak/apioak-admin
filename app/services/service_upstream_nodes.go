@@ -7,6 +7,7 @@ import (
 	"apioak-admin/app/utils"
 	"apioak-admin/app/validators"
 	"errors"
+	"strconv"
 	"strings"
 )
 
@@ -62,7 +63,8 @@ func DiffUpstreamNode(upstreamResID string, paramNodeList []validators.UpstreamN
 
 	paramNodeListMap := make(map[string]validators.UpstreamNodeAddUpdate)
 	for _, paramNodeInfo := range paramNodeList {
-		paramNodeListMap[paramNodeInfo.NodeIp] = paramNodeInfo
+		paramNodeListMapKey := paramNodeInfo.NodeIp + "-" + strconv.Itoa(paramNodeInfo.NodePort)
+		paramNodeListMap[paramNodeListMapKey] = paramNodeInfo
 	}
 
 	upstreamNodeModel := models.UpstreamNodes{}
@@ -73,9 +75,10 @@ func DiffUpstreamNode(upstreamResID string, paramNodeList []validators.UpstreamN
 
 	upstreamNodeListMap := make(map[string]models.UpstreamNodes)
 	for _, upstreamNodeInfo := range upstreamNodeList {
-		upstreamNodeListMap[upstreamNodeInfo.NodeIP] = upstreamNodeInfo
+		upstreamNodeListMapKey := upstreamNodeInfo.NodeIP + "-" + strconv.Itoa(upstreamNodeInfo.NodePort)
+		upstreamNodeListMap[upstreamNodeListMapKey] = upstreamNodeInfo
 
-		paramNodeInfo, ok := paramNodeListMap[upstreamNodeInfo.NodeIP]
+		paramNodeInfo, ok := paramNodeListMap[upstreamNodeListMapKey]
 
 		if ok {
 			updateNodeList = append(updateNodeList, models.UpstreamNodes{
@@ -92,7 +95,8 @@ func DiffUpstreamNode(upstreamResID string, paramNodeList []validators.UpstreamN
 	ipNameIdMap := utils.IpNameIdMap()
 
 	for _, paramNodeListInfo := range paramNodeList {
-		_, ok := upstreamNodeListMap[paramNodeListInfo.NodeIp]
+		upstreamNodeListMapKey := paramNodeListInfo.NodeIp + "-" + strconv.Itoa(paramNodeListInfo.NodePort)
+		_, ok := upstreamNodeListMap[upstreamNodeListMapKey]
 		if !ok {
 
 			resId, resIdErr := upstreamNodeModel.ModelUniqueId()

@@ -217,13 +217,69 @@ func (u *ServiceUpstream) UpstreamCreate(request *validators.UpstreamAddUpdate) 
 	return
 }
 
-// @todo upstream更新
 func (u *ServiceUpstream) UpstreamUpdate(resId string, request *validators.UpstreamAddUpdate) (err error) {
-	// upstreamModel := models.Upstreams{}
-	// upstreamInfo, err := upstreamModel.UpstreamDetailByResId(resId)
-	// if err != nil {
-	// 	return err
-	// }
+	upstreamModel := models.Upstreams{}
+	var upstreamInfo models.Upstreams
+	upstreamInfo, err = upstreamModel.UpstreamDetailByResId(resId)
+	if err != nil {
+		return err
+	}
+
+	err = packages.GetDb().Transaction(func(tx *gorm.DB) (err error) {
+
+		updateUpstreamData := map[string]interface{}{
+			"algorithm": request.LoadBalance,
+			"read_timeout": request.ReadTimeout,
+			"write_timeout": request.WriteTimeout,
+			"connect_timeout": request.ConnectTimeout,
+		}
+		if upstreamInfo.Release == utils.ReleaseStatusY {
+			updateUpstreamData["release"] = utils.ReleaseStatusT
+		}
+		if request.Name != "---" {
+			// 传递了就要更新名称，如果传递空数据则直接赋值当前的ID
+			name := request.Name
+			if name == "" {
+				name = upstreamInfo.ResID
+			}
+			updateUpstreamData["name"] = name
+		}
+
+		if err = tx.Table(upstreamModel.TableName()).
+			Where("res_id = ?", resId).
+			Updates(updateUpstreamData).Error; err != nil {
+			return
+		}
+
+		addNodeList, updateNodeList, delNodeResIds := DiffUpstreamNode(resId, request.UpstreamNodes)
+
+		upstreamNodeModel := models.UpstreamNodes{}
+		if len(addNodeList) > 0 {
+			if err = tx.Create(&addNodeList).Error; err != nil {
+				return
+			}
+		}
+
+		if len(updateNodeList) > 0 {
+			for _, updateNodeInfo := range updateNodeList {
+				if err = tx.Table(upstreamNodeModel.TableName()).
+					Where("res_id = ?", updateNodeInfo.ResID).
+					Updates(&updateNodeInfo).Error; err != nil {
+					return
+				}
+			}
+		}
+
+		if len(delNodeResIds) > 0 {
+			if err = tx.Table(upstreamNodeModel.TableName()).
+				Where("res_id in ?", delNodeResIds).
+				Delete(&upstreamNodeModel).Error; err != nil {
+				return
+			}
+		}
+
+		return
+	})
 
 	return
 }

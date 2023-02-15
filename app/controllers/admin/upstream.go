@@ -93,7 +93,9 @@ func UpstreamInfo(c *gin.Context) {
 }
 
 func UpstreamUpdate(c *gin.Context) {
-	var request = &validators.UpstreamAddUpdate{}
+	var request = &validators.UpstreamAddUpdate{
+		Name: "---",
+	}
 	if msg, err := packages.ParseRequestParams(c, request); err != nil {
 		utils.Error(c, msg)
 		return
