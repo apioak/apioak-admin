@@ -391,25 +391,42 @@ func RouterRelease(routerResIds []string, releaseType string) (err error) {
 	newApiOak := rpc.NewApiOak()
 	if releaseType == utils.ReleaseTypePush {
 
-		routerConfigList := make([]rpc.RouterConfig, 0)
-		for _, routerInfo := range routerList {
-			var routerConfig rpc.RouterConfig
-			routerConfig, err = generateRouterConfig(routerInfo)
+		err = packages.GetDb().Transaction(func(tx *gorm.DB) (err error) {
+
+			routerConfigList := make([]rpc.RouterConfig, 0)
+			for _, routerInfo := range routerList {
+
+				_, err = SyncPluginToDataSide(tx, models.PluginConfigsTypeRouter, routerInfo.ResID)
+
+				if err != nil {
+					return
+				}
+
+				var routerConfig rpc.RouterConfig
+				routerConfig, err = generateRouterConfig(routerInfo)
+				if err != nil {
+					return
+				}
+
+				if len(routerConfig.Name) == 0 {
+					continue
+				}
+
+				err = routerModel.RouterSwitchRelease(routerInfo.ResID, utils.ReleaseStatusY)
+				if err != nil {
+					return
+				}
+
+				routerConfigList = append(routerConfigList, routerConfig)
+			}
+
+			err = newApiOak.RouterPut(routerConfigList)
 			if err != nil {
 				return
 			}
 
-			if len(routerConfig.Name) == 0 {
-				continue
-			}
-
-			routerConfigList = append(routerConfigList, routerConfig)
-		}
-
-		err = newApiOak.RouterPut(routerConfigList)
-		if err != nil {
 			return
-		}
+		})
 
 	} else {
 		err = newApiOak.RouterDelete(publishedRouterResIds)
