@@ -1,7 +1,7 @@
 package utils
 
 import (
-	jsoniter "github.com/json-iterator/go"
+	"encoding/json"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -16,23 +16,23 @@ type HttpResp struct {
 }
 
 func PostJson(uri string, params interface{}, header http.Header, timeout time.Duration) (httpResp HttpResp, err error) {
-	postParam, err := jsoniter.MarshalToString(params)
+	postParam, err := json.Marshal(params)
 	if err != nil {
 		return
 	}
 	header.Add("Content-Type", "application/json")
 
-	return HttpDo("POST", uri, postParam, header, timeout)
+	return HttpDo("POST", uri, string(postParam), header, timeout)
 }
 
 func PutJson(uri string, params interface{}, header http.Header, timeout time.Duration) (httpResp HttpResp, err error) {
-	postParam, err := jsoniter.MarshalToString(params)
+	postParam, err := json.Marshal(params)
 	if err != nil {
 		return
 	}
 	header.Add("Content-Type", "application/json")
 
-	return HttpDo("PUT", uri, postParam, header, timeout)
+	return HttpDo("PUT", uri, string(postParam), header, timeout)
 }
 
 func PostForm(uri string, params url.Values, header http.Header, timeout time.Duration) (httpResp HttpResp, err error) {
