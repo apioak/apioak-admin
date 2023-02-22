@@ -65,6 +65,10 @@ type ConfigObjectName struct {
 	Name string `json:"name,omitempty"`
 }
 
+type UpstreamNodeList struct {
+	List []UpstreamNodeConfig `json:"list"`
+}
+
 type HealthCheck struct {
 	Enabled  bool   `json:"enabled"`
 	Tcp      bool   `json:"tcp"`
@@ -122,6 +126,30 @@ func (m *ApiOak) commonPut(resName string, uri string, data interface{}, params 
 	return
 }
 
+func (m *ApiOak) UpstreamNodeList(upstreamNodeIds []string) (list []UpstreamNodeConfig, err error) {
+
+	uri := m.Address + upstreamNodeUri
+
+	var params = url.Values{}
+	var headers = http.Header{}
+	var httpResp utils.HttpResp
+	httpResp, err = utils.Get(uri, params, headers, timeOut)
+	if err != nil {
+		return
+	}
+
+	if httpResp.StatusCode != 200 {
+		err = errors.New(enums.CodeMessages(enums.SyncError))
+		return
+	} else {
+		var tmpList UpstreamNodeList
+		json.Unmarshal(httpResp.Body, &tmpList)
+		list = tmpList.List
+	}
+
+	return
+}
+
 func (m *ApiOak) UpstreamNodePut(upstreamNodeConfigList []UpstreamNodeConfig) (err error) {
 	if len(upstreamNodeConfigList) == 0 {
 		return
@@ -162,10 +190,10 @@ func (m *ApiOak) UpstreamNodeDelete(upstreamNodeResIds []string) (err error) {
 			headers.Set("Host", m.Domain)
 		}
 
-		uri = uri + "/" + upstreamNodeResId
+		nodeUri := uri + "/" + upstreamNodeResId
 
 		var httpResp utils.HttpResp
-		httpResp, err = utils.Get(uri, params, headers, timeOut)
+		httpResp, err = utils.Get(nodeUri, params, headers, timeOut)
 		if err != nil {
 			return
 		}
@@ -174,15 +202,15 @@ func (m *ApiOak) UpstreamNodeDelete(upstreamNodeResIds []string) (err error) {
 			err = errors.New(enums.CodeMessages(enums.SyncError))
 			return
 		} else if httpResp.StatusCode == 200 {
-			httpResp, err = utils.Delete(uri, params, headers, timeOut)
+			httpResp, err = utils.Delete(nodeUri, params, headers, timeOut)
 			if err != nil {
 				return
 			}
 
 			if httpResp.StatusCode != 200 {
 				err = errors.New(enums.CodeMessages(enums.PublishError))
+				return
 			}
-			return
 		}
 	}
 
@@ -257,10 +285,10 @@ func (m *ApiOak) UpstreamGet(upstreamResIds []string) (list []UpstreamConfig, er
 			headers.Set("Host", m.Domain)
 		}
 
-		uri = uri + "/" + upstreamResId
+		getUri := uri + "/" + upstreamResId
 
 		var httpResp utils.HttpResp
-		httpResp, err = utils.Get(uri, params, headers, timeOut)
+		httpResp, err = utils.Get(getUri, params, headers, timeOut)
 		if err != nil {
 			return
 		}
@@ -331,10 +359,10 @@ func (m *ApiOak) UpstreamDelete(upstreamResIds []string) (err error) {
 			headers.Set("Host", m.Domain)
 		}
 
-		uri = uri + "/" + upstreamResId
+		delUri := uri + "/" + upstreamResId
 
 		var httpResp utils.HttpResp
-		httpResp, err = utils.Get(uri, params, headers, timeOut)
+		httpResp, err = utils.Get(delUri, params, headers, timeOut)
 		if err != nil {
 			return
 		}
@@ -343,7 +371,7 @@ func (m *ApiOak) UpstreamDelete(upstreamResIds []string) (err error) {
 			err = errors.New(enums.CodeMessages(enums.SyncError))
 			return
 		} else if httpResp.StatusCode == 200 {
-			httpResp, err = utils.Delete(uri, params, headers, timeOut)
+			httpResp, err = utils.Delete(delUri, params, headers, timeOut)
 			if err != nil {
 				return
 			}
@@ -384,10 +412,10 @@ func (m *ApiOak) RouterGet(routerResIds []string) (list []RouterConfig, err erro
 			headers.Set("Host", m.Domain)
 		}
 
-		uri = uri + "/" + routerResId
+		getUri := uri + "/" + routerResId
 
 		var httpResp utils.HttpResp
-		httpResp, err = utils.Get(uri, params, headers, timeOut)
+		httpResp, err = utils.Get(getUri, params, headers, timeOut)
 		if err != nil {
 			return
 		}
@@ -456,10 +484,10 @@ func (m *ApiOak) RouterDelete(routerResIds []string) (err error) {
 			headers.Set("Host", m.Domain)
 		}
 
-		uri = uri + "/" + routerResId
+		delUri := uri + "/" + routerResId
 
 		var httpResp utils.HttpResp
-		httpResp, err = utils.Get(uri, params, headers, timeOut)
+		httpResp, err = utils.Get(delUri, params, headers, timeOut)
 		if err != nil {
 			return
 		}
@@ -468,7 +496,7 @@ func (m *ApiOak) RouterDelete(routerResIds []string) (err error) {
 			err = errors.New(enums.CodeMessages(enums.SyncError))
 			return
 		} else if httpResp.StatusCode == 200 {
-			httpResp, err = utils.Delete(uri, params, headers, timeOut)
+			httpResp, err = utils.Delete(delUri, params, headers, timeOut)
 			if err != nil {
 				return
 			}

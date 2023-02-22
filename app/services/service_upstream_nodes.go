@@ -125,54 +125,19 @@ func DiffUpstreamNode(upstreamResID string, paramNodeList []validators.UpstreamN
 	return
 }
 
-func UpstreamNodeRelease(upstreamResIds []string, releaseType string) (err error) {
-	if len(upstreamResIds) == 0 {
-		return
+func UpstreamNodeLocalCloudDiff(localNodeList []models.UpstreamNodes, cloudNodeList []rpc.UpstreamNodeConfig) (
+	putNodeIds []string, deleteNodeIds []string) {
+
+	localNodeListMap := make(map[string]models.UpstreamNodes)
+	for _, localNodeInfo := range localNodeList {
+		localNodeListMap[localNodeInfo.ResID] = localNodeInfo
+		putNodeIds = append(putNodeIds, localNodeInfo.ResID)
 	}
 
-	releaseType = strings.ToLower(releaseType)
-
-	if (releaseType != utils.ReleaseTypePush) && (releaseType != utils.ReleaseTypeDelete) {
-		err = errors.New(enums.CodeMessages(enums.ReleaseTypeError))
-		return
-	}
-
-	newApiOak := rpc.NewApiOak()
-
-	if releaseType == utils.ReleaseTypeDelete {
-		return
-	}
-
-	upstreamNodeModel := models.UpstreamNodes{}
-
-	upstreamNodeList := make([]models.UpstreamNodes, 0)
-	upstreamNodeList, err = upstreamNodeModel.UpstreamNodeListByUpstreamResIds(upstreamResIds)
-	if err != nil {
-		return
-	}
-
-	if len(upstreamNodeList) == 0 {
-		return
-	}
-
-	upstreamNodeConfigList := make([]rpc.UpstreamNodeConfig, 0)
-	for _, upstreamNodeInfo := range upstreamNodeList {
-		var upstreamNodeConfig rpc.UpstreamNodeConfig
-		upstreamNodeConfig, err = generateUpstreamNodeConfig(upstreamNodeInfo)
-		if err != nil {
-			return err
+	for _, cloudNodeInfo := range cloudNodeList {
+		if _, exits := localNodeListMap[cloudNodeInfo.Name]; !exits {
+			deleteNodeIds = append(deleteNodeIds, cloudNodeInfo.Name)
 		}
-
-		if len(upstreamNodeConfig.Name) == 0 {
-			continue
-		}
-
-		upstreamNodeConfigList = append(upstreamNodeConfigList, upstreamNodeConfig)
-	}
-
-	err = newApiOak.UpstreamNodePut(upstreamNodeConfigList)
-	if err != nil {
-		return
 	}
 
 	return
@@ -200,4 +165,58 @@ func generateUpstreamNodeConfig(upstreamNodeInfo models.UpstreamNodes) (rpc.Upst
 	upstreamNodeConfig.Check.Enabled = false
 
 	return upstreamNodeConfig, nil
+}
+
+func NodeRelease(nodeResIds []string, releaseType string) (err error) {
+	if len(nodeResIds) == 0 {
+		return
+	}
+
+	releaseType = strings.ToLower(releaseType)
+
+	if (releaseType != utils.ReleaseTypePush) && (releaseType != utils.ReleaseTypeDelete) {
+		err = errors.New(enums.CodeMessages(enums.ReleaseTypeError))
+		return
+	}
+
+	newApiOak := rpc.NewApiOak()
+
+	if releaseType == utils.ReleaseTypeDelete {
+		err = newApiOak.UpstreamNodeDelete(nodeResIds)
+		return
+	} else {
+		upstreamNodeModel := models.UpstreamNodes{}
+
+		upstreamNodeList := make([]models.UpstreamNodes, 0)
+		upstreamNodeList, err = upstreamNodeModel.UpstreamNodeListByResIds(nodeResIds)
+		if err != nil {
+			return
+		}
+
+		if len(upstreamNodeList) == 0 {
+			return
+		}
+
+		upstreamNodeConfigList := make([]rpc.UpstreamNodeConfig, 0)
+		for _, upstreamNodeInfo := range upstreamNodeList {
+			var upstreamNodeConfig rpc.UpstreamNodeConfig
+			upstreamNodeConfig, err = generateUpstreamNodeConfig(upstreamNodeInfo)
+			if err != nil {
+				return err
+			}
+
+			if len(upstreamNodeConfig.Name) == 0 {
+				continue
+			}
+
+			upstreamNodeConfigList = append(upstreamNodeConfigList, upstreamNodeConfig)
+		}
+
+		err = newApiOak.UpstreamNodePut(upstreamNodeConfigList)
+		if err != nil {
+			return
+		}
+	}
+
+	return
 }
