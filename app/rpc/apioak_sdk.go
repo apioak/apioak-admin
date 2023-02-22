@@ -99,26 +99,35 @@ func (m *ApiOak) commonPut(resName string, uri string, data interface{}, params 
 	var httpResp utils.HttpResp
 	httpResp, err = utils.Get(getUri, params, headers, timeOut)
 	if err != nil {
+		packages.Log.Error(err.Error())
+		err = errors.New(enums.CodeMessages(enums.RemoteServiceErr))
 		return
 	}
 
 	if httpResp.StatusCode == 404 {
 		httpResp, err = utils.PostJson(uri, data, headers, timeOut)
 		if err != nil {
+			packages.Log.Error(err.Error())
+			err = errors.New(enums.CodeMessages(enums.PublishError))
 			return
 		}
 
 		if httpResp.StatusCode != 200 {
-			return errors.New(enums.CodeMessages(enums.PublishError))
+			packages.Log.Error(string(httpResp.Body))
+			err = errors.New(enums.CodeMessages(enums.PublishError))
+			return
 		}
 	} else if httpResp.StatusCode == 200 {
 		httpResp, err = utils.PutJson(getUri, data, headers, timeOut)
 
 		if err != nil {
+			packages.Log.Error(err.Error())
+			err = errors.New(enums.CodeMessages(enums.PublishError))
 			return
 		}
 
 		if httpResp.StatusCode != 200 {
+			packages.Log.Error(string(httpResp.Body))
 			err = errors.New(enums.CodeMessages(enums.PublishError))
 		}
 	}
@@ -135,11 +144,14 @@ func (m *ApiOak) UpstreamNodeList(upstreamNodeIds []string) (list []UpstreamNode
 	var httpResp utils.HttpResp
 	httpResp, err = utils.Get(uri, params, headers, timeOut)
 	if err != nil {
+		packages.Log.Error(err.Error())
+		err = errors.New(enums.CodeMessages(enums.RemoteServiceErr))
 		return
 	}
 
 	if httpResp.StatusCode != 200 {
-		err = errors.New(enums.CodeMessages(enums.SyncError))
+		packages.Log.Error(string(httpResp.Body))
+		err = errors.New(enums.CodeMessages(enums.RemoteServiceErr))
 		return
 	} else {
 		var tmpList UpstreamNodeList
@@ -195,10 +207,13 @@ func (m *ApiOak) UpstreamNodeDelete(upstreamNodeResIds []string) (err error) {
 		var httpResp utils.HttpResp
 		httpResp, err = utils.Get(nodeUri, params, headers, timeOut)
 		if err != nil {
+			packages.Log.Error(err.Error())
+			err = errors.New(enums.CodeMessages(enums.RemoteServiceErr))
 			return
 		}
 
 		if httpResp.StatusCode == 500 {
+			packages.Log.Error(string(httpResp.Body))
 			err = errors.New(enums.CodeMessages(enums.SyncError))
 			return
 		} else if httpResp.StatusCode == 200 {
@@ -208,6 +223,7 @@ func (m *ApiOak) UpstreamNodeDelete(upstreamNodeResIds []string) (err error) {
 			}
 
 			if httpResp.StatusCode != 200 {
+				packages.Log.Error(string(httpResp.Body))
 				err = errors.New(enums.CodeMessages(enums.PublishError))
 				return
 			}
@@ -238,19 +254,25 @@ func (m *ApiOak) UpstreamNodeDeleteByIds(upstreamNodeIds []string) (err error) {
 		httpResp, err = utils.Get(uri, params, headers, timeOut)
 
 		if err != nil {
+			packages.Log.Error(err.Error())
+			err = errors.New(enums.CodeMessages(enums.RemoteServiceErr))
 			return
 		}
 
 		if httpResp.StatusCode == 500 {
+			packages.Log.Error(string(httpResp.Body))
 			err = errors.New(enums.CodeMessages(enums.SyncError))
 			return
 		} else if httpResp.StatusCode == 200 {
 			httpResp, err = utils.Delete(uri, params, headers, timeOut)
 			if err != nil {
+				packages.Log.Error(err.Error())
+				err = errors.New(enums.CodeMessages(enums.SyncError))
 				return
 			}
 
 			if httpResp.StatusCode != 200 {
+				packages.Log.Error(string(httpResp.Body))
 				err = errors.New(enums.CodeMessages(enums.PublishError))
 			}
 			return
@@ -290,12 +312,15 @@ func (m *ApiOak) UpstreamGet(upstreamResIds []string) (list []UpstreamConfig, er
 		var httpResp utils.HttpResp
 		httpResp, err = utils.Get(getUri, params, headers, timeOut)
 		if err != nil {
+			packages.Log.Error(err.Error())
+			err = errors.New(enums.CodeMessages(enums.RemoteServiceErr))
 			return
 		}
 
 		if httpResp.StatusCode == 404 {
 			continue
 		} else if httpResp.StatusCode == 500 {
+			packages.Log.Error(string(httpResp.Body))
 			err = errors.New(enums.CodeMessages(enums.SyncError))
 			return
 		} else if httpResp.StatusCode == 200 {
@@ -364,19 +389,25 @@ func (m *ApiOak) UpstreamDelete(upstreamResIds []string) (err error) {
 		var httpResp utils.HttpResp
 		httpResp, err = utils.Get(delUri, params, headers, timeOut)
 		if err != nil {
+			packages.Log.Error(err.Error())
+			err = errors.New(enums.CodeMessages(enums.RemoteServiceErr))
 			return
 		}
 
 		if httpResp.StatusCode == 500 {
+			packages.Log.Error(string(httpResp.Body))
 			err = errors.New(enums.CodeMessages(enums.SyncError))
 			return
 		} else if httpResp.StatusCode == 200 {
 			httpResp, err = utils.Delete(delUri, params, headers, timeOut)
 			if err != nil {
+				packages.Log.Error(err.Error())
+				err = errors.New(enums.CodeMessages(enums.SyncError))
 				return
 			}
 
 			if httpResp.StatusCode != 200 {
+				packages.Log.Error(string(httpResp.Body))
 				err = errors.New(enums.CodeMessages(enums.PublishError))
 			}
 			return
@@ -417,12 +448,15 @@ func (m *ApiOak) RouterGet(routerResIds []string) (list []RouterConfig, err erro
 		var httpResp utils.HttpResp
 		httpResp, err = utils.Get(getUri, params, headers, timeOut)
 		if err != nil {
+			packages.Log.Error(err.Error())
+			err = errors.New(enums.CodeMessages(enums.RemoteServiceErr))
 			return
 		}
 
 		if httpResp.StatusCode == 404 {
 			continue
 		} else if httpResp.StatusCode == 500 {
+			packages.Log.Error(string(httpResp.Body))
 			err = errors.New(enums.CodeMessages(enums.SyncError))
 			return
 		} else if httpResp.StatusCode == 200 {
@@ -489,19 +523,25 @@ func (m *ApiOak) RouterDelete(routerResIds []string) (err error) {
 		var httpResp utils.HttpResp
 		httpResp, err = utils.Get(delUri, params, headers, timeOut)
 		if err != nil {
+			packages.Log.Error(err.Error())
+			err = errors.New(enums.CodeMessages(enums.RemoteServiceErr))
 			return
 		}
 
 		if httpResp.StatusCode == 500 {
+			packages.Log.Error(string(httpResp.Body))
 			err = errors.New(enums.CodeMessages(enums.SyncError))
 			return
 		} else if httpResp.StatusCode == 200 {
 			httpResp, err = utils.Delete(delUri, params, headers, timeOut)
 			if err != nil {
+				packages.Log.Error(err.Error())
+				err = errors.New(enums.CodeMessages(enums.SyncError))
 				return
 			}
 
 			if httpResp.StatusCode != 200 {
+				packages.Log.Error(string(httpResp.Body))
 				err = errors.New(enums.CodeMessages(enums.PublishError))
 			}
 			return
@@ -532,7 +572,7 @@ func (m *ApiOak) CertificateGet(resID string) (CertificateGetResponse, error) {
 	httpResp, err := utils.Get(uri, params, headers, timeOut)
 	if err != nil || httpResp.StatusCode != 200 {
 		packages.Log.Error("Failed to obtain the data side certificate information", err)
-		return CertificateGetResponse{}, err
+		return CertificateGetResponse{}, errors.New(enums.CodeMessages(enums.RemoteServiceErr))
 	}
 
 	var body CertificateGetResponse
@@ -540,7 +580,6 @@ func (m *ApiOak) CertificateGet(resID string) (CertificateGetResponse, error) {
 
 	if err != nil {
 		packages.Log.Error("Failed to parse data side certificate information", err)
-		return CertificateGetResponse{}, err
 	}
 
 	return body, nil
@@ -556,7 +595,7 @@ func (m *ApiOak) CertificateDelete(resID string) error {
 	httpResp, err := utils.Get(uri, params, headers, timeOut)
 	if err != nil {
 		packages.Log.Error("[delete]:Failed to obtain the data side certificate information", err)
-		return errors.New(err.Error())
+		return errors.New(enums.CodeMessages(enums.RemoteServiceErr))
 	}
 
 	if httpResp.StatusCode != 200 {
@@ -567,7 +606,7 @@ func (m *ApiOak) CertificateDelete(resID string) error {
 
 	if err != nil || dHttpResp.StatusCode != 200 {
 		packages.Log.Error("[delete]:Failed to delete the data side certificate information", err)
-		return errors.New(err.Error())
+		return errors.New(enums.CodeMessages(enums.SyncError))
 	}
 
 	return nil
@@ -616,10 +655,11 @@ func (m *ApiOak) ServiceGet(resID string) (ServiceResponse, error) {
 	httpResp, err := utils.Get(uri, params, headers, timeOut)
 	if err != nil {
 		packages.Log.Error("Failed to obtain the data side service information", err)
-		return ServiceResponse{}, err
+		return ServiceResponse{}, errors.New(enums.CodeMessages(enums.RemoteServiceErr))
 	}
 
 	if httpResp.StatusCode == 500 {
+		packages.Log.Error(string(httpResp.Body))
 		return ServiceResponse{}, errors.New(enums.CodeMessages(enums.SyncError))
 	} else if httpResp.StatusCode == 200 {
 		var body ServiceResponse
@@ -627,7 +667,6 @@ func (m *ApiOak) ServiceGet(resID string) (ServiceResponse, error) {
 
 		if err != nil {
 			packages.Log.Error("Failed to parse data side service information", err)
-			return ServiceResponse{}, err
 		}
 		return body, nil
 	} else {
@@ -644,7 +683,7 @@ func (m *ApiOak) ServiceDelete(resID string) error {
 	httpResp, err := utils.Get(uri, params, headers, timeOut)
 	if err != nil {
 		packages.Log.Error("[delete]:Failed to obtain the data side service information", err)
-		return errors.New(err.Error())
+		return errors.New(enums.CodeMessages(enums.RemoteServiceErr))
 	}
 
 	if httpResp.StatusCode == 404 {
@@ -655,7 +694,7 @@ func (m *ApiOak) ServiceDelete(resID string) error {
 
 	if err != nil || dHttpResp.StatusCode != 200 {
 		packages.Log.Error("[delete]:Failed to delete the data side service information", err)
-		return errors.New(err.Error())
+		return errors.New(enums.CodeMessages(enums.SyncError))
 	}
 
 	return nil
@@ -706,10 +745,11 @@ func (m *ApiOak) PluginGet(resID string) (PluginResponse, error) {
 	httpResp, err := utils.Get(uri, params, headers, timeOut)
 	if err != nil {
 		packages.Log.Error("Failed to obtain the data side plugin information", err)
-		return PluginResponse{}, err
+		return PluginResponse{}, errors.New(enums.CodeMessages(enums.RemoteServiceErr))
 	}
 
 	if httpResp.StatusCode == 500 {
+		packages.Log.Error(string(httpResp.Body))
 		return PluginResponse{}, errors.New(enums.CodeMessages(enums.SyncError))
 	} else if httpResp.StatusCode == 200 {
 		var body PluginResponse
@@ -717,7 +757,6 @@ func (m *ApiOak) PluginGet(resID string) (PluginResponse, error) {
 
 		if err != nil {
 			packages.Log.Error("Failed to parse data side plugin information", err)
-			return PluginResponse{}, err
 		}
 		return body, nil
 	} else {
@@ -734,7 +773,7 @@ func (m *ApiOak) PluginDelete(resID string) error {
 	httpResp, err := utils.Get(uri, params, headers, timeOut)
 	if err != nil {
 		packages.Log.Error("[delete]:Failed to obtain the data side plugin information", err)
-		return errors.New(err.Error())
+		return errors.New(enums.CodeMessages(enums.RemoteServiceErr))
 	}
 
 	if httpResp.StatusCode != 200 {
@@ -745,7 +784,7 @@ func (m *ApiOak) PluginDelete(resID string) error {
 
 	if err != nil || dHttpResp.StatusCode != 200 {
 		packages.Log.Error("[delete]:Failed to delete the data side plugin information", err)
-		return errors.New(err.Error())
+		return errors.New(enums.CodeMessages(enums.SyncError))
 	}
 
 	return nil

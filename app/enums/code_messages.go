@@ -25,6 +25,7 @@ const (
 	PublishError         = 109 // 发布失败
 	SyncError            = 110 // 同步失败
 	NameExist            = 111 // 名称已存在
+	RemoteServiceErr     = 112 // 服务异常，请联系管理员
 
 	ServiceNull          = 10001 // 服务不存在
 	ServiceParamsNull    = 10002 // 服务参数缺失
@@ -73,7 +74,7 @@ const (
 	UserLoggingInError  = 10607 // 用户登录失败
 	UserLoggingInExpire = 10608 // 用户登录已过期
 
-	UpstreamNull = 10701 // 上游不存在
+	UpstreamNull        = 10701 // 上游不存在
 	UpstreamRouterExist = 10702 // 上游已被路由绑定，暂不允许该操作
 
 )
@@ -93,6 +94,7 @@ var ZhMapMessages = map[int]string{
 	PublishError:         "发布失败",
 	SyncError:            "同步失败",
 	NameExist:            "名称已存在",
+	RemoteServiceErr:     "服务异常，请联系管理员",
 
 	ServiceNull:          "服务不存在",
 	ServiceParamsNull:    "服务参数缺失",
@@ -140,9 +142,8 @@ var ZhMapMessages = map[int]string{
 	UserLoggingInError:  "用户登录失败",
 	UserLoggingInExpire: "用户登录已过期",
 
-	UpstreamNull: "上游不存在",
+	UpstreamNull:        "上游不存在",
 	UpstreamRouterExist: "上游已被路由绑定，暂不允许该操作",
-
 }
 
 var EnMapMessages = map[int]string{
@@ -160,6 +161,7 @@ var EnMapMessages = map[int]string{
 	PublishError:         "Publish error",
 	SyncError:            "Sync error",
 	NameExist:            "Name already exists",
+	RemoteServiceErr:     "Service exception, please contact the administrator",
 
 	ServiceNull:          "Service does not exist",
 	ServiceParamsNull:    "Missing service parameters",
@@ -207,9 +209,8 @@ var EnMapMessages = map[int]string{
 	UserLoggingInError:  "User login failed",
 	UserLoggingInExpire: "User login has expired",
 
-	UpstreamNull: "Upstream does not exist",
+	UpstreamNull:        "Upstream does not exist",
 	UpstreamRouterExist: "Upstream has been bound by a route. This operation is not allowed temporarily",
-
 }
 
 func CodeMessages(code int) string {
