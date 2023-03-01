@@ -20,7 +20,10 @@
 `apioak-admin` is the control plane backend project of `apioak` gateway, based on <a target="_blank" href="https://github.com/golang/go">Go 1.16</a> and <a target="_blank" href="https://github.com/gin-gonic/gin">Gin 1.7.2</a> development, the project matches the data surface project <a target="_blank" href="https ://github.com/apioak/apioak">apioak</a>.
 The project aims to simplify the use of `apioak`, optimize the user's operation, and achieve a minimal operation to complete the launch and release of a complete service configuration.
 
-## Compile
+## Quick start
+For the convenience of use, the front-end and back-end projects are merged and packaged as out-of-the-box executable files, which only need to be downloaded in [Releases](https://github.com/apioak/apioak-admin/releases) Compress the package and decompress it, then configure the `config/app.yaml` configuration file in the corresponding directory and execute the executable file to complete the deployment of the project. Just access the contents of the `server` configuration item in the `config/app.yaml` configuration file.
+
+## Self-compiled
 ```
 go build -o apioak-admin main.go
 ```
@@ -29,15 +32,17 @@ go build -o apioak-admin main.go
 For the system dependencies necessary to install `apioak-admin` on different operating systems (`MySQL >= 5.7 or MariaDB >= 10.2`, etc.), please refer to: [Dependency Installation Documentation](doc/zh_CN/install-dependencies.md ).
 
 ## Configuration
-- Import the database configuration file to `MySQL` or `MariaDB`, the data table configuration file path `/path/config/apioak.sql`.
+- Import the database configuration file to `MySQL` or `MariaDB`, the data table configuration file path `/{path}/config/apioak.sql`.
 
-- Create a `config` directory in the directory where the `apioak` executable file generated after the above compilation command is located, and copy the configuration file `app_example.yaml` under the `apioak-admin` project to this directory, and change the name to` app.yaml`, and then configure the database connection information of the `database` item in the configuration file, the `server` item accesses the service information after starting the service, and the `apioak` item is the `admin-api` deployed on the data plane of the data plane access information.
+- Create a `config` directory in the directory where the `apioak-admin` executable file generated after compiling the command is located, and copy the configuration file `app_example.yaml` under the `apioak-admin` project to this directory, and change the name to `app.yaml`, and then configure in that configuration file.
+  > - `database`: database connection information.
+  > - `token`: User login to issue `token` configuration information.
+  > - `server`: Information about accessing the service after starting the service.
+  > - `apioak`: Data plane configuration synchronization connection information.
+  > - `logger`: Record log configuration information.
+  > - `validator`: The language of parameter verification information. zh:Chinese (default) / en:English
 
 ## Run
 ```
 ./apioak-admin
 ```
-
-## Other
-For the convenience of use in the project, there are executable files that already include the front-end and back-end projects of this project. You only need to download the corresponding executable files, and then add the `config/app.yaml` configuration file in the executable file directory to complete To start the front-end and back-end projects, directly access the `server` item in the `config/app.yaml` configuration file to operate.
-
