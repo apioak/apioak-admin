@@ -19,6 +19,7 @@
 - Optimize the static document packaging system.
 - Optimize remote data synchronization exception reminder.
 - Optimize some parameter checks and logical association checks.
+- The data table `oak_upstreams` adds fields `enable` and `release`.
 
 
 #### Document
