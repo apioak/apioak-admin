@@ -30,7 +30,6 @@ type ValidatorRouterAddUpdate struct {
 	RequestMethods string `json:"request_methods" zh:"请求方法" en:"Request method" binding:"required,min=3,CheckRouterRequestMethodOneOf"`
 	RouterPath     string `json:"router_path" zh:"路由路径" en:"Routing path" binding:"required,min=1,CheckRouterPathPrefix"`
 	Enable         int    `json:"enable" zh:"路由开关" en:"Routing enable" binding:"required,oneof=1 2"`
-	UpstreamAddUpdate
 }
 
 type ValidatorRouterList struct {

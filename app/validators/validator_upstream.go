@@ -17,16 +17,34 @@ var (
 	}
 )
 
+type UpstreamList struct {
+	Enable    int    `form:"enable" json:"enable" zh:"上游开关" en:"Upstream enable" binding:"omitempty,oneof=1 2"`
+	Release   int    `form:"release" json:"release" zh:"发布状态" en:"Release status" binding:"omitempty,oneof=1 2 3"`
+	Algorithm int    `form:"algorithm" json:"algorithm" zh:"负载均衡" en:"Load balancing" binding:"omitempty"`
+	Search    string `form:"search" json:"search" zh:"搜索内容" en:"Search content" binding:"omitempty"`
+	BaseListPage
+}
+
 type UpstreamTimeout struct {
-	ReadTimeout    int `json:"read_timeout" zh:"读超市" en:"Read timeout" binding:"omitempty,min=1,max=600000"`
+	ReadTimeout    int `json:"read_timeout" zh:"读超时" en:"Read timeout" binding:"omitempty,min=1,max=600000"`
 	WriteTimeout   int `json:"write_timeout" zh:"写超时" en:"Write timeout" binding:"omitempty,min=1,max=600000"`
 	ConnectTimeout int `json:"connect_timeout" zh:"连接超时" en:"Connect timeout" binding:"omitempty,min=1,max=600000"`
 }
 
 type UpstreamAddUpdate struct {
-	LoadBalance   int                     `json:"load_balance" zh:"负载均衡算法" en:"Load balancing algorithm" binding:"omitempty,CheckLoadBalanceOneOf"`
-	UpstreamNodes []UpstreamNodeAddUpdate `json:"upstream_nodes" zh:"上游节点" en:"Upstream nodes" binding:"omitempty,CheckUpstreamNode"`
+	Name        string `json:"name" zh:"上游名称" en:"Upstream name" binding:"omitempty,min=1,max=30"`
+	LoadBalance int    `json:"load_balance" zh:"负载均衡算法" en:"Load balancing algorithm" binding:"omitempty,CheckLoadBalanceOneOf"`
+	Enable      int    `json:"enable" zh:"上游开关" en:"Upstream enable" binding:"omitempty,oneof=1 2"`
 	UpstreamTimeout
+	UpstreamNodes []UpstreamNodeAddUpdate `json:"upstream_nodes" zh:"上游节点" en:"Upstream nodes" binding:"required,min=1,CheckUpstreamNode"`
+}
+
+type UpstreamUpdateName struct {
+	Name string `json:"name" zh:"上游名称" en:"Upstream name" binding:"required,min=1,max=30"`
+}
+
+type UpstreamSwitchEnable struct {
+	Enable int `json:"enable" zh:"上游开关" en:"Upstream enable" binding:"required,oneof=1 2"`
 }
 
 func CheckLoadBalanceOneOf(fl validator.FieldLevel) bool {

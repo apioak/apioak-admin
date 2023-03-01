@@ -124,6 +124,21 @@ func (r *Routers) RouterListByRouterResIds(routerResIds []string) ([]Routers, er
 	return routerList, err
 }
 
+func (r *Routers) RouterListByUpstreamResIds(upstreamResIds []string) (list []Routers, err error) {
+	list = make([]Routers, 0)
+
+	err = packages.GetDb().
+		Table(r.TableName()).
+		Where("upstream_res_id in ?", upstreamResIds).
+		Find(&list).Error
+
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		err = nil
+	}
+
+	return
+}
+
 func (r *Routers) RouterInfosByServiceRouterId(serviceResId string, resId string) (router Routers, err error) {
 	err = packages.GetDb().
 		Table(r.TableName()).
@@ -152,7 +167,7 @@ func (r *Routers) RouterInfosByServiceIdReleaseStatus(serviceId string, releaseS
 	return routerInfos
 }
 
-func (r *Routers) RouterAdd(routerData Routers, upstreamData Upstreams, upstreamNodes []UpstreamNodes) (string, error) {
+func (r *Routers) RouterAdd(routerData Routers) (string, error) {
 	routerResId, routerIdUniqueErr := r.ModelUniqueId()
 	if routerIdUniqueErr != nil {
 		return routerResId, routerIdUniqueErr
@@ -168,43 +183,6 @@ func (r *Routers) RouterAdd(routerData Routers, upstreamData Upstreams, upstream
 
 	if err := tx.Error; err != nil {
 		return routerResId, err
-	}
-
-	if len(upstreamNodes) > 0 {
-		upstreamResId, err := upstreamData.ModelUniqueId()
-		if err != nil {
-			return routerResId, err
-		}
-
-		upstreamData.ResID = upstreamResId
-		upstreamData.Name = upstreamResId
-		if upstreamData.Algorithm == 0 {
-			upstreamData.Algorithm = utils.LoadBalanceRoundRobin
-		}
-		upstreamErr := tx.Create(&upstreamData).Error
-
-		if upstreamErr != nil {
-			tx.Rollback()
-			return routerResId, upstreamErr
-		}
-
-		for _, upstreamNode := range upstreamNodes {
-			upstreamNodeResId, nodeErr := upstreamNode.ModelUniqueId()
-			if nodeErr != nil {
-				return routerResId, nodeErr
-			}
-
-			upstreamNode.ResID = upstreamNodeResId
-			upstreamNode.UpstreamResID = upstreamResId
-
-			upstreamNodeErr := tx.Create(&upstreamNode).Error
-			if upstreamNodeErr != nil {
-				tx.Rollback()
-				return routerResId, upstreamNodeErr
-			}
-		}
-
-		routerData.UpstreamResID = upstreamResId
 	}
 
 	routerData.ResID = routerResId

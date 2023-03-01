@@ -145,6 +145,8 @@ CREATE TABLE `oak_upstreams` (
   `connect_timeout` int(10) unsigned NOT NULL DEFAULT 1 COMMENT 'Connect timeout',
   `write_timeout` int(10) unsigned NOT NULL DEFAULT 1 COMMENT 'Write timeout',
   `read_timeout` int(10) unsigned NOT NULL DEFAULT 1 COMMENT 'Read timeout',
+  `enable` tinyint(1) unsigned NOT NULL DEFAULT 2 COMMENT 'Enable  1:on  2:off',
+  `release` tinyint(1) unsigned NOT NULL DEFAULT 1 COMMENT 'Release status 1:unpublished  2:to be published  3:published',
   `created_at` timestamp NOT NULL DEFAULT current_timestamp() COMMENT 'Creation time',
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp() COMMENT 'Update time',
   PRIMARY KEY (`id`),

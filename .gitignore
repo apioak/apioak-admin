@@ -1,6 +1,5 @@
 tmp
 .idea
-.DS_Store
 etc
 bin
 logs/*
@@ -8,5 +7,5 @@ config/app.yaml
 apioak-admin
 apioak
 .air.toml
-dist/
-html/
+/dist
+**/.DS_Store
