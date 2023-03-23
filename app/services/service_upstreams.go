@@ -456,7 +456,7 @@ func UpstreamRelease(upstreamResIds []string, releaseType string) (err error) {
 	}
 
 	var cloudNodeList []rpc.UpstreamNodeConfig
-	cloudNodeList, err = newApiOak.UpstreamNodeList(upstreamNodeIds)
+	cloudNodeList, err = newApiOak.UpstreamNodeListByNodeIds(upstreamNodeIds)
 	if err != nil {
 		return
 	}
@@ -509,12 +509,12 @@ func UpstreamRelease(upstreamResIds []string, releaseType string) (err error) {
 			return
 		}
 
-		err = newApiOak.UpstreamPut(upstreamConfigList)
+		err = NodeRelease(deleteNodeIds, utils.ReleaseTypeDelete)
 		if err != nil {
 			return
 		}
 
-		err = NodeRelease(deleteNodeIds, utils.ReleaseTypeDelete)
+		err = newApiOak.UpstreamPut(upstreamConfigList)
 		if err != nil {
 			return
 		}
@@ -526,12 +526,12 @@ func UpstreamRelease(upstreamResIds []string, releaseType string) (err error) {
 			deleteNodeIds = append(deleteNodeIds, cloudNodeInfo.Name)
 		}
 
-		err = newApiOak.UpstreamDelete(upstreamResIds)
+		err = NodeRelease(deleteNodeIds, utils.ReleaseTypeDelete)
 		if err != nil {
 			return
 		}
 
-		err = NodeRelease(deleteNodeIds, utils.ReleaseTypeDelete)
+		err = newApiOak.UpstreamDelete(upstreamResIds)
 		if err != nil {
 			return
 		}

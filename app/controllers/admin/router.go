@@ -26,7 +26,7 @@ func RouterAdd(c *gin.Context) {
 	}
 
 	checkServiceExistErr := services.CheckServiceExist(bindParams.ServiceResID)
-	if (len(bindParams.ServiceResID) == 0) || (checkServiceExistErr != nil) {
+	if checkServiceExistErr != nil {
 		utils.Error(c, checkServiceExistErr.Error())
 		return
 	}

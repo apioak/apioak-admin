@@ -162,6 +162,28 @@ func (m *ApiOak) UpstreamNodeList(upstreamNodeIds []string) (list []UpstreamNode
 	return
 }
 
+func (m *ApiOak) UpstreamNodeListByNodeIds(upstreamNodeIds []string) (list []UpstreamNodeConfig, err error) {
+
+	nodeList, err := m.UpstreamNodeList(upstreamNodeIds)
+	if err != nil {
+		return
+	}
+
+	upstreamNodeIdsMap := make(map[string]byte)
+	for _, upstreamNodeId := range upstreamNodeIds {
+		upstreamNodeIdsMap[upstreamNodeId] = 0
+	}
+
+	for _, nodeInfo := range nodeList {
+		if _, exist := upstreamNodeIdsMap[nodeInfo.Name]; exist {
+			list = append(list, nodeInfo)
+		}
+	}
+
+	return
+}
+
+
 func (m *ApiOak) UpstreamNodePut(upstreamNodeConfigList []UpstreamNodeConfig) (err error) {
 	if len(upstreamNodeConfigList) == 0 {
 		return
