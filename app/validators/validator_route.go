@@ -59,13 +59,13 @@ func CheckRouterPathPrefix(fl validator.FieldLevel) bool {
 		return false
 	}
 
-	matchDefaultPath := strings.Index(routePath, "/*")
-	if matchDefaultPath == 0 {
-		var errMsg string
-		errMsg = fmt.Sprintf(routerPathDefaultPathPrefixMessages[strings.ToLower(packages.GetValidatorLocale())], fl.FieldName())
-		packages.SetAllCustomizeValidatorErrMsgs("CheckRouterPathPrefix", errMsg)
-		return false
-	}
+	// matchDefaultPath := strings.Index(routePath, "/*")
+	// if matchDefaultPath == 0 {
+	// 	var errMsg string
+	// 	errMsg = fmt.Sprintf(routerPathDefaultPathPrefixMessages[strings.ToLower(packages.GetValidatorLocale())], fl.FieldName())
+	// 	packages.SetAllCustomizeValidatorErrMsgs("CheckRouterPathPrefix", errMsg)
+	// 	return false
+	// }
 
 	return true
 }
