@@ -20,13 +20,8 @@ func RouterAdd(c *gin.Context) {
 
 	validators.GetRouterAttributesDefault(&bindParams)
 
-	if bindParams.RouterPath == utils.DefaultRouterPath {
-		utils.Error(c, enums.CodeMessages(enums.RouterDefaultPathNoPermission))
-		return
-	}
-
 	checkServiceExistErr := services.CheckServiceExist(bindParams.ServiceResID)
-	if (len(bindParams.ServiceResID) == 0) || (checkServiceExistErr != nil) {
+	if checkServiceExistErr != nil {
 		utils.Error(c, checkServiceExistErr.Error())
 		return
 	}
@@ -125,18 +120,6 @@ func RouterUpdate(c *gin.Context) {
 		return
 	}
 
-	checkEditDefaultPathRouterErr := services.CheckEditDefaultPathRouter(routerResId)
-	if checkEditDefaultPathRouterErr != nil {
-		utils.Error(c, checkEditDefaultPathRouterErr.Error())
-		return
-	}
-
-	checkServiceRouterPathErr := services.CheckServiceRouterPath(bindParams.RouterPath)
-	if checkServiceRouterPathErr != nil {
-		utils.Error(c, checkServiceRouterPathErr.Error())
-		return
-	}
-
 	err := services.CheckExistServiceRouterPath(bindParams.ServiceResID, bindParams.RouterPath, []string{routerResId})
 	if err != nil {
 		utils.Error(c, err.Error())
@@ -206,12 +189,6 @@ func RouterSwitchEnable(c *gin.Context) {
 		return
 	}
 
-	checkEditDefaultPathRouteErr := services.CheckEditDefaultPathRouter(routerResId)
-	if checkEditDefaultPathRouteErr != nil {
-		utils.Error(c, checkEditDefaultPathRouteErr.Error())
-		return
-	}
-
 	checkRouteEnableChangeErr := services.CheckRouterEnableChange(routerResId, bindParams.Enable)
 	if checkRouteEnableChangeErr != nil {
 		utils.Error(c, checkRouteEnableChangeErr.Error())
@@ -241,12 +218,6 @@ func RouterDelete(c *gin.Context) {
 	checkExistRouteErr := services.CheckRouterExist(routeResId, serviceResId)
 	if checkExistRouteErr != nil {
 		utils.Error(c, checkExistRouteErr.Error())
-		return
-	}
-
-	checkEditDefaultPathRouteErr := services.CheckEditDefaultPathRouter(routeResId)
-	if checkEditDefaultPathRouteErr != nil {
-		utils.Error(c, checkEditDefaultPathRouteErr.Error())
 		return
 	}
 
