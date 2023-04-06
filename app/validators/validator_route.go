@@ -13,10 +13,6 @@ var (
 		utils.LocalEn: "%s must start with [/]",
 		utils.LocalZh: "%s必须以[/]开始",
 	}
-	routerPathDefaultPathPrefixMessages = map[string]string{
-		utils.LocalEn: "%s It is temporarily not allowed to start with the default routing path[/*]",
-		utils.LocalZh: "%s暂不允许以默认路由路径[/*]开头",
-	}
 	routerRequestMethodOneOfMessages = map[string]string{
 		utils.LocalEn: "%s must be one of [%s]",
 		utils.LocalZh: "%s必须是[%s]中的一个",
@@ -58,14 +54,6 @@ func CheckRouterPathPrefix(fl validator.FieldLevel) bool {
 		packages.SetAllCustomizeValidatorErrMsgs("CheckRouterPathPrefix", errMsg)
 		return false
 	}
-
-	// matchDefaultPath := strings.Index(routePath, "/*")
-	// if matchDefaultPath == 0 {
-	// 	var errMsg string
-	// 	errMsg = fmt.Sprintf(routerPathDefaultPathPrefixMessages[strings.ToLower(packages.GetValidatorLocale())], fl.FieldName())
-	// 	packages.SetAllCustomizeValidatorErrMsgs("CheckRouterPathPrefix", errMsg)
-	// 	return false
-	// }
 
 	return true
 }
