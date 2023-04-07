@@ -4,7 +4,7 @@
 
 <p align="center">
   <a href="https://github.com/apioak/apioak-admin">
-    <img src="https://img.shields.io/badge/apioak--admin-v0.6.0-blue" alt="apioak-admin">
+    <img src="https://img.shields.io/badge/Apioak--Admin-Master-blue" alt="Apioak-Admin">
   </a>
   <a href="https://github.com/golang/go">
     <img src="https://img.shields.io/badge/Go-v1.16-blue" alt="go-1.16">
